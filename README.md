@@ -2,6 +2,11 @@
 
 Personal projects workspace.
 
+**Live demo (GitHub Pages):** https://muhannad00002.github.io/muhannad-app/
+
+- 📱 [Customer app](https://muhannad00002.github.io/muhannad-app/scan-and-go/app/index.html#/customer/splash)
+- 🏬 [Merchant back office](https://muhannad00002.github.io/muhannad-app/scan-and-go/app/index.html#/merchant/dashboard)
+
 ## Projects
 
 ### scan-and-go (Sayr)
