@@ -83,7 +83,7 @@ SG.apps.launcher = (root)=>{
       '<button class="btn btn-pri btn-lg" data-act="demo-start">'+icon("play",17)+' Play the guided demo</button>'+
       '<button class="btn btn-ghost" data-act="reset-demo">'+icon("refresh",15)+' Reset demo data</button>'+
     '</div>'+
-    '<p class="small muted" style="margin-top:26px;max-width:520px;text-align:center">Simulated environment with seeded data for Nora Boutique, Riyadh &amp; Jeddah. A sale completed at the POS updates inventory, vendor feeds, loyalty and every report in real time.</p>'+
+    '<p class="small muted" style="margin-top:26px;max-width:520px;text-align:center">Simulated environment with seeded data for Nora Boutique, Muscat &amp; Salalah. A sale completed at the POS updates inventory, vendor feeds, loyalty and every report in real time.</p>'+
   '</div>';
 };
 })();

@@ -11,7 +11,7 @@ function inventory(root){
   let body;
   if(tab==="levels"){
     const list = DB.products.filter(p=>((p.stock.b1||0)+(p.stock.b2||0))<900);
-    body = '<div class="tablewrap"><table><thead><tr><th>Product</th><th class="r">U Walk</th><th class="r">Red Sea Mall</th><th class="r">Total</th><th>Status</th><th class="r">Adjust</th></tr></thead><tbody>'+
+    body = '<div class="tablewrap"><table><thead><tr><th>Product</th><th class="r">Mall of Oman</th><th class="r">Salalah Grand Mall</th><th class="r">Total</th><th>Status</th><th class="r">Adjust</th></tr></thead><tbody>'+
       list.map(p=>{ const tot=(p.stock.b1||0)+(p.stock.b2||0);
         return '<tr><td><div class="row">'+pimg(p,34,9)+'<div><b style="font-size:13.5px">'+esc(p.name)+'</b><div class="small muted">'+p.sku+'</div></div></div></td>'+
         '<td class="r num">'+(p.stock.b1||0)+'</td><td class="r num">'+(p.stock.b2||0)+'</td><td class="r num" style="font-weight:700">'+tot+'</td>'+
@@ -38,7 +38,7 @@ function inventory(root){
       '<button class="btn btn-sec" data-act="inv-export">'+icon("download",15)+' Export stock CSV</button></div>'+body);
 }
 SG.actions["inv-tab"]=t=>{ SG.sess.invTab=t; SG.saveSess(); SG.render(); };
-SG.actions["inv-export"]=()=>{ SG.downloadCSV("stock.csv",[["Product","SKU","U Walk","Red Sea Mall"],
+SG.actions["inv-export"]=()=>{ SG.downloadCSV("stock.csv",[["Product","SKU","Mall of Oman","Salalah Grand Mall"],
   ...DB.products.map(p=>[p.name,p.sku,p.stock.b1||0,p.stock.b2||0])]); SG.toast("stock.csv downloaded"); };
 SG.actions["inv-restock"]=arg=>{ const [pid,bid]=arg.split("|");
   SG.adjustStock(pid,bid,20,"restock","Quick restock","Ahmed Siddiqui");
@@ -304,7 +304,7 @@ function reports(root){
       '<div class="kpi"><span class="kpi-label">Orders</span><span class="kpi-value num">'+os.length.toLocaleString()+'</span></div>'+
       '<div class="kpi"><span class="kpi-label">Units</span><span class="kpi-value num">'+os.reduce((s,o)=>s+o.items.reduce((x,i)=>x+i.qty,0),0).toLocaleString()+'</span></div>'+
       '<div class="kpi"><span class="kpi-label">VAT collected</span><span class="kpi-value num">'+fmtK(os.reduce((s,o)=>s+o.tax,0))+'</span></div></div>'+
-    '<div class="chart-card"><div class="chart-h"><h3>Sales by weekday</h3><div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c2)"></span>Gross (SAR)</span></div></div><div id="r-week"></div></div>'+
+    '<div class="chart-card"><div class="chart-h"><h3>Sales by weekday</h3><div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c2)"></span>Gross (OMR)</span></div></div><div id="r-week"></div></div>'+
     '<div class="grid2" style="align-items:start">'+
       '<div class="chart-card"><div class="chart-h"><h3>Product performance</h3></div>'+
         SG.barList(top.map(t=>({label:t.name,value:Math.round(t.revenue),sub:t.units+" units",img:pimg({emoji:t.emoji,grad:t.grad},32,8)})))+'</div>'+
@@ -319,7 +319,7 @@ function reports(root){
 SG.actions["r-range"]=d=>{ SG.sess.rRange=+d; SG.saveSess(); SG.invalidate("m-reports"); SG.render(); };
 SG.actions["r-export"]=()=>{
   const range=SG.sess.rRange||30;
-  SG.downloadCSV("sales-report-"+range+"d.csv",[["Date","Gross SAR"],...SG.seriesDaily(range).map(d=>[d.date,d.v])]);
+  SG.downloadCSV("sales-report-"+range+"d.csv",[["Date","Gross OMR"],...SG.seriesDaily(range).map(d=>[d.date,d.v])]);
   SG.toast("Report exported");
 };
 
@@ -336,7 +336,7 @@ function insights(root){
   const friShare = Math.round(SG.sumSales(fri)/Math.max(SG.sumSales(SG.ordersSince(30)),1)*100);
   const cards = [
     {t:"Weekend concentration is high", body:friShare+"% of the last 30 days' revenue lands on Friday–Saturday. Consider a weekday promotion (e.g. WELCOME15 push on Tue–Wed) to smooth demand and reduce weekend register queues.", act:"Review coupons", nav:"#/merchant/settings"},
-    {t:(growth>=0?"Momentum is positive":"Sales dipped this week"), body:"Last 7 days are "+(growth>=0?"up ":"down ")+Math.abs(growth)+"% vs the week before. "+(growth>=0?"The push came mostly from "+esc(top[0]?top[0].name:"top sellers")+".":"The dip traces to fewer weekday baskets at Red Sea Mall."), act:"Open reports", nav:"#/merchant/reports"},
+    {t:(growth>=0?"Momentum is positive":"Sales dipped this week"), body:"Last 7 days are "+(growth>=0?"up ":"down ")+Math.abs(growth)+"% vs the week before. "+(growth>=0?"The push came mostly from "+esc(top[0]?top[0].name:"top sellers")+".":"The dip traces to fewer weekday baskets at Salalah Grand Mall."), act:"Open reports", nav:"#/merchant/reports"},
     {t:"Restock before the weekend", body: low.length? low.slice(0,2).map(l=>esc(l.p.name)+" ("+l.qty+" left)").join(" and ")+" will likely sell out within "+(low[0].qty<3?"2":"5")+" days at the current run-rate.":"All SKUs are healthy — no stock-outs projected in the next 14 days.", act:"Open inventory", nav:"#/merchant/inventory"},
     {t:"Bundle opportunity", body:"Shoppers who buy "+esc(top[0]?top[0].name:"your top seller")+" add a Fragrance item in 38% of baskets. A “complete the look” shelf card near the abaya rail could lift attach rate.", act:"See products", nav:"#/merchant/products"},
     {t:"Vendor spotlight", body:"Oud & Amber generates the highest revenue per shelf-slot this month. Their commission terms (22%) are also your best margin among vendors — consider giving them the entrance display.", act:"Open vendors", nav:"#/merchant/vendors"},
@@ -423,7 +423,7 @@ function subscription(root){
       '<div class="plan-card'+(p.id==="business"?" current":"")+'">'+
       (p.id==="business"?'<span class="chip chip-accent" style="position:absolute;top:-11px;left:18px">Current plan</span>':'')+
       '<b style="font-size:15px">'+p.name+'</b>'+
-      '<div class="price num">'+(p.price?"SAR "+p.price:"Custom")+(p.price?'<span style="font-size:13px;color:var(--ink3);font-weight:500">/mo</span>':'')+'</div>'+
+      '<div class="price num">'+(p.price?SG.rial+" "+p.price:"Custom")+(p.price?'<span style="font-size:13px;color:var(--ink3);font-weight:500">/mo</span>':'')+'</div>'+
       '<ul>'+p.feats.map(f=>'<li>'+icon("check",14)+' '+f+'</li>').join("")+'</ul>'+
       (p.id==="business"?'<button class="btn btn-sec" disabled>Your plan</button>'
         :p.id==="enterprise"?'<button class="btn btn-sec" data-act="sub-contact">Talk to sales</button>'

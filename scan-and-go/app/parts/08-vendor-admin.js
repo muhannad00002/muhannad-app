@@ -52,7 +52,7 @@ function vhome(root){
       '<div class="kpi"><span class="kpi-label">Your payout (est.)</span><span class="kpi-value num">'+fmtK(agg.gross*(1-v.commission/100))+'</span><span class="kpi-delta muted">after '+v.commission+'% commission</span></div>'+
       '<div class="kpi"><span class="kpi-label">Pending settlement</span><span class="kpi-value num">'+(pending?fmtK(pending.net):"—")+'</span><span class="kpi-delta muted">'+(pending?pending.period:"all settled")+'</span></div></div>'+
     '<div class="chart-card"><div class="chart-h"><h3>Your daily sales at '+esc(DB.storeName)+'</h3>'+
-      '<div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c3)"></span>Gross (SAR)</span></div></div><div id="v-line"></div></div>'+
+      '<div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c3)"></span>Gross (OMR)</span></div></div><div id="v-line"></div></div>'+
     '<div class="grid2">'+
       '<div class="card card-pad"><h3 style="font-size:15px;margin-bottom:8px">Stock health</h3>'+
         (lows.length? lows.map(p=>'<div class="listrow">'+pimg(p,36,9)+'<div style="flex:1"><b style="font-size:13.5px">'+esc(p.name)+'</b>'+
@@ -123,9 +123,9 @@ function vsales(root){
 function vreports(root){
   const v = SG.vendorById(VENDOR_ID);
   const reports = [
-    {name:"Daily sales digest", desc:"Yesterday's units, value and stock alerts", file:"dune-atelier-daily.csv", rows:()=>[["Product","Units","Gross SAR"],...SG.topProducts(1,99,VENDOR_ID).map(t=>[t.name,t.units,t.revenue.toFixed(2)])]},
-    {name:"30-day sales detail", desc:"Every sale line for the month", file:"dune-atelier-30d.csv", rows:()=>[["Date","Product","Units","Gross SAR"],...SG.topProducts(30,99,VENDOR_ID).map(t=>[new Date().toISOString().slice(0,10),t.name,t.units,t.revenue.toFixed(2)])]},
-    {name:"Inventory snapshot", desc:"Current stock by branch", file:"dune-atelier-stock.csv", rows:()=>[["Product","U Walk","Red Sea Mall"],...DB.products.filter(p=>p.vendorId===VENDOR_ID).map(p=>[p.name,p.stock.b1||0,p.stock.b2||0])]},
+    {name:"Daily sales digest", desc:"Yesterday's units, value and stock alerts", file:"dune-atelier-daily.csv", rows:()=>[["Product","Units","Gross OMR"],...SG.topProducts(1,99,VENDOR_ID).map(t=>[t.name,t.units,t.revenue.toFixed(2)])]},
+    {name:"30-day sales detail", desc:"Every sale line for the month", file:"dune-atelier-30d.csv", rows:()=>[["Date","Product","Units","Gross OMR"],...SG.topProducts(30,99,VENDOR_ID).map(t=>[new Date().toISOString().slice(0,10),t.name,t.units,t.revenue.toFixed(2)])]},
+    {name:"Inventory snapshot", desc:"Current stock by branch", file:"dune-atelier-stock.csv", rows:()=>[["Product","Mall of Oman","Salalah Grand Mall"],...DB.products.filter(p=>p.vendorId===VENDOR_ID).map(p=>[p.name,p.stock.b1||0,p.stock.b2||0])]},
     {name:"Settlement statement", desc:"Gross, commission and net by period", file:"dune-atelier-settlements.csv", rows:()=>[["Period","Gross","Commission","Net","Status"],...DB.settlements.filter(s=>s.vendorId===VENDOR_ID).map(s=>[s.period,s.gross,s.commission,s.net,s.status])]},
   ];
   root.innerHTML = vshell("reports",
@@ -205,7 +205,7 @@ function aover(root){
       '<div class="kpi"><span class="kpi-label">Platform GMV (30d)</span><span class="kpi-value num">'+fmtK(gmv)+'</span><span class="kpi-delta up">'+icon("arrowUp",13)+' 9%</span></div>'+
       '<div class="kpi"><span class="kpi-label">Active users</span><span class="kpi-value num">'+users+'</span><span class="kpi-delta muted">across all stores</span></div></div>'+
     '<div class="chart-card"><div class="chart-h"><h3>MRR — trailing 12 months</h3>'+
-      '<div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c4)"></span>MRR (SAR)</span></div></div><div id="a-mrr"></div></div>'+
+      '<div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c4)"></span>MRR (OMR)</span></div></div><div id="a-mrr"></div></div>'+
     '<div class="grid2">'+
       '<div class="card card-pad"><div class="row-between" style="margin-bottom:6px"><h3 style="font-size:15px">Largest tenants by GMV</h3><button class="btn btn-ghost btn-sm" data-nav="#/admin/tenants">All tenants</button></div>'+
         SG.barList(DB.tenants.slice().sort((a,b)=>b.gmv30-a.gmv30).slice(0,5).map(t=>({label:t.name,value:t.gmv30,sub:t.plan+" · "+t.branches+" branches"})))+'</div>'+
@@ -230,7 +230,7 @@ function atenants(root){
 SG.actions["a-newtenant"]=()=>{
   const d=SG.dialog({title:"Create tenant", body:
     '<div class="field"><label>Store name</label><input class="input" id="at-name" placeholder="e.g. Layali Home"></div>'+
-    '<div class="grid2" style="gap:12px"><div class="field"><label>Plan</label><select class="input" id="at-plan"><option value="starter">Starter — SAR 99</option><option value="business">Business — SAR 299</option><option value="premium">Premium — SAR 799</option></select></div>'+
+    '<div class="grid2" style="gap:12px"><div class="field"><label>Plan</label><select class="input" id="at-plan"><option value="starter">Starter — OMR 99</option><option value="business">Business — OMR 299</option><option value="premium">Premium — OMR 799</option></select></div>'+
     '<div class="field"><label>Owner email</label><input class="input" id="at-email" type="email" placeholder="owner@store.com"></div></div>'+
     '<p class="small muted">The owner receives onboarding instructions and a 14-day trial starts immediately.</p>',
     actions:'<button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-pri" data-save>Create & send invite</button>'});
@@ -289,7 +289,7 @@ function aapi(root){
     '<div class="card card-pad"><h3 style="font-size:15px;margin-bottom:8px">Top consumers (Premium API)</h3>'+
       SG.barList([{label:"Coastline Sports — ERP sync",value:31200,sub:"inventory + orders"},
         {label:"Sultan Perfumes — BI pipeline",value:18400,sub:"reports export"},
-        {label:"GreenGrocer KSA — price sync",value:9100,sub:"products"}],{money:false})+'</div>');
+        {label:"GreenGrocer Oman — price sync",value:9100,sub:"products"}],{money:false})+'</div>');
   SG.lineChart("a-calls",{series:calls, height:220, money:false, color:"var(--c4)"});
 }
 })();
