@@ -1,0 +1,78 @@
+SCAN & GO PLATFORM - PRODUCT REQUIREMENTS
+
+Overview A SaaS platform consisting of: 1. Customer App 2. Merchant App
+(Store Management)
+
+Customer App - User registration/login. - Select store by scanning
+entrance QR. - Scan product QR codes. - View product details. - Shopping
+cart management. - Generate Checkout QR. - Cashier scans Checkout QR. -
+Payment completion. - Purchase history. - Digital receipts. - Loyalty
+support (future).
+
+Merchant App
+
+Dashboard - Sales overview. - Orders. - Revenue. - Top products. -
+Active cashiers.
+
+Product Management - Create/Edit/Delete products. - Images. -
+Categories. - SKU. - Barcode. - QR generation. - Inventory quantity. -
+Tax. - Pricing. - Bulk import/export.
+
+QR Management - Generate printable QR labels. - PDF export. - Batch
+printing.
+
+Checkout - Scan customer Checkout QR. - Review cart. - Apply
+discounts. - Accept cash/card/payment gateway. - Complete order. -
+Print/send receipt.
+
+Inventory - Stock adjustments. - Low stock alerts. - Inventory history.
+
+Reports - Daily/weekly/monthly/yearly sales. - Product performance. -
+Employee performance. - Inventory reports.
+
+Employees - Roles and permissions. - Activity logs.
+
+Branches - Multi-branch support.
+
+Settings - Taxes. - Branding. - Receipt template. - Business
+information.
+
+MULTI-BRAND BOUTIQUE FEATURE
+
+Many boutiques sell products belonging to different independent
+brands/vendors.
+
+Vendor Management - Create vendor accounts. - Assign products to
+vendors. - Vendor contact information. - Commission settings (optional).
+
+Automatic Vendor Notifications The system automatically sends a daily
+notification/email/WhatsApp summary to every vendor including: -
+Products sold today. - Quantity sold for each product. - Remaining
+stock. - Products running low. - Out-of-stock items. - Sales value. -
+Pending settlements (optional).
+
+Vendor Portal Each vendor can: - View only their own products. - View
+sales. - View remaining inventory. - Download reports. - Receive
+notifications. - Update product information (optional).
+
+Store Owner Controls - Approve vendor products. - Change prices. -
+Adjust inventory. - Transfer stock. - Suspend vendors. - View all
+vendors in one dashboard.
+
+Subscription Plans
+
+Starter - 1 branch - 2 employees - 300 products - Basic reports
+
+Business - Multiple employees - 3000 products - Advanced reports -
+Multi-brand support
+
+Premium - Unlimited products - Unlimited employees - Unlimited
+branches - Vendor portal - API - Loyalty - Advanced analytics
+
+Enterprise - Custom integrations - ERP integration - Dedicated support -
+SLA
+
+Future Enhancements - AI sales insights. - POS integrations. - Self
+checkout. - Indoor navigation. - Coupons. - Promotions. - Customer
+loyalty. - Demand forecasting. - Multi-language. - Offline
+synchronization.

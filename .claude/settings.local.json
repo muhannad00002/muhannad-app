@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"/Users/muhannad/Desktop/muhannad app/scan-and-go/docs\" && cp \"/Users/muhannad/Downloads/Scan_and_Go_Requirements.txt\" \"/Users/muhannad/Desktop/muhannad app/scan-and-go/docs/requirements.txt\")",
+      "Skill(artifact-design)",
+      "Skill(artifact-design:*)",
+      "Skill(dataviz)",
+      "Skill(dataviz:*)",
+      "Bash(node /private/tmp/claude-501/bundled-skills/2.1.202/d2ae4c6bba61c200c20200acc751f688/dataviz/scripts/validate_palette.js \"#0E8A6D,#4477CC,#B7791F,#A24E8E,#5B8DB8\" --mode light --surface \"#FFFFFF\")",
+      "Bash(node validate_palette.js \"#0E8A6D,#4477CC,#B7791F,#A24E8E,#6459D8\" --mode light --surface \"#FFFFFF\")",
+      "Bash(node validate_palette.js \"#34D3A6,#7AA7F0,#E0A93E,#D98BC7,#9D93F2\" --mode dark --surface \"#171F1C\")",
+      "Bash(node validate_palette.js \"#1FB88E,#5E93E8,#D69A28,#CE74BA,#8B80EE\" --mode dark --surface \"#171F1C\")",
+      "Bash(node validate_palette.js \"#149C77,#4A7FD6,#BE8A1E,#BC5FA8,#7A6FE3\" --mode dark --surface \"#171F1C\")",
+      "Bash(python3 -)",
+      "Bash(node --check parts/03-ui.js)",
+      "Bash(gh auth *)",
+      "Bash(unzip -o \"/Users/muhannad/Downloads/svg.zip\" -d \"/private/tmp/claude-501/-Users-muhannad-Desktop-muhannad-app/58f4db42-7e9b-46bc-8da1-fbc0d5ca34d6/scratchpad/svg\")",
+      "Bash(git -C \"/Users/muhannad/Desktop/muhannad app/scan-and-go\" status)",
+      "Bash(awk -F: '{print $1}')",
+      "Bash(node -e ' *)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
