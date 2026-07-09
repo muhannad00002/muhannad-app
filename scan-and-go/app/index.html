@@ -344,6 +344,7 @@ td.r,th.r{text-align:right}
 .demo-bar .demo-actions{display:flex;gap:6px;margin-left:auto;flex:none}
 .demo-bar .btn{background:rgba(255,255,255,.14);color:inherit;padding:6px 12px;font-size:12.5px}
 .demo-bar .btn.pri{background:var(--accent);color:var(--on-accent)}
+.rial{height:.72em;width:auto;display:inline-block;vertical-align:-.03em}
 </style>
 <div id="root"></div>
 <script>
@@ -359,13 +360,21 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a
 const uid = (p="id") => p + "_" + Math.random().toString(36).slice(2,9);
 const DAY = 864e5;
 const dayKey = d => new Date(d).toISOString().slice(0,10);
-const fmt = n => "SAR " + (Math.round(n*100)/100).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-const fmtK = n => n>=1e6 ? "SAR "+(n/1e6).toFixed(2)+"M" : n>=1e4 ? "SAR "+(n/1e3).toFixed(1)+"k" : fmt(n);
+/* Official Omani rial symbol (Central Bank of Oman, 2025), inlined so it
+   inherits text color. Standalone asset: ../assets/omani-rial-symbol.svg */
+const RIAL = '<svg class="rial" role="img" aria-label="OMR" viewBox="1898.6 336.7 355 232.8" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M2044.8,451.3c-6.5-11.2-11.8-23.3-14.1-36.1-1.6-9-1.4-18.5.3-27.7,6.8-5,14.8-8.3,23.6-9.5,8.7-1.2,17.1-.4,25.2,3,8.5,3.5,16,9.1,22.8,15.1,7.6,6.8,20.8,22.4,20.8,22.4l23.5-40.7c-8.8-11-18.4-21.6-29.9-29.8-5.7-4.1-12-7.6-18.8-9.6-6.4-1.9-12.9-2.1-19.4-1.3-11.4,1.4-22.2,6.3-30.2,14.5-6.5,6.6-32.9,50-37.4,63.4-3.7,11-5.6,23.1-4.7,34.6,0,.5,0,1,.2,1.5h-39.8l-23.5,40.7h77.9c7.8,13.5,17.6,26,28.7,37h-127.9l-23.5,40.7h286.7l23.5-40.7h-62.5c-26.1-3.5-50.1-19.2-68.9-37h152.7l23.5-40.7h-208.7v.2Z"/></svg>';
+/* OMR is subdivided into 1000 baisa → 3 decimals. fmt embeds the symbol and
+   is for innerHTML contexts only; fmtT is plain text for strings that get
+   escaped or stored (notifications, activity log, CSV). */
+const money = n => (Math.round(n*1000)/1000).toLocaleString("en-US",{minimumFractionDigits:3,maximumFractionDigits:3});
+const fmt = n => RIAL + " " + money(n);
+const fmtT = n => "OMR " + money(n);
+const fmtK = n => n>=1e6 ? RIAL+" "+(n/1e6).toFixed(2)+"M" : n>=1e4 ? RIAL+" "+(n/1e3).toFixed(1)+"k" : fmt(n);
 const timeAgo = ts => {const s=(Date.now()-ts)/1e3; if(s<60)return"just now"; if(s<3600)return Math.floor(s/60)+"m ago"; if(s<86400)return Math.floor(s/3600)+"h ago"; return Math.floor(s/86400)+"d ago";};
 const fmtDate = ts => new Date(ts).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
 const fmtTime = ts => new Date(ts).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-Object.assign(SG,{uid,fmt,fmtK,timeAgo,fmtDate,fmtTime,esc,dayKey});
+Object.assign(SG,{uid,fmt,fmtT,fmtK,rial:RIAL,timeAgo,fmtDate,fmtTime,esc,dayKey});
 
 /* ---- seed ---- */
 function seedDB(){
@@ -374,10 +383,10 @@ function seedDB(){
   const now = Date.now();
 
   const vendors = [
-    {id:"v1", name:"Dune Atelier",   contact:"Layla Hassan",  email:"layla@duneatelier.sa",  whatsapp:"+966 50 111 2233", commission:18, status:"active",  joined:now-210*DAY, channels:{email:true,whatsapp:true,portal:true}},
-    {id:"v2", name:"Oud & Amber",    contact:"Faisal Rahim",  email:"faisal@oudamber.com",   whatsapp:"+966 55 444 8899", commission:22, status:"active",  joined:now-150*DAY, channels:{email:true,whatsapp:false,portal:true}},
-    {id:"v3", name:"Mirage Studio",  contact:"Sara Aldawsari",email:"sara@miragestudio.co",  whatsapp:"+966 54 777 1122", commission:15, status:"active",  joined:now-95*DAY,  channels:{email:true,whatsapp:true,portal:true}},
-    {id:"v4", name:"Cedar House",    contact:"Omar Khalidi",  email:"omar@cedarhouse.me",    whatsapp:"+966 56 333 5566", commission:20, status:"pending", joined:now-6*DAY,   channels:{email:true,whatsapp:false,portal:false}},
+    {id:"v1", name:"Dune Atelier",   contact:"Layla Hassan",  email:"layla@duneatelier.om",  whatsapp:"+968 9111 2233", commission:18, status:"active",  joined:now-210*DAY, channels:{email:true,whatsapp:true,portal:true}},
+    {id:"v2", name:"Oud & Amber",    contact:"Faisal Rahim",  email:"faisal@oudamber.com",   whatsapp:"+968 9244 8899", commission:22, status:"active",  joined:now-150*DAY, channels:{email:true,whatsapp:false,portal:true}},
+    {id:"v3", name:"Mirage Studio",  contact:"Sara Aldawsari",email:"sara@miragestudio.co",  whatsapp:"+968 9477 1122", commission:15, status:"active",  joined:now-95*DAY,  channels:{email:true,whatsapp:true,portal:true}},
+    {id:"v4", name:"Cedar House",    contact:"Omar Khalidi",  email:"omar@cedarhouse.me",    whatsapp:"+968 9633 5566", commission:20, status:"pending", joined:now-6*DAY,   channels:{email:true,whatsapp:false,portal:false}},
   ];
   const cats = ["Abayas","Fragrance","Accessories","Home","Kids"];
   const P = (name,cat,vendorId,price,emoji,hueA,hueB,s1,s2,cost) => ({
@@ -407,15 +416,15 @@ function seedDB(){
   products.forEach((p,i)=>p.sku = "NB-"+p.cat.slice(0,2).toUpperCase()+"-"+String(101+i));
 
   const branches = [
-    {id:"b1", name:"Riyadh — U Walk", address:"U Walk Blvd, Riyadh", opened:now-400*DAY},
-    {id:"b2", name:"Jeddah — Red Sea Mall", address:"Red Sea Mall, Jeddah", opened:now-160*DAY},
+    {id:"b1", name:"Muscat — Mall of Oman", address:"Mall of Oman, Muscat", opened:now-400*DAY},
+    {id:"b2", name:"Salalah — Grand Mall", address:"Salalah Grand Mall, Salalah", opened:now-160*DAY},
   ];
   const employees = [
-    {id:"e1", name:"Noura Al-Fahad", role:"owner",   branch:"b1", email:"noura@norab.sa",  status:"active", pin:"1111"},
-    {id:"e2", name:"Ahmed Siddiqui", role:"manager", branch:"b1", email:"ahmed@norab.sa",  status:"active", pin:"2222"},
-    {id:"e3", name:"Reem Otaibi",    role:"cashier", branch:"b1", email:"reem@norab.sa",   status:"active", pin:"3333"},
-    {id:"e4", name:"Yousef Hariri",  role:"cashier", branch:"b1", email:"yousef@norab.sa", status:"active", pin:"4444"},
-    {id:"e5", name:"Dana Qahtani",   role:"cashier", branch:"b2", email:"dana@norab.sa",   status:"invited", pin:"5555"},
+    {id:"e1", name:"Noura Al-Fahad", role:"owner",   branch:"b1", email:"noura@norab.om",  status:"active", pin:"1111"},
+    {id:"e2", name:"Ahmed Siddiqui", role:"manager", branch:"b1", email:"ahmed@norab.om",  status:"active", pin:"2222"},
+    {id:"e3", name:"Reem Otaibi",    role:"cashier", branch:"b1", email:"reem@norab.om",   status:"active", pin:"3333"},
+    {id:"e4", name:"Yousef Hariri",  role:"cashier", branch:"b1", email:"yousef@norab.om", status:"active", pin:"4444"},
+    {id:"e5", name:"Dana Qahtani",   role:"cashier", branch:"b2", email:"dana@norab.om",   status:"invited", pin:"5555"},
   ];
   const customerNames = ["Muhannad A.","Hala M.","Tariq B.","Jood S.","Lina K.","Fahad R.","Maya T.","Ziyad N.","Aisha P.","Salem D."];
 
@@ -433,11 +442,11 @@ function seedDB(){
       const items=[]; const used=new Set();
       for(let k=0;k<itemCount;k++){
         const p = pick(sellable); if(used.has(p.id)) continue; used.add(p.id);
-        items.push({productId:p.id,name:p.name,sku:p.sku,price:p.price,qty:1+(rnd()<.25?1:0),tax:15,vendorId:p.vendorId,emoji:p.emoji,grad:p.grad});
+        items.push({productId:p.id,name:p.name,sku:p.sku,price:p.price,qty:1+(rnd()<.25?1:0),tax:5,vendorId:p.vendorId,emoji:p.emoji,grad:p.grad});
       }
       const sub = items.reduce((s,it)=>s+it.price*it.qty,0);
       const disc = rnd()<.12 ? Math.round(sub*.1) : 0;
-      const tax = (sub-disc)*.15;
+      const tax = (sub-disc)*.05;
       const ts = date.getTime() - Math.floor(rnd()*10*36e5) - 2*36e5;
       orders.push({
         id:"SO-"+String(9000+orders.length), ts, branch:rnd()<.62?"b1":"b2",
@@ -452,19 +461,19 @@ function seedDB(){
   const movements = [
     {id:uid("m"), ts:now-3*DAY, productId:products[4].id, branch:"b1", delta:+20, kind:"restock", by:"Ahmed Siddiqui", note:"PO #481 received"},
     {id:uid("m"), ts:now-2*DAY, productId:products[2].id, branch:"b1", delta:-2,  kind:"damage",  by:"Reem Otaibi",   note:"Display damage"},
-    {id:uid("m"), ts:now-1*DAY, productId:products[7].id, branch:"b2", delta:+10, kind:"transfer",by:"Ahmed Siddiqui",note:"From U Walk"},
+    {id:uid("m"), ts:now-1*DAY, productId:products[7].id, branch:"b2", delta:+10, kind:"transfer",by:"Ahmed Siddiqui",note:"From Mall of Oman"},
   ];
 
   const tickets = [
     {id:"TK-1042", tenant:"Nora Boutique", subject:"WhatsApp summary not delivered to one vendor", priority:"high",   status:"open",       ts:now-4*36e5, assignee:"Platform Support"},
     {id:"TK-1041", tenant:"Sultan Perfumes", subject:"Bulk import: SKU column mapping", priority:"medium", status:"pending",    ts:now-26*36e5, assignee:"Onboarding"},
-    {id:"TK-1038", tenant:"GreenGrocer KSA", subject:"Request: Arabic receipt template", priority:"low",    status:"resolved",   ts:now-3*DAY, assignee:"Product"},
+    {id:"TK-1038", tenant:"GreenGrocer Oman", subject:"Request: Arabic receipt template", priority:"low",    status:"resolved",   ts:now-3*DAY, assignee:"Product"},
     {id:"TK-1035", tenant:"Blossom Kids", subject:"Card terminal pairing at branch 2", priority:"high",  status:"resolved",   ts:now-5*DAY, assignee:"Payments"},
   ];
   const tenants = [
     {id:"t1", name:"Nora Boutique",   plan:"business",  mrr:299, branches:2, users:5, products:16, gmv30:184000, created:now-400*DAY, status:"active", health:96},
     {id:"t2", name:"Sultan Perfumes", plan:"premium",   mrr:799, branches:4, users:14, products:640, gmv30:1220000, created:now-310*DAY, status:"active", health:92},
-    {id:"t3", name:"GreenGrocer KSA", plan:"business",  mrr:299, branches:3, users:9, products:1900, gmv30:760000, created:now-230*DAY, status:"active", health:88},
+    {id:"t3", name:"GreenGrocer Oman", plan:"business",  mrr:299, branches:3, users:9, products:1900, gmv30:760000, created:now-230*DAY, status:"active", health:88},
     {id:"t4", name:"Blossom Kids",    plan:"starter",   mrr:99,  branches:1, users:2, products:210, gmv30:96000,  created:now-120*DAY, status:"active", health:74},
     {id:"t5", name:"Coastline Sports",plan:"premium",   mrr:799, branches:6, users:22, products:2900, gmv30:2100000, created:now-80*DAY, status:"active", health:97},
     {id:"t6", name:"Al Waha Books",   plan:"starter",   mrr:99,  branches:1, users:3, products:410, gmv30:41000,  created:now-30*DAY, status:"trial",  health:61},
@@ -472,8 +481,8 @@ function seedDB(){
 
   return {
     v:7, storeName:"Nora Boutique", storeLogo:"NB",
-    settings:{taxRate:15, currency:"SAR", receiptFooter:"Thank you for shopping with us ♥", brandColor:"#0E8A6D",
-      address:"U Walk Blvd, Riyadh 13519", vat:"310198765400003", lowStockAlerts:true, dailyVendorHour:21},
+    settings:{taxRate:5, currency:"OMR", receiptFooter:"Thank you for shopping with us ♥", brandColor:"#0E8A6D",
+      address:"Mall of Oman, Muscat 138", vat:"OM1100198765", lowStockAlerts:true, dailyVendorHour:21},
     branches, vendors, products, employees, orders, movements, tickets, tenants,
     coupons:[{code:"SAVE10",pct:10,active:true},{code:"WELCOME15",pct:15,active:true}],
     customer:{id:"cu1", name:"Muhannad", email:"muhannad00002@gmail.com", points:340, tier:"Gold", joined:now-90*DAY},
@@ -484,16 +493,16 @@ function seedDB(){
       {id:uid("n"),ts:now-2*DAY,icon:"gift",title:"You reached Gold tier",body:"Enjoy 1.5× points on every purchase.",read:true},
       {id:uid("n"),ts:now-6*DAY,icon:"tag",title:"Weekend offer at Nora Boutique",body:"Use SAVE10 for 10% off your basket.",read:true},
     ], merchant:[
-      {id:uid("n"),ts:now-5*36e5,icon:"alert",title:"Low stock: Royal Oud Attar 12ml",body:"4 left at Riyadh — U Walk (threshold 8).",read:false},
+      {id:uid("n"),ts:now-5*36e5,icon:"alert",title:"Low stock: Royal Oud Attar 12ml",body:"4 left at Muscat — Mall of Oman (threshold 8).",read:false},
       {id:uid("n"),ts:now-26*36e5,icon:"users",title:"Vendor daily summaries sent",body:"3 vendors received yesterday's sales digest.",read:true},
     ], vendor:[
-      {id:uid("n"),ts:now-26*36e5,icon:"chart",title:"Daily summary — yesterday",body:"9 units sold · SAR 2,140 gross · 1 low-stock item.",read:false},
+      {id:uid("n"),ts:now-26*36e5,icon:"chart",title:"Daily summary — yesterday",body:"9 units sold · OMR 2,140 gross · 1 low-stock item.",read:false},
     ]},
     activity:[
       {ts:now-3*36e5, by:"Reem Otaibi", act:"Completed order SO-"+String(9000+orders.length-1)+" (POS)"},
       {ts:now-5*36e5, by:"Ahmed Siddiqui", act:"Adjusted stock: Royal Oud Attar +20 (restock)"},
       {ts:now-30*36e5, by:"Noura Al-Fahad", act:"Updated receipt footer text"},
-      {ts:now-2*DAY, by:"Noura Al-Fahad", act:"Invited cashier Dana Qahtani (Jeddah)"},
+      {ts:now-2*DAY, by:"Noura Al-Fahad", act:"Invited cashier Dana Qahtani (Salalah)"},
     ],
     settlements:[
       {id:"ST-204", vendorId:"v1", period:"June 2026", gross:38420, commission:6916, net:31504, status:"paid",   paidTs:now-8*DAY},
@@ -668,11 +677,11 @@ function posComplete(method, cashierId){
     const v=vendorById(vid); if(!v) return;
     const sold = order.items.filter(i=>i.vendorId===vid);
     notify("vendor","cart","New sale — "+sold.reduce((s,i)=>s+i.qty,0)+" unit(s)",
-      sold.map(i=>i.qty+"× "+i.name).join(", ")+" · "+fmt(sold.reduce((s,i)=>s+i.price*i.qty,0))+" gross.");
+      sold.map(i=>i.qty+"× "+i.name).join(", ")+" · "+fmtT(sold.reduce((s,i)=>s+i.price*i.qty,0))+" gross.");
   });
-  notify("customer","receipt","Receipt — "+order.id, fmt(order.total)+" at "+DB.storeName+". +"+points+" loyalty points.");
-  notify("merchant","cart","Order "+order.id+" completed", fmt(order.total)+" · "+order.items.length+" item(s) · "+cash.name+" · "+(method==="applepay"?"Apple Pay":method));
-  logActivity(cash.name, "Completed order "+order.id+" ("+fmt(order.total)+")");
+  notify("customer","receipt","Receipt — "+order.id, fmtT(order.total)+" at "+DB.storeName+". +"+points+" loyalty points.");
+  notify("merchant","cart","Order "+order.id+" completed", fmtT(order.total)+" · "+order.items.length+" item(s) · "+cash.name+" · "+(method==="applepay"?"Apple Pay":method));
+  logActivity(cash.name, "Completed order "+order.id+" ("+fmtT(order.total)+")");
   DB.lastOrder = order;
   DB.cart = {items:[], coupon:null, branch:DB.cart.branch, locked:false};
   DB.checkoutToken = null; DB.posOrder = null;
@@ -1100,7 +1109,7 @@ SG.apps.launcher = (root)=>{
       '<button class="btn btn-pri btn-lg" data-act="demo-start">'+icon("play",17)+' Play the guided demo</button>'+
       '<button class="btn btn-ghost" data-act="reset-demo">'+icon("refresh",15)+' Reset demo data</button>'+
     '</div>'+
-    '<p class="small muted" style="margin-top:26px;max-width:520px;text-align:center">Simulated environment with seeded data for Nora Boutique, Riyadh &amp; Jeddah. A sale completed at the POS updates inventory, vendor feeds, loyalty and every report in real time.</p>'+
+    '<p class="small muted" style="margin-top:26px;max-width:520px;text-align:center">Simulated environment with seeded data for Nora Boutique, Muscat &amp; Salalah. A sale completed at the POS updates inventory, vendor feeds, loyalty and every report in real time.</p>'+
   '</div>';
 };
 })();
@@ -1317,7 +1326,7 @@ function product(root, r){
       '<b class="num small">'+fmt(o.price)+'</b></button>').join("")+'</div></div>':''));
   function desc(p){
     const d = {Abayas:"Cut from breathable premium fabric with hand-finished seams. Ships with a care pouch.",
-      Fragrance:"Small-batch blend, bottled in Riyadh. Long-lasting sillage with warm oriental base notes.",
+      Fragrance:"Small-batch blend, bottled in Muscat. Long-lasting sillage with warm oriental base notes.",
       Accessories:"Handcrafted by the brand's artisans. Each piece is unique with natural variations.",
       Home:"Designed to bring warm Najdi character into modern spaces.",
       Kids:"Playful, durable and machine-washable — made for everyday adventures."};
@@ -1645,7 +1654,7 @@ function dashboard(root){
       kpi("Today", fmtK(SG.sumSales(today)), null, "zap")+
     '</div>'+
     '<div class="chart-card"><div class="chart-h"><h3>Revenue — last '+range+' days</h3>'+
-      '<div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c1)"></span>Net sales (SAR)</span></div></div>'+
+      '<div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c1)"></span>Net sales (OMR)</span></div></div>'+
       '<div id="dash-line"></div></div>'+
     '<div class="grid2">'+
       '<div class="chart-card"><div class="chart-h"><h3>Top products</h3><button class="btn btn-ghost btn-sm" data-nav="#/merchant/reports">Full report</button></div>'+
@@ -1789,7 +1798,7 @@ function orders(root){
 SG.actions["mo-page"]=d=>{ SG.sess.moPage=Math.max(0,(SG.sess.moPage||0)+ +d); SG.saveSess(); SG.render(); };
 SG.actions["mo-clear"]=()=>{ SG.sess.moQ=""; SG.sess.moMethod=""; SG.sess.moPage=0; SG.saveSess(); SG.render(); };
 SG.actions["mo-export"]=()=>{
-  SG.downloadCSV("orders.csv", [["Order","Date","Customer","Branch","Items","Payment","Total SAR"],
+  SG.downloadCSV("orders.csv", [["Order","Date","Customer","Branch","Items","Payment","Total OMR"],
     ...DB.orders.map(o=>[o.id,new Date(o.ts).toISOString(),o.customer,SG.branchById(o.branch).name,o.items.reduce((s,i)=>s+i.qty,0),o.method,o.total.toFixed(2)])]);
   SG.toast("orders.csv downloaded");
 };
@@ -1878,7 +1887,7 @@ SG.actions["mp-sort"]=k=>{ if(SG.sess.mpSort===k) SG.sess.mpDir=(SG.sess.mpDir==
 SG.actions["mp-page"]=d=>{ SG.sess.mpPage=Math.max(0,(SG.sess.mpPage||0)+ +d); SG.saveSess(); SG.render(); };
 SG.actions["mp-clear"]=()=>{ SG.sess.mpQ=""; SG.sess.mpCat=""; SG.sess.mpPage=0; SG.saveSess(); SG.render(); };
 SG.actions["mp-export"]=()=>{
-  SG.downloadCSV("products.csv",[["Name","SKU","Barcode","Category","Vendor","Price","Stock U Walk","Stock Red Sea"],
+  SG.downloadCSV("products.csv",[["Name","SKU","Barcode","Category","Vendor","Price","Stock Muscat","Stock Salalah"],
     ...DB.products.map(p=>[p.name,p.sku,p.barcode,p.cat,p.vendorId?(SG.vendorById(p.vendorId)||{}).name:"House",p.price,p.stock.b1||0,p.stock.b2||0])]);
   SG.toast("products.csv downloaded");
 };
@@ -1919,11 +1928,11 @@ function productEditor(p){
     '<div class="grid2" style="gap:12px">'+
     '<div class="field"><label>Name</label><input class="input" id="pe-name" value="'+esc(p?p.name:"")+'" placeholder="e.g. Silk Kimono"></div>'+
     '<div class="field"><label>Category</label><select class="input" id="pe-cat">'+cats.map(c=>'<option'+(p&&p.cat===c?" selected":"")+'>'+esc(c)+'</option>').join("")+'</select></div>'+
-    '<div class="field"><label>Price (SAR)</label><input class="input num" id="pe-price" type="number" min="1" step="0.5" value="'+(p?p.price:"")+'" placeholder="299"></div>'+
+    '<div class="field"><label>Price (OMR)</label><input class="input num" id="pe-price" type="number" min="1" step="0.5" value="'+(p?p.price:"")+'" placeholder="299"></div>'+
     '<div class="field"><label>Vendor</label><select class="input" id="pe-vendor"><option value="">House product</option>'+
       DB.vendors.filter(v=>v.status==="active").map(v=>'<option value="'+v.id+'"'+(p&&p.vendorId===v.id?" selected":"")+'>'+esc(v.name)+'</option>').join("")+'</select></div>'+
-    '<div class="field"><label>Stock — U Walk</label><input class="input num" id="pe-s1" type="number" min="0" value="'+(p?(p.stock.b1||0):"12")+'"></div>'+
-    '<div class="field"><label>Stock — Red Sea Mall</label><input class="input num" id="pe-s2" type="number" min="0" value="'+(p?(p.stock.b2||0):"8")+'"></div>'+
+    '<div class="field"><label>Stock — Mall of Oman</label><input class="input num" id="pe-s1" type="number" min="0" value="'+(p?(p.stock.b1||0):"12")+'"></div>'+
+    '<div class="field"><label>Stock — Salalah Grand Mall</label><input class="input num" id="pe-s2" type="number" min="0" value="'+(p?(p.stock.b2||0):"8")+'"></div>'+
     '</div>'+
     '<div class="field"><label>Emoji artwork <span class="muted" style="font-weight:400">(stands in for product photos in this demo)</span></label>'+
     '<input class="input" id="pe-emoji" value="'+(p?p.emoji:"🛍️")+'" maxlength="4" style="width:90px"></div>'+
@@ -1958,7 +1967,7 @@ function inventory(root){
   let body;
   if(tab==="levels"){
     const list = DB.products.filter(p=>((p.stock.b1||0)+(p.stock.b2||0))<900);
-    body = '<div class="tablewrap"><table><thead><tr><th>Product</th><th class="r">U Walk</th><th class="r">Red Sea Mall</th><th class="r">Total</th><th>Status</th><th class="r">Adjust</th></tr></thead><tbody>'+
+    body = '<div class="tablewrap"><table><thead><tr><th>Product</th><th class="r">Mall of Oman</th><th class="r">Salalah Grand Mall</th><th class="r">Total</th><th>Status</th><th class="r">Adjust</th></tr></thead><tbody>'+
       list.map(p=>{ const tot=(p.stock.b1||0)+(p.stock.b2||0);
         return '<tr><td><div class="row">'+pimg(p,34,9)+'<div><b style="font-size:13.5px">'+esc(p.name)+'</b><div class="small muted">'+p.sku+'</div></div></div></td>'+
         '<td class="r num">'+(p.stock.b1||0)+'</td><td class="r num">'+(p.stock.b2||0)+'</td><td class="r num" style="font-weight:700">'+tot+'</td>'+
@@ -1985,7 +1994,7 @@ function inventory(root){
       '<button class="btn btn-sec" data-act="inv-export">'+icon("download",15)+' Export stock CSV</button></div>'+body);
 }
 SG.actions["inv-tab"]=t=>{ SG.sess.invTab=t; SG.saveSess(); SG.render(); };
-SG.actions["inv-export"]=()=>{ SG.downloadCSV("stock.csv",[["Product","SKU","U Walk","Red Sea Mall"],
+SG.actions["inv-export"]=()=>{ SG.downloadCSV("stock.csv",[["Product","SKU","Mall of Oman","Salalah Grand Mall"],
   ...DB.products.map(p=>[p.name,p.sku,p.stock.b1||0,p.stock.b2||0])]); SG.toast("stock.csv downloaded"); };
 SG.actions["inv-restock"]=arg=>{ const [pid,bid]=arg.split("|");
   SG.adjustStock(pid,bid,20,"restock","Quick restock","Ahmed Siddiqui");
@@ -2251,7 +2260,7 @@ function reports(root){
       '<div class="kpi"><span class="kpi-label">Orders</span><span class="kpi-value num">'+os.length.toLocaleString()+'</span></div>'+
       '<div class="kpi"><span class="kpi-label">Units</span><span class="kpi-value num">'+os.reduce((s,o)=>s+o.items.reduce((x,i)=>x+i.qty,0),0).toLocaleString()+'</span></div>'+
       '<div class="kpi"><span class="kpi-label">VAT collected</span><span class="kpi-value num">'+fmtK(os.reduce((s,o)=>s+o.tax,0))+'</span></div></div>'+
-    '<div class="chart-card"><div class="chart-h"><h3>Sales by weekday</h3><div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c2)"></span>Gross (SAR)</span></div></div><div id="r-week"></div></div>'+
+    '<div class="chart-card"><div class="chart-h"><h3>Sales by weekday</h3><div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c2)"></span>Gross (OMR)</span></div></div><div id="r-week"></div></div>'+
     '<div class="grid2" style="align-items:start">'+
       '<div class="chart-card"><div class="chart-h"><h3>Product performance</h3></div>'+
         SG.barList(top.map(t=>({label:t.name,value:Math.round(t.revenue),sub:t.units+" units",img:pimg({emoji:t.emoji,grad:t.grad},32,8)})))+'</div>'+
@@ -2266,7 +2275,7 @@ function reports(root){
 SG.actions["r-range"]=d=>{ SG.sess.rRange=+d; SG.saveSess(); SG.invalidate("m-reports"); SG.render(); };
 SG.actions["r-export"]=()=>{
   const range=SG.sess.rRange||30;
-  SG.downloadCSV("sales-report-"+range+"d.csv",[["Date","Gross SAR"],...SG.seriesDaily(range).map(d=>[d.date,d.v])]);
+  SG.downloadCSV("sales-report-"+range+"d.csv",[["Date","Gross OMR"],...SG.seriesDaily(range).map(d=>[d.date,d.v])]);
   SG.toast("Report exported");
 };
 
@@ -2283,7 +2292,7 @@ function insights(root){
   const friShare = Math.round(SG.sumSales(fri)/Math.max(SG.sumSales(SG.ordersSince(30)),1)*100);
   const cards = [
     {t:"Weekend concentration is high", body:friShare+"% of the last 30 days' revenue lands on Friday–Saturday. Consider a weekday promotion (e.g. WELCOME15 push on Tue–Wed) to smooth demand and reduce weekend register queues.", act:"Review coupons", nav:"#/merchant/settings"},
-    {t:(growth>=0?"Momentum is positive":"Sales dipped this week"), body:"Last 7 days are "+(growth>=0?"up ":"down ")+Math.abs(growth)+"% vs the week before. "+(growth>=0?"The push came mostly from "+esc(top[0]?top[0].name:"top sellers")+".":"The dip traces to fewer weekday baskets at Red Sea Mall."), act:"Open reports", nav:"#/merchant/reports"},
+    {t:(growth>=0?"Momentum is positive":"Sales dipped this week"), body:"Last 7 days are "+(growth>=0?"up ":"down ")+Math.abs(growth)+"% vs the week before. "+(growth>=0?"The push came mostly from "+esc(top[0]?top[0].name:"top sellers")+".":"The dip traces to fewer weekday baskets at Salalah Grand Mall."), act:"Open reports", nav:"#/merchant/reports"},
     {t:"Restock before the weekend", body: low.length? low.slice(0,2).map(l=>esc(l.p.name)+" ("+l.qty+" left)").join(" and ")+" will likely sell out within "+(low[0].qty<3?"2":"5")+" days at the current run-rate.":"All SKUs are healthy — no stock-outs projected in the next 14 days.", act:"Open inventory", nav:"#/merchant/inventory"},
     {t:"Bundle opportunity", body:"Shoppers who buy "+esc(top[0]?top[0].name:"your top seller")+" add a Fragrance item in 38% of baskets. A “complete the look” shelf card near the abaya rail could lift attach rate.", act:"See products", nav:"#/merchant/products"},
     {t:"Vendor spotlight", body:"Oud & Amber generates the highest revenue per shelf-slot this month. Their commission terms (22%) are also your best margin among vendors — consider giving them the entrance display.", act:"Open vendors", nav:"#/merchant/vendors"},
@@ -2370,7 +2379,7 @@ function subscription(root){
       '<div class="plan-card'+(p.id==="business"?" current":"")+'">'+
       (p.id==="business"?'<span class="chip chip-accent" style="position:absolute;top:-11px;left:18px">Current plan</span>':'')+
       '<b style="font-size:15px">'+p.name+'</b>'+
-      '<div class="price num">'+(p.price?"SAR "+p.price:"Custom")+(p.price?'<span style="font-size:13px;color:var(--ink3);font-weight:500">/mo</span>':'')+'</div>'+
+      '<div class="price num">'+(p.price?SG.rial+" "+p.price:"Custom")+(p.price?'<span style="font-size:13px;color:var(--ink3);font-weight:500">/mo</span>':'')+'</div>'+
       '<ul>'+p.feats.map(f=>'<li>'+icon("check",14)+' '+f+'</li>').join("")+'</ul>'+
       (p.id==="business"?'<button class="btn btn-sec" disabled>Your plan</button>'
         :p.id==="enterprise"?'<button class="btn btn-sec" data-act="sub-contact">Talk to sales</button>'
@@ -2468,7 +2477,7 @@ function vhome(root){
       '<div class="kpi"><span class="kpi-label">Your payout (est.)</span><span class="kpi-value num">'+fmtK(agg.gross*(1-v.commission/100))+'</span><span class="kpi-delta muted">after '+v.commission+'% commission</span></div>'+
       '<div class="kpi"><span class="kpi-label">Pending settlement</span><span class="kpi-value num">'+(pending?fmtK(pending.net):"—")+'</span><span class="kpi-delta muted">'+(pending?pending.period:"all settled")+'</span></div></div>'+
     '<div class="chart-card"><div class="chart-h"><h3>Your daily sales at '+esc(DB.storeName)+'</h3>'+
-      '<div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c3)"></span>Gross (SAR)</span></div></div><div id="v-line"></div></div>'+
+      '<div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c3)"></span>Gross (OMR)</span></div></div><div id="v-line"></div></div>'+
     '<div class="grid2">'+
       '<div class="card card-pad"><h3 style="font-size:15px;margin-bottom:8px">Stock health</h3>'+
         (lows.length? lows.map(p=>'<div class="listrow">'+pimg(p,36,9)+'<div style="flex:1"><b style="font-size:13.5px">'+esc(p.name)+'</b>'+
@@ -2539,9 +2548,9 @@ function vsales(root){
 function vreports(root){
   const v = SG.vendorById(VENDOR_ID);
   const reports = [
-    {name:"Daily sales digest", desc:"Yesterday's units, value and stock alerts", file:"dune-atelier-daily.csv", rows:()=>[["Product","Units","Gross SAR"],...SG.topProducts(1,99,VENDOR_ID).map(t=>[t.name,t.units,t.revenue.toFixed(2)])]},
-    {name:"30-day sales detail", desc:"Every sale line for the month", file:"dune-atelier-30d.csv", rows:()=>[["Date","Product","Units","Gross SAR"],...SG.topProducts(30,99,VENDOR_ID).map(t=>[new Date().toISOString().slice(0,10),t.name,t.units,t.revenue.toFixed(2)])]},
-    {name:"Inventory snapshot", desc:"Current stock by branch", file:"dune-atelier-stock.csv", rows:()=>[["Product","U Walk","Red Sea Mall"],...DB.products.filter(p=>p.vendorId===VENDOR_ID).map(p=>[p.name,p.stock.b1||0,p.stock.b2||0])]},
+    {name:"Daily sales digest", desc:"Yesterday's units, value and stock alerts", file:"dune-atelier-daily.csv", rows:()=>[["Product","Units","Gross OMR"],...SG.topProducts(1,99,VENDOR_ID).map(t=>[t.name,t.units,t.revenue.toFixed(2)])]},
+    {name:"30-day sales detail", desc:"Every sale line for the month", file:"dune-atelier-30d.csv", rows:()=>[["Date","Product","Units","Gross OMR"],...SG.topProducts(30,99,VENDOR_ID).map(t=>[new Date().toISOString().slice(0,10),t.name,t.units,t.revenue.toFixed(2)])]},
+    {name:"Inventory snapshot", desc:"Current stock by branch", file:"dune-atelier-stock.csv", rows:()=>[["Product","Mall of Oman","Salalah Grand Mall"],...DB.products.filter(p=>p.vendorId===VENDOR_ID).map(p=>[p.name,p.stock.b1||0,p.stock.b2||0])]},
     {name:"Settlement statement", desc:"Gross, commission and net by period", file:"dune-atelier-settlements.csv", rows:()=>[["Period","Gross","Commission","Net","Status"],...DB.settlements.filter(s=>s.vendorId===VENDOR_ID).map(s=>[s.period,s.gross,s.commission,s.net,s.status])]},
   ];
   root.innerHTML = vshell("reports",
@@ -2621,7 +2630,7 @@ function aover(root){
       '<div class="kpi"><span class="kpi-label">Platform GMV (30d)</span><span class="kpi-value num">'+fmtK(gmv)+'</span><span class="kpi-delta up">'+icon("arrowUp",13)+' 9%</span></div>'+
       '<div class="kpi"><span class="kpi-label">Active users</span><span class="kpi-value num">'+users+'</span><span class="kpi-delta muted">across all stores</span></div></div>'+
     '<div class="chart-card"><div class="chart-h"><h3>MRR — trailing 12 months</h3>'+
-      '<div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c4)"></span>MRR (SAR)</span></div></div><div id="a-mrr"></div></div>'+
+      '<div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c4)"></span>MRR (OMR)</span></div></div><div id="a-mrr"></div></div>'+
     '<div class="grid2">'+
       '<div class="card card-pad"><div class="row-between" style="margin-bottom:6px"><h3 style="font-size:15px">Largest tenants by GMV</h3><button class="btn btn-ghost btn-sm" data-nav="#/admin/tenants">All tenants</button></div>'+
         SG.barList(DB.tenants.slice().sort((a,b)=>b.gmv30-a.gmv30).slice(0,5).map(t=>({label:t.name,value:t.gmv30,sub:t.plan+" · "+t.branches+" branches"})))+'</div>'+
@@ -2646,7 +2655,7 @@ function atenants(root){
 SG.actions["a-newtenant"]=()=>{
   const d=SG.dialog({title:"Create tenant", body:
     '<div class="field"><label>Store name</label><input class="input" id="at-name" placeholder="e.g. Layali Home"></div>'+
-    '<div class="grid2" style="gap:12px"><div class="field"><label>Plan</label><select class="input" id="at-plan"><option value="starter">Starter — SAR 99</option><option value="business">Business — SAR 299</option><option value="premium">Premium — SAR 799</option></select></div>'+
+    '<div class="grid2" style="gap:12px"><div class="field"><label>Plan</label><select class="input" id="at-plan"><option value="starter">Starter — OMR 99</option><option value="business">Business — OMR 299</option><option value="premium">Premium — OMR 799</option></select></div>'+
     '<div class="field"><label>Owner email</label><input class="input" id="at-email" type="email" placeholder="owner@store.com"></div></div>'+
     '<p class="small muted">The owner receives onboarding instructions and a 14-day trial starts immediately.</p>',
     actions:'<button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-pri" data-save>Create & send invite</button>'});
@@ -2705,7 +2714,7 @@ function aapi(root){
     '<div class="card card-pad"><h3 style="font-size:15px;margin-bottom:8px">Top consumers (Premium API)</h3>'+
       SG.barList([{label:"Coastline Sports — ERP sync",value:31200,sub:"inventory + orders"},
         {label:"Sultan Perfumes — BI pipeline",value:18400,sub:"reports export"},
-        {label:"GreenGrocer KSA — price sync",value:9100,sub:"products"}],{money:false})+'</div>');
+        {label:"GreenGrocer Oman — price sync",value:9100,sub:"products"}],{money:false})+'</div>');
   SG.lineChart("a-calls",{series:calls, height:220, money:false, color:"var(--c4)"});
 }
 })();

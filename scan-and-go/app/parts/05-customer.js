@@ -209,7 +209,7 @@ function product(root, r){
       '<b class="num small">'+fmt(o.price)+'</b></button>').join("")+'</div></div>':''));
   function desc(p){
     const d = {Abayas:"Cut from breathable premium fabric with hand-finished seams. Ships with a care pouch.",
-      Fragrance:"Small-batch blend, bottled in Riyadh. Long-lasting sillage with warm oriental base notes.",
+      Fragrance:"Small-batch blend, bottled in Muscat. Long-lasting sillage with warm oriental base notes.",
       Accessories:"Handcrafted by the brand's artisans. Each piece is unique with natural variations.",
       Home:"Designed to bring warm Najdi character into modern spaces.",
       Kids:"Playful, durable and machine-washable — made for everyday adventures."};

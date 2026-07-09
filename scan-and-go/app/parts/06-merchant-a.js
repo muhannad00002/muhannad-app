@@ -96,7 +96,7 @@ function dashboard(root){
       kpi("Today", fmtK(SG.sumSales(today)), null, "zap")+
     '</div>'+
     '<div class="chart-card"><div class="chart-h"><h3>Revenue — last '+range+' days</h3>'+
-      '<div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c1)"></span>Net sales (SAR)</span></div></div>'+
+      '<div class="chart-legend"><span class="lg"><span class="sw" style="background:var(--c1)"></span>Net sales (OMR)</span></div></div>'+
       '<div id="dash-line"></div></div>'+
     '<div class="grid2">'+
       '<div class="chart-card"><div class="chart-h"><h3>Top products</h3><button class="btn btn-ghost btn-sm" data-nav="#/merchant/reports">Full report</button></div>'+
@@ -240,7 +240,7 @@ function orders(root){
 SG.actions["mo-page"]=d=>{ SG.sess.moPage=Math.max(0,(SG.sess.moPage||0)+ +d); SG.saveSess(); SG.render(); };
 SG.actions["mo-clear"]=()=>{ SG.sess.moQ=""; SG.sess.moMethod=""; SG.sess.moPage=0; SG.saveSess(); SG.render(); };
 SG.actions["mo-export"]=()=>{
-  SG.downloadCSV("orders.csv", [["Order","Date","Customer","Branch","Items","Payment","Total SAR"],
+  SG.downloadCSV("orders.csv", [["Order","Date","Customer","Branch","Items","Payment","Total OMR"],
     ...DB.orders.map(o=>[o.id,new Date(o.ts).toISOString(),o.customer,SG.branchById(o.branch).name,o.items.reduce((s,i)=>s+i.qty,0),o.method,o.total.toFixed(2)])]);
   SG.toast("orders.csv downloaded");
 };
@@ -329,7 +329,7 @@ SG.actions["mp-sort"]=k=>{ if(SG.sess.mpSort===k) SG.sess.mpDir=(SG.sess.mpDir==
 SG.actions["mp-page"]=d=>{ SG.sess.mpPage=Math.max(0,(SG.sess.mpPage||0)+ +d); SG.saveSess(); SG.render(); };
 SG.actions["mp-clear"]=()=>{ SG.sess.mpQ=""; SG.sess.mpCat=""; SG.sess.mpPage=0; SG.saveSess(); SG.render(); };
 SG.actions["mp-export"]=()=>{
-  SG.downloadCSV("products.csv",[["Name","SKU","Barcode","Category","Vendor","Price","Stock U Walk","Stock Red Sea"],
+  SG.downloadCSV("products.csv",[["Name","SKU","Barcode","Category","Vendor","Price","Stock Muscat","Stock Salalah"],
     ...DB.products.map(p=>[p.name,p.sku,p.barcode,p.cat,p.vendorId?(SG.vendorById(p.vendorId)||{}).name:"House",p.price,p.stock.b1||0,p.stock.b2||0])]);
   SG.toast("products.csv downloaded");
 };
@@ -370,11 +370,11 @@ function productEditor(p){
     '<div class="grid2" style="gap:12px">'+
     '<div class="field"><label>Name</label><input class="input" id="pe-name" value="'+esc(p?p.name:"")+'" placeholder="e.g. Silk Kimono"></div>'+
     '<div class="field"><label>Category</label><select class="input" id="pe-cat">'+cats.map(c=>'<option'+(p&&p.cat===c?" selected":"")+'>'+esc(c)+'</option>').join("")+'</select></div>'+
-    '<div class="field"><label>Price (SAR)</label><input class="input num" id="pe-price" type="number" min="1" step="0.5" value="'+(p?p.price:"")+'" placeholder="299"></div>'+
+    '<div class="field"><label>Price (OMR)</label><input class="input num" id="pe-price" type="number" min="1" step="0.5" value="'+(p?p.price:"")+'" placeholder="299"></div>'+
     '<div class="field"><label>Vendor</label><select class="input" id="pe-vendor"><option value="">House product</option>'+
       DB.vendors.filter(v=>v.status==="active").map(v=>'<option value="'+v.id+'"'+(p&&p.vendorId===v.id?" selected":"")+'>'+esc(v.name)+'</option>').join("")+'</select></div>'+
-    '<div class="field"><label>Stock — U Walk</label><input class="input num" id="pe-s1" type="number" min="0" value="'+(p?(p.stock.b1||0):"12")+'"></div>'+
-    '<div class="field"><label>Stock — Red Sea Mall</label><input class="input num" id="pe-s2" type="number" min="0" value="'+(p?(p.stock.b2||0):"8")+'"></div>'+
+    '<div class="field"><label>Stock — Mall of Oman</label><input class="input num" id="pe-s1" type="number" min="0" value="'+(p?(p.stock.b1||0):"12")+'"></div>'+
+    '<div class="field"><label>Stock — Salalah Grand Mall</label><input class="input num" id="pe-s2" type="number" min="0" value="'+(p?(p.stock.b2||0):"8")+'"></div>'+
     '</div>'+
     '<div class="field"><label>Emoji artwork <span class="muted" style="font-weight:400">(stands in for product photos in this demo)</span></label>'+
     '<input class="input" id="pe-emoji" value="'+(p?p.emoji:"🛍️")+'" maxlength="4" style="width:90px"></div>'+

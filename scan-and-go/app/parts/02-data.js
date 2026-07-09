@@ -10,13 +10,21 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a
 const uid = (p="id") => p + "_" + Math.random().toString(36).slice(2,9);
 const DAY = 864e5;
 const dayKey = d => new Date(d).toISOString().slice(0,10);
-const fmt = n => "SAR " + (Math.round(n*100)/100).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-const fmtK = n => n>=1e6 ? "SAR "+(n/1e6).toFixed(2)+"M" : n>=1e4 ? "SAR "+(n/1e3).toFixed(1)+"k" : fmt(n);
+/* Official Omani rial symbol (Central Bank of Oman, 2025), inlined so it
+   inherits text color. Standalone asset: ../assets/omani-rial-symbol.svg */
+const RIAL = '<svg class="rial" role="img" aria-label="OMR" viewBox="1898.6 336.7 355 232.8" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M2044.8,451.3c-6.5-11.2-11.8-23.3-14.1-36.1-1.6-9-1.4-18.5.3-27.7,6.8-5,14.8-8.3,23.6-9.5,8.7-1.2,17.1-.4,25.2,3,8.5,3.5,16,9.1,22.8,15.1,7.6,6.8,20.8,22.4,20.8,22.4l23.5-40.7c-8.8-11-18.4-21.6-29.9-29.8-5.7-4.1-12-7.6-18.8-9.6-6.4-1.9-12.9-2.1-19.4-1.3-11.4,1.4-22.2,6.3-30.2,14.5-6.5,6.6-32.9,50-37.4,63.4-3.7,11-5.6,23.1-4.7,34.6,0,.5,0,1,.2,1.5h-39.8l-23.5,40.7h77.9c7.8,13.5,17.6,26,28.7,37h-127.9l-23.5,40.7h286.7l23.5-40.7h-62.5c-26.1-3.5-50.1-19.2-68.9-37h152.7l23.5-40.7h-208.7v.2Z"/></svg>';
+/* OMR is subdivided into 1000 baisa → 3 decimals. fmt embeds the symbol and
+   is for innerHTML contexts only; fmtT is plain text for strings that get
+   escaped or stored (notifications, activity log, CSV). */
+const money = n => (Math.round(n*1000)/1000).toLocaleString("en-US",{minimumFractionDigits:3,maximumFractionDigits:3});
+const fmt = n => RIAL + " " + money(n);
+const fmtT = n => "OMR " + money(n);
+const fmtK = n => n>=1e6 ? RIAL+" "+(n/1e6).toFixed(2)+"M" : n>=1e4 ? RIAL+" "+(n/1e3).toFixed(1)+"k" : fmt(n);
 const timeAgo = ts => {const s=(Date.now()-ts)/1e3; if(s<60)return"just now"; if(s<3600)return Math.floor(s/60)+"m ago"; if(s<86400)return Math.floor(s/3600)+"h ago"; return Math.floor(s/86400)+"d ago";};
 const fmtDate = ts => new Date(ts).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
 const fmtTime = ts => new Date(ts).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-Object.assign(SG,{uid,fmt,fmtK,timeAgo,fmtDate,fmtTime,esc,dayKey});
+Object.assign(SG,{uid,fmt,fmtT,fmtK,rial:RIAL,timeAgo,fmtDate,fmtTime,esc,dayKey});
 
 /* ---- seed ---- */
 function seedDB(){
@@ -25,10 +33,10 @@ function seedDB(){
   const now = Date.now();
 
   const vendors = [
-    {id:"v1", name:"Dune Atelier",   contact:"Layla Hassan",  email:"layla@duneatelier.sa",  whatsapp:"+966 50 111 2233", commission:18, status:"active",  joined:now-210*DAY, channels:{email:true,whatsapp:true,portal:true}},
-    {id:"v2", name:"Oud & Amber",    contact:"Faisal Rahim",  email:"faisal@oudamber.com",   whatsapp:"+966 55 444 8899", commission:22, status:"active",  joined:now-150*DAY, channels:{email:true,whatsapp:false,portal:true}},
-    {id:"v3", name:"Mirage Studio",  contact:"Sara Aldawsari",email:"sara@miragestudio.co",  whatsapp:"+966 54 777 1122", commission:15, status:"active",  joined:now-95*DAY,  channels:{email:true,whatsapp:true,portal:true}},
-    {id:"v4", name:"Cedar House",    contact:"Omar Khalidi",  email:"omar@cedarhouse.me",    whatsapp:"+966 56 333 5566", commission:20, status:"pending", joined:now-6*DAY,   channels:{email:true,whatsapp:false,portal:false}},
+    {id:"v1", name:"Dune Atelier",   contact:"Layla Hassan",  email:"layla@duneatelier.om",  whatsapp:"+968 9111 2233", commission:18, status:"active",  joined:now-210*DAY, channels:{email:true,whatsapp:true,portal:true}},
+    {id:"v2", name:"Oud & Amber",    contact:"Faisal Rahim",  email:"faisal@oudamber.com",   whatsapp:"+968 9244 8899", commission:22, status:"active",  joined:now-150*DAY, channels:{email:true,whatsapp:false,portal:true}},
+    {id:"v3", name:"Mirage Studio",  contact:"Sara Aldawsari",email:"sara@miragestudio.co",  whatsapp:"+968 9477 1122", commission:15, status:"active",  joined:now-95*DAY,  channels:{email:true,whatsapp:true,portal:true}},
+    {id:"v4", name:"Cedar House",    contact:"Omar Khalidi",  email:"omar@cedarhouse.me",    whatsapp:"+968 9633 5566", commission:20, status:"pending", joined:now-6*DAY,   channels:{email:true,whatsapp:false,portal:false}},
   ];
   const cats = ["Abayas","Fragrance","Accessories","Home","Kids"];
   const P = (name,cat,vendorId,price,emoji,hueA,hueB,s1,s2,cost) => ({
@@ -58,15 +66,15 @@ function seedDB(){
   products.forEach((p,i)=>p.sku = "NB-"+p.cat.slice(0,2).toUpperCase()+"-"+String(101+i));
 
   const branches = [
-    {id:"b1", name:"Riyadh — U Walk", address:"U Walk Blvd, Riyadh", opened:now-400*DAY},
-    {id:"b2", name:"Jeddah — Red Sea Mall", address:"Red Sea Mall, Jeddah", opened:now-160*DAY},
+    {id:"b1", name:"Muscat — Mall of Oman", address:"Mall of Oman, Muscat", opened:now-400*DAY},
+    {id:"b2", name:"Salalah — Grand Mall", address:"Salalah Grand Mall, Salalah", opened:now-160*DAY},
   ];
   const employees = [
-    {id:"e1", name:"Noura Al-Fahad", role:"owner",   branch:"b1", email:"noura@norab.sa",  status:"active", pin:"1111"},
-    {id:"e2", name:"Ahmed Siddiqui", role:"manager", branch:"b1", email:"ahmed@norab.sa",  status:"active", pin:"2222"},
-    {id:"e3", name:"Reem Otaibi",    role:"cashier", branch:"b1", email:"reem@norab.sa",   status:"active", pin:"3333"},
-    {id:"e4", name:"Yousef Hariri",  role:"cashier", branch:"b1", email:"yousef@norab.sa", status:"active", pin:"4444"},
-    {id:"e5", name:"Dana Qahtani",   role:"cashier", branch:"b2", email:"dana@norab.sa",   status:"invited", pin:"5555"},
+    {id:"e1", name:"Noura Al-Fahad", role:"owner",   branch:"b1", email:"noura@norab.om",  status:"active", pin:"1111"},
+    {id:"e2", name:"Ahmed Siddiqui", role:"manager", branch:"b1", email:"ahmed@norab.om",  status:"active", pin:"2222"},
+    {id:"e3", name:"Reem Otaibi",    role:"cashier", branch:"b1", email:"reem@norab.om",   status:"active", pin:"3333"},
+    {id:"e4", name:"Yousef Hariri",  role:"cashier", branch:"b1", email:"yousef@norab.om", status:"active", pin:"4444"},
+    {id:"e5", name:"Dana Qahtani",   role:"cashier", branch:"b2", email:"dana@norab.om",   status:"invited", pin:"5555"},
   ];
   const customerNames = ["Muhannad A.","Hala M.","Tariq B.","Jood S.","Lina K.","Fahad R.","Maya T.","Ziyad N.","Aisha P.","Salem D."];
 
@@ -84,11 +92,11 @@ function seedDB(){
       const items=[]; const used=new Set();
       for(let k=0;k<itemCount;k++){
         const p = pick(sellable); if(used.has(p.id)) continue; used.add(p.id);
-        items.push({productId:p.id,name:p.name,sku:p.sku,price:p.price,qty:1+(rnd()<.25?1:0),tax:15,vendorId:p.vendorId,emoji:p.emoji,grad:p.grad});
+        items.push({productId:p.id,name:p.name,sku:p.sku,price:p.price,qty:1+(rnd()<.25?1:0),tax:5,vendorId:p.vendorId,emoji:p.emoji,grad:p.grad});
       }
       const sub = items.reduce((s,it)=>s+it.price*it.qty,0);
       const disc = rnd()<.12 ? Math.round(sub*.1) : 0;
-      const tax = (sub-disc)*.15;
+      const tax = (sub-disc)*.05;
       const ts = date.getTime() - Math.floor(rnd()*10*36e5) - 2*36e5;
       orders.push({
         id:"SO-"+String(9000+orders.length), ts, branch:rnd()<.62?"b1":"b2",
@@ -103,19 +111,19 @@ function seedDB(){
   const movements = [
     {id:uid("m"), ts:now-3*DAY, productId:products[4].id, branch:"b1", delta:+20, kind:"restock", by:"Ahmed Siddiqui", note:"PO #481 received"},
     {id:uid("m"), ts:now-2*DAY, productId:products[2].id, branch:"b1", delta:-2,  kind:"damage",  by:"Reem Otaibi",   note:"Display damage"},
-    {id:uid("m"), ts:now-1*DAY, productId:products[7].id, branch:"b2", delta:+10, kind:"transfer",by:"Ahmed Siddiqui",note:"From U Walk"},
+    {id:uid("m"), ts:now-1*DAY, productId:products[7].id, branch:"b2", delta:+10, kind:"transfer",by:"Ahmed Siddiqui",note:"From Mall of Oman"},
   ];
 
   const tickets = [
     {id:"TK-1042", tenant:"Nora Boutique", subject:"WhatsApp summary not delivered to one vendor", priority:"high",   status:"open",       ts:now-4*36e5, assignee:"Platform Support"},
     {id:"TK-1041", tenant:"Sultan Perfumes", subject:"Bulk import: SKU column mapping", priority:"medium", status:"pending",    ts:now-26*36e5, assignee:"Onboarding"},
-    {id:"TK-1038", tenant:"GreenGrocer KSA", subject:"Request: Arabic receipt template", priority:"low",    status:"resolved",   ts:now-3*DAY, assignee:"Product"},
+    {id:"TK-1038", tenant:"GreenGrocer Oman", subject:"Request: Arabic receipt template", priority:"low",    status:"resolved",   ts:now-3*DAY, assignee:"Product"},
     {id:"TK-1035", tenant:"Blossom Kids", subject:"Card terminal pairing at branch 2", priority:"high",  status:"resolved",   ts:now-5*DAY, assignee:"Payments"},
   ];
   const tenants = [
     {id:"t1", name:"Nora Boutique",   plan:"business",  mrr:299, branches:2, users:5, products:16, gmv30:184000, created:now-400*DAY, status:"active", health:96},
     {id:"t2", name:"Sultan Perfumes", plan:"premium",   mrr:799, branches:4, users:14, products:640, gmv30:1220000, created:now-310*DAY, status:"active", health:92},
-    {id:"t3", name:"GreenGrocer KSA", plan:"business",  mrr:299, branches:3, users:9, products:1900, gmv30:760000, created:now-230*DAY, status:"active", health:88},
+    {id:"t3", name:"GreenGrocer Oman", plan:"business",  mrr:299, branches:3, users:9, products:1900, gmv30:760000, created:now-230*DAY, status:"active", health:88},
     {id:"t4", name:"Blossom Kids",    plan:"starter",   mrr:99,  branches:1, users:2, products:210, gmv30:96000,  created:now-120*DAY, status:"active", health:74},
     {id:"t5", name:"Coastline Sports",plan:"premium",   mrr:799, branches:6, users:22, products:2900, gmv30:2100000, created:now-80*DAY, status:"active", health:97},
     {id:"t6", name:"Al Waha Books",   plan:"starter",   mrr:99,  branches:1, users:3, products:410, gmv30:41000,  created:now-30*DAY, status:"trial",  health:61},
@@ -123,8 +131,8 @@ function seedDB(){
 
   return {
     v:7, storeName:"Nora Boutique", storeLogo:"NB",
-    settings:{taxRate:15, currency:"SAR", receiptFooter:"Thank you for shopping with us ♥", brandColor:"#0E8A6D",
-      address:"U Walk Blvd, Riyadh 13519", vat:"310198765400003", lowStockAlerts:true, dailyVendorHour:21},
+    settings:{taxRate:5, currency:"OMR", receiptFooter:"Thank you for shopping with us ♥", brandColor:"#0E8A6D",
+      address:"Mall of Oman, Muscat 138", vat:"OM1100198765", lowStockAlerts:true, dailyVendorHour:21},
     branches, vendors, products, employees, orders, movements, tickets, tenants,
     coupons:[{code:"SAVE10",pct:10,active:true},{code:"WELCOME15",pct:15,active:true}],
     customer:{id:"cu1", name:"Muhannad", email:"muhannad00002@gmail.com", points:340, tier:"Gold", joined:now-90*DAY},
@@ -135,16 +143,16 @@ function seedDB(){
       {id:uid("n"),ts:now-2*DAY,icon:"gift",title:"You reached Gold tier",body:"Enjoy 1.5× points on every purchase.",read:true},
       {id:uid("n"),ts:now-6*DAY,icon:"tag",title:"Weekend offer at Nora Boutique",body:"Use SAVE10 for 10% off your basket.",read:true},
     ], merchant:[
-      {id:uid("n"),ts:now-5*36e5,icon:"alert",title:"Low stock: Royal Oud Attar 12ml",body:"4 left at Riyadh — U Walk (threshold 8).",read:false},
+      {id:uid("n"),ts:now-5*36e5,icon:"alert",title:"Low stock: Royal Oud Attar 12ml",body:"4 left at Muscat — Mall of Oman (threshold 8).",read:false},
       {id:uid("n"),ts:now-26*36e5,icon:"users",title:"Vendor daily summaries sent",body:"3 vendors received yesterday's sales digest.",read:true},
     ], vendor:[
-      {id:uid("n"),ts:now-26*36e5,icon:"chart",title:"Daily summary — yesterday",body:"9 units sold · SAR 2,140 gross · 1 low-stock item.",read:false},
+      {id:uid("n"),ts:now-26*36e5,icon:"chart",title:"Daily summary — yesterday",body:"9 units sold · OMR 2,140 gross · 1 low-stock item.",read:false},
     ]},
     activity:[
       {ts:now-3*36e5, by:"Reem Otaibi", act:"Completed order SO-"+String(9000+orders.length-1)+" (POS)"},
       {ts:now-5*36e5, by:"Ahmed Siddiqui", act:"Adjusted stock: Royal Oud Attar +20 (restock)"},
       {ts:now-30*36e5, by:"Noura Al-Fahad", act:"Updated receipt footer text"},
-      {ts:now-2*DAY, by:"Noura Al-Fahad", act:"Invited cashier Dana Qahtani (Jeddah)"},
+      {ts:now-2*DAY, by:"Noura Al-Fahad", act:"Invited cashier Dana Qahtani (Salalah)"},
     ],
     settlements:[
       {id:"ST-204", vendorId:"v1", period:"June 2026", gross:38420, commission:6916, net:31504, status:"paid",   paidTs:now-8*DAY},
@@ -319,11 +327,11 @@ function posComplete(method, cashierId){
     const v=vendorById(vid); if(!v) return;
     const sold = order.items.filter(i=>i.vendorId===vid);
     notify("vendor","cart","New sale — "+sold.reduce((s,i)=>s+i.qty,0)+" unit(s)",
-      sold.map(i=>i.qty+"× "+i.name).join(", ")+" · "+fmt(sold.reduce((s,i)=>s+i.price*i.qty,0))+" gross.");
+      sold.map(i=>i.qty+"× "+i.name).join(", ")+" · "+fmtT(sold.reduce((s,i)=>s+i.price*i.qty,0))+" gross.");
   });
-  notify("customer","receipt","Receipt — "+order.id, fmt(order.total)+" at "+DB.storeName+". +"+points+" loyalty points.");
-  notify("merchant","cart","Order "+order.id+" completed", fmt(order.total)+" · "+order.items.length+" item(s) · "+cash.name+" · "+(method==="applepay"?"Apple Pay":method));
-  logActivity(cash.name, "Completed order "+order.id+" ("+fmt(order.total)+")");
+  notify("customer","receipt","Receipt — "+order.id, fmtT(order.total)+" at "+DB.storeName+". +"+points+" loyalty points.");
+  notify("merchant","cart","Order "+order.id+" completed", fmtT(order.total)+" · "+order.items.length+" item(s) · "+cash.name+" · "+(method==="applepay"?"Apple Pay":method));
+  logActivity(cash.name, "Completed order "+order.id+" ("+fmtT(order.total)+")");
   DB.lastOrder = order;
   DB.cart = {items:[], coupon:null, branch:DB.cart.branch, locked:false};
   DB.checkoutToken = null; DB.posOrder = null;
