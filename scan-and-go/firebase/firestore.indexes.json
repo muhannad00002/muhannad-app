@@ -1,0 +1,11 @@
+{
+  "indexes": [
+    { "collectionGroup": "orders", "queryScope": "COLLECTION",
+      "fields": [ { "fieldPath": "branch", "order": "ASCENDING" },
+                  { "fieldPath": "ts", "order": "DESCENDING" } ] },
+    { "collectionGroup": "products", "queryScope": "COLLECTION",
+      "fields": [ { "fieldPath": "vendorId", "order": "ASCENDING" },
+                  { "fieldPath": "created", "order": "DESCENDING" } ] }
+  ],
+  "fieldOverrides": []
+}

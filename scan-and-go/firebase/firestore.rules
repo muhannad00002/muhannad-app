@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Catalog data the customer app reads freely.
+    match /products/{doc}  { allow read: if true; allow write: if false; }
+    match /branches/{doc}  { allow read: if true; allow write: if false; }
+    match /config/{doc}    { allow read: if true; allow write: if false; }
+
+    // Store-internal data: no client access until real auth ships.
+    // (The upload script uses the Admin SDK, which bypasses these rules.)
+    match /{collection}/{doc} { allow read, write: if false; }
+  }
+}
