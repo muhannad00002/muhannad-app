@@ -1,0 +1,24 @@
+{
+  "name": "scan-and-go",
+  "version": "1.0.0",
+  "description": "Sayr — scan & go retail platform (web demo + iOS shell)",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build": "node app/build.js",
+    "serve": "node app/serve.js",
+    "ios:copy": "node app/build.js && cap copy ios",
+    "ios:open": "cap open ios"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/ios": "^8.4.1"
+  },
+  "private": true
+}

@@ -139,6 +139,8 @@ function seedDB(){
     cart:{items:[], coupon:null, branch:null, locked:false},
     checkoutToken:null,
     posOrder:null,
+    /* platform-managed splash announcement shown in the customer app */
+    splash:{active:false, emoji:"🇴🇲", title:"Welcome to Sayr", body:"", cta:"Continue", id:"sp_seed", updated:0},
     notifications:{customer:[
       {id:uid("n"),ts:now-2*DAY,icon:"gift",title:"You reached Gold tier",body:"Enjoy 1.5× points on every purchase.",read:true},
       {id:uid("n"),ts:now-6*DAY,icon:"tag",title:"Weekend offer at Nora Boutique",body:"Use SAVE10 for 10% off your basket.",read:true},
@@ -175,6 +177,8 @@ function seedDB(){
 const DB_KEY = "sayr_db_v7";
 let DB;
 try{ const raw = localStorage.getItem(DB_KEY); DB = raw ? JSON.parse(raw) : null; if(!DB || DB.v!==7) DB = null; }catch(e){ DB = null; }
+/* migrate stored DBs that predate the splash feature */
+if(DB && DB.splash===undefined) DB.splash = {active:false, emoji:"🎉", title:"", body:"", cta:"Continue", id:"sp_0", updated:0};
 if(!DB) DB = seedDB();
 let saveT = null;
 function save(){ clearTimeout(saveT); saveT = setTimeout(()=>{ try{localStorage.setItem(DB_KEY, JSON.stringify(DB));}catch(e){} }, 250); }

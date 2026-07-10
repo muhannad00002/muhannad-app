@@ -49,9 +49,25 @@ function splash(root){
     '<h2 style="font-size:30px;letter-spacing:-.02em">Sayr</h2>'+
     '<p class="muted" style="text-align:center">Scan the shelf.<br>Skip the line.</p>'+
     '<div class="skel" style="width:120px;height:5px;border-radius:99px;margin-top:16px"></div></div>', {tabbar:false});
-  const t = setTimeout(()=> SG.go(SG.sess.custAuthed ? (DB.cart.branch?"#/customer/home":"#/customer/entrance") : "#/customer/auth"), 1300);
+  const t = setTimeout(()=>{
+    const p = DB.splash;
+    if(p && p.active && SG.sess.promoSeen!==p.id) promoSplash(root);
+    else SG.go(custDest());
+  }, 1300);
   SG.onCleanup(()=>clearTimeout(t));
 }
+function custDest(){ return SG.sess.custAuthed ? (DB.cart.branch?"#/customer/home":"#/customer/entrance") : "#/customer/auth"; }
+
+/* ---- promo splash (configured in Platform Admin → Customer splash) ---- */
+function promoSplash(root){
+  const s = DB.splash;
+  root.innerHTML = frame("", '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:420px;text-align:center;padding:0 8px;animation:screenIn .45s var(--ease)">'+
+    '<div style="font-size:62px;line-height:1">'+esc(s.emoji||"🎉")+'</div>'+
+    '<h2 style="font-size:26px;letter-spacing:-.02em;max-width:300px">'+esc(s.title||"")+'</h2>'+
+    (s.body?'<p class="muted" style="max-width:300px">'+esc(s.body)+'</p>':'')+
+    '<button class="btn btn-pri btn-lg" data-act="promo-continue" style="margin-top:12px;min-width:190px">'+esc(s.cta||"Continue")+'</button></div>', {tabbar:false});
+}
+SG.actions["promo-continue"] = ()=>{ SG.sess.promoSeen=(DB.splash||{}).id; SG.saveSess(); SG.go(custDest()); };
 
 /* ---- auth ---- */
 function auth(root){

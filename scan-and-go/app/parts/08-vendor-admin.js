@@ -165,6 +165,7 @@ const ANAV = [
   {id:"revenue", ic:"chart", label:"Revenue"},
   {id:"tickets", ic:"ticket", label:"Support", live:()=>DB.tickets.filter(t=>t.status==="open").length},
   {id:"api", ic:"key", label:"API usage"},
+  {id:"splash", ic:"sparkle", label:"Customer splash"},
 ];
 function ashell(page, inner){
   return SG.offlineBanner()+
@@ -185,9 +186,58 @@ function ashell(page, inner){
 }
 SG.apps.admin = (root, r)=>{
   document.title = "Sayr — Platform Admin";
-  const pages = {overview:aover, tenants:atenants, revenue:arevenue, tickets:atickets, api:aapi};
+  const pages = {overview:aover, tenants:atenants, revenue:arevenue, tickets:atickets, api:aapi, splash:asplash};
   (pages[r.page]||aover)(root, r);
 };
+
+/* ---- customer splash manager ---- */
+function asplash(root){
+  const s = DB.splash || {};
+  root.innerHTML = ashell("splash",
+    '<div class="grid2" style="align-items:start">'+
+    '<div class="card card-pad">'+
+      '<div class="row-between" style="margin-bottom:4px"><h3 style="font-size:15px">Splash screen</h3>'+
+        '<span class="chip '+(s.active?'chip-good':'chip-neutral')+'">'+(s.active?'Live':'Off')+'</span></div>'+
+      '<p class="small muted" style="margin-bottom:14px">Shown full-screen once per session when shoppers open the customer app — announcements, offers, seasonal greetings. Saving again re-shows it to everyone.</p>'+
+      '<div class="field"><label>Status</label><select class="input" id="sp-active">'+
+        '<option value="0"'+(!s.active?' selected':'')+'>Off</option>'+
+        '<option value="1"'+(s.active?' selected':'')+'>Live — show to customers</option></select></div>'+
+      '<div class="grid2" style="gap:12px">'+
+        '<div class="field"><label>Emoji</label><input class="input" id="sp-emoji" maxlength="8" value="'+esc(s.emoji||"🎉")+'"></div>'+
+        '<div class="field"><label>Button label</label><input class="input" id="sp-cta" maxlength="24" value="'+esc(s.cta||"Continue")+'"></div></div>'+
+      '<div class="field"><label>Headline</label><input class="input" id="sp-title" maxlength="48" value="'+esc(s.title||"")+'" placeholder="Eid Mubarak from Sayr 🌙"></div>'+
+      '<div class="field"><label>Message (optional)</label><textarea class="input" id="sp-body" rows="3" maxlength="160" placeholder="Enjoy 10% off across Nora Boutique this weekend.">'+esc(s.body||"")+'</textarea></div>'+
+      '<div class="row" style="gap:8px;margin-top:14px">'+
+        '<button class="btn btn-pri" data-act="splash-save">Save</button>'+
+        '<button class="btn btn-sec" data-act="splash-test">Open in customer app</button></div>'+
+    '</div>'+
+    '<div class="card card-pad" style="text-align:center">'+
+      '<div class="eyebrow" style="margin-bottom:14px">Live preview</div>'+
+      '<div id="sp-preview" style="padding:28px 14px;border:1px dashed var(--line2);border-radius:16px"></div>'+
+      (s.updated?'<p class="small muted" style="margin-top:10px">Last saved '+SG.timeAgo(s.updated)+'</p>':'')+
+    '</div></div>');
+  const prev = ()=>{
+    const g = id=>document.getElementById(id);
+    const em=g("sp-emoji").value.trim()||"🎉", ti=g("sp-title").value.trim(), bo=g("sp-body").value.trim(), ct=g("sp-cta").value.trim()||"Continue";
+    g("sp-preview").innerHTML =
+      '<div style="font-size:52px;line-height:1;margin-bottom:10px">'+esc(em)+'</div>'+
+      '<h3 style="font-size:20px;margin-bottom:6px">'+(ti?esc(ti):'<span class="muted">Headline…</span>')+'</h3>'+
+      (bo?'<p class="small muted" style="max-width:260px;margin:0 auto 14px">'+esc(bo)+'</p>':'')+
+      '<span class="btn btn-pri" style="pointer-events:none;margin-top:4px">'+esc(ct)+'</span>';
+  };
+  prev();
+  ["sp-emoji","sp-title","sp-body","sp-cta"].forEach(id=>document.getElementById(id).addEventListener("input",prev));
+}
+SG.actions["splash-save"] = ()=>{
+  const g = id=>document.getElementById(id);
+  DB.splash = {active:g("sp-active").value==="1", emoji:g("sp-emoji").value.trim()||"🎉",
+    title:g("sp-title").value.trim(), body:g("sp-body").value.trim(),
+    cta:g("sp-cta").value.trim()||"Continue", id:SG.uid("sp"), updated:Date.now()};
+  SG.save();
+  SG.toast(DB.splash.active ? "Splash saved — customers see it on next launch" : "Splash saved (off)");
+  SG.render();
+};
+SG.actions["splash-test"] = ()=>{ SG.sess.promoSeen=null; SG.saveSess(); SG.go("#/customer/splash"); };
 const mrrSeries = ()=>{ /* 12 months of platform MRR growth to today's sum */
   const total = DB.tenants.reduce((s,t)=>s+t.mrr,0);
   const out=[]; for(let m=11;m>=0;m--){ const d=new Date(); d.setMonth(d.getMonth()-m);

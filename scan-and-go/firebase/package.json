@@ -1,0 +1,12 @@
+{
+  "name": "sayr-firebase",
+  "private": true,
+  "description": "Firestore seed data + rules for Sayr",
+  "scripts": {
+    "export": "node export-seed.js",
+    "upload": "node upload-seed.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}
