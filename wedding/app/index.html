@@ -1,0 +1,2244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Zaffa — Wedding Planner &amp; Marketplace</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="description" content="Zaffa — your personal wedding planner. Plan the day, browse curated vendors, track every task in one elegant place.">
+<meta name="theme-color" content="#B76E79">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Zaffa">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<style>
+/* ================= ZAFFA — DESIGN SYSTEM =================
+   Modern · elegant · feminine · minimal · premium.
+   Palette: cream, warm white, rose gold, champagne, light pink. */
+:root{
+  /* surfaces */
+  --ground:#FBF6F2;      /* warm cream page */
+  --ground2:#F6EDE6;     /* deeper cream */
+  --surface:#FFFFFF;     /* card */
+  --surface2:#FBF3EE;    /* subtle fill */
+  --surface3:#F4E7DE;    /* pressed / track */
+  /* ink */
+  --ink:#33262A;         /* near-black warm */
+  --ink2:#7A6A6E;        /* secondary */
+  --ink3:#A9989C;        /* tertiary */
+  --line:#EFE2DA;        /* hairline */
+  --line2:#E4D3C8;       /* stronger hairline */
+  /* brand — rose gold */
+  --rose:#B76E79;
+  --rose-deep:#9E5763;
+  --rose-soft:#F7E7E9;
+  --rose-tint:#FCEFF1;
+  --on-rose:#FFFFFF;
+  /* champagne / gold accents */
+  --gold:#C6A469;
+  --gold-soft:#F5ECDC;
+  --champagne:#E7D3BE;
+  --blush:#F7E3E6;
+  /* semantic */
+  --good:#5C9E7E; --good-soft:#E6F1EB;
+  --warn:#C08A3E; --warn-soft:#F8EEDD;
+  --crit:#C56B6B; --crit-soft:#F9E6E6;
+  /* status colours for chips */
+  --s-todo:#A9989C; --s-todo-soft:#F1EAEC;
+  --s-prog:#C6A469; --s-prog-soft:#F5ECDC;
+  --s-done:#5C9E7E; --s-done-soft:#E6F1EB;
+  /* shadows — soft, diffuse */
+  --shadow-1:0 1px 2px rgba(120,80,80,.05),0 2px 8px rgba(120,80,80,.05);
+  --shadow-2:0 6px 20px rgba(140,90,90,.09),0 2px 6px rgba(140,90,90,.05);
+  --shadow-3:0 18px 46px rgba(120,70,80,.16),0 6px 14px rgba(120,70,80,.07);
+  --shadow-rose:0 10px 28px rgba(183,110,121,.30);
+  /* radii */
+  --r-s:10px; --r-m:16px; --r-l:22px; --r-xl:28px; --r-full:999px;
+  /* type */
+  --font-d:"Cormorant Garamond","Hoefler Text",Didot,"Playfair Display",Georgia,serif;
+  --font-b:"Avenir Next",-apple-system,ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+  --font-m:ui-monospace,"SF Mono",Menlo,monospace;
+  --dur:.24s; --ease:cubic-bezier(.32,.72,.24,1);
+  --tab-h:76px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --ground:#1A1416; --ground2:#211A1C; --surface:#241C1F; --surface2:#2B2225; --surface3:#342A2D;
+  --ink:#F3E9EC; --ink2:#BCA9AF; --ink3:#8C7A80; --line:#342A2D; --line2:#42353A;
+  --rose:#D98C97; --rose-deep:#E7A2AC; --rose-soft:#3A2A2E; --rose-tint:#2E2225; --on-rose:#241417;
+  --gold:#D8BC85; --gold-soft:#352C1E; --champagne:#4A3C2C; --blush:#3A2A2E;
+  --good:#7BBE9C; --good-soft:#22332B; --warn:#D9AA5E; --warn-soft:#352A18; --crit:#E08B8B; --crit-soft:#3A2323;
+  --s-todo:#8C7A80; --s-todo-soft:#2E2528; --s-prog:#D8BC85; --s-prog-soft:#352C1E; --s-done:#7BBE9C; --s-done-soft:#22332B;
+  --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 6px 20px rgba(0,0,0,.5); --shadow-3:0 18px 46px rgba(0,0,0,.6);
+  --shadow-rose:0 10px 28px rgba(0,0,0,.5);
+}}
+:root[data-theme="light"]{color-scheme:light}
+:root[data-theme="dark"]{
+  --ground:#1A1416; --ground2:#211A1C; --surface:#241C1F; --surface2:#2B2225; --surface3:#342A2D;
+  --ink:#F3E9EC; --ink2:#BCA9AF; --ink3:#8C7A80; --line:#342A2D; --line2:#42353A;
+  --rose:#D98C97; --rose-deep:#E7A2AC; --rose-soft:#3A2A2E; --rose-tint:#2E2225; --on-rose:#241417;
+  --gold:#D8BC85; --gold-soft:#352C1E; --champagne:#4A3C2C; --blush:#3A2A2E;
+  --good:#7BBE9C; --good-soft:#22332B; --warn:#D9AA5E; --warn-soft:#352A18; --crit:#E08B8B; --crit-soft:#3A2323;
+  --s-todo:#8C7A80; --s-todo-soft:#2E2528; --s-prog:#D8BC85; --s-prog-soft:#352C1E; --s-done:#7BBE9C; --s-done-soft:#22332B;
+  --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 6px 20px rgba(0,0,0,.5); --shadow-3:0 18px 46px rgba(0,0,0,.6);
+  --shadow-rose:0 10px 28px rgba(0,0,0,.5); color-scheme:dark;
+}
+
+*{box-sizing:border-box;margin:0}
+html{height:100%;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+body{height:100%;background:var(--ground);color:var(--ink);font-family:var(--font-b);
+  font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;overscroll-behavior-y:none}
+#root{height:100%}
+h1,h2,h3,h4{font-family:var(--font-d);font-weight:600;line-height:1.12;letter-spacing:.005em;text-wrap:balance}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+input,select,textarea{font:inherit;color:var(--ink);background:none}
+svg{display:block;flex:none}
+img{display:block;max-width:100%}
+::selection{background:var(--rose-soft);color:var(--rose-deep)}
+:focus-visible{outline:2px solid var(--rose);outline-offset:2px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+.num{font-variant-numeric:tabular-nums}
+.serif{font-family:var(--font-d)}
+.muted{color:var(--ink2)} .faint{color:var(--ink3)} .small{font-size:13px} .tiny{font-size:11.5px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--rose)}
+.center{text-align:center}
+a{color:var(--rose-deep);text-decoration:none}
+.row{display:flex;align-items:center;gap:10px}
+.col{display:flex;flex-direction:column}
+.between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.wrap{flex-wrap:wrap}
+.gap6{gap:6px}.gap8{gap:8px}.gap12{gap:12px}.gap16{gap:16px}
+.grow{flex:1}
+.hide{display:none!important}
+
+/* scrollbars */
+::-webkit-scrollbar{width:0;height:0}
+.scroll-x{overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.scroll-x::-webkit-scrollbar{display:none}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14.5px;
+  padding:12px 18px;border-radius:var(--r-full);border:1px solid transparent;transition:transform var(--dur) var(--ease),background var(--dur),box-shadow var(--dur),color var(--dur);
+  white-space:nowrap;user-select:none;letter-spacing:.01em}
+.btn:active{transform:scale(.96)}
+.btn-pri{background:linear-gradient(135deg,var(--rose),var(--rose-deep));color:var(--on-rose);box-shadow:var(--shadow-rose)}
+.btn-pri:hover{filter:brightness(1.05)}
+.btn-sec{background:var(--surface);border-color:var(--line2);color:var(--ink);box-shadow:var(--shadow-1)}
+.btn-sec:hover{background:var(--surface2)}
+.btn-ghost{background:var(--rose-soft);color:var(--rose-deep)}
+.btn-ghost:hover{filter:brightness(.98)}
+.btn-quiet{color:var(--ink2);padding:10px 12px}
+.btn-quiet:hover{background:var(--surface2)}
+.btn-block{display:flex;width:100%}
+.btn-lg{padding:15px 22px;font-size:16px}
+.btn-sm{padding:8px 13px;font-size:13px}
+.btn:disabled{opacity:.45;pointer-events:none}
+.btn-dark{background:var(--ink);color:var(--surface)}
+
+/* pill / chip */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:var(--r-full);
+  font-size:12.5px;font-weight:600;background:var(--surface2);color:var(--ink2);border:1px solid transparent;
+  transition:all var(--dur) var(--ease);white-space:nowrap}
+.chip.on{background:var(--rose);color:var(--on-rose);box-shadow:var(--shadow-1)}
+.chip:active{transform:scale(.95)}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:var(--r-full);font-size:11px;font-weight:700;letter-spacing:.02em}
+.tag-rose{background:var(--rose-soft);color:var(--rose-deep)}
+.tag-gold{background:var(--gold-soft);color:var(--gold)}
+.tag-good{background:var(--good-soft);color:var(--good)}
+.tag-warn{background:var(--warn-soft);color:var(--warn)}
+.tag-todo{background:var(--s-todo-soft);color:var(--s-todo)}
+.tag-prog{background:var(--s-prog-soft);color:var(--s-prog)}
+.tag-done{background:var(--s-done-soft);color:var(--s-done)}
+
+/* cards */
+.card{background:var(--surface);border-radius:var(--r-l);box-shadow:var(--shadow-1);border:1px solid var(--line)}
+.card-2{box-shadow:var(--shadow-2);border-color:transparent}
+.pad{padding:18px} .pad-l{padding:22px} .pad-s{padding:14px}
+
+/* inputs */
+.field{display:block;width:100%;padding:13px 15px;background:var(--surface);border:1px solid var(--line2);
+  border-radius:var(--r-m);font-size:15px;transition:border var(--dur),box-shadow var(--dur);color:var(--ink)}
+.field:focus{outline:none;border-color:var(--rose);box-shadow:0 0 0 4px var(--rose-tint)}
+.field::placeholder{color:var(--ink3)}
+textarea.field{resize:vertical;min-height:88px;line-height:1.5}
+.lbl{display:block;font-size:12.5px;font-weight:700;color:var(--ink2);margin:0 0 7px 3px;letter-spacing:.02em}
+select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23A9989C' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:40px}
+
+/* avatar / thumb */
+.thumb{background-size:cover;background-position:center;border-radius:var(--r-m);position:relative;overflow:hidden;flex:none}
+.avatar{border-radius:var(--r-full);background-size:cover;background-position:center;flex:none;display:grid;place-items:center;
+  font-family:var(--font-d);font-weight:600;color:var(--on-rose)}
+
+/* rating stars */
+.stars{--v:0;display:inline-block;position:relative;font-size:13px;line-height:1;color:var(--gold);white-space:nowrap}
+.stars::before{content:"★★★★★";letter-spacing:1px;color:var(--line2)}
+.stars>i{position:absolute;left:0;top:0;overflow:hidden;width:calc(var(--v)*20%);white-space:nowrap}
+.stars>i::before{content:"★★★★★";letter-spacing:1px;color:var(--gold)}
+
+/* progress ring handled inline; linear bar: */
+.bar{height:8px;border-radius:var(--r-full);background:var(--surface3);overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:var(--r-full);background:linear-gradient(90deg,var(--rose),var(--gold));transition:width .6s var(--ease)}
+
+/* section heading */
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 13px}
+.sec-h h3{font-size:22px}
+.sec-h .link{font-size:13px;font-weight:600;color:var(--rose)}
+
+/* app shell / phone frame */
+.app{max-width:460px;margin:0 auto;min-height:100%;position:relative;background:var(--ground);
+  box-shadow:0 0 60px rgba(140,90,90,.10)}
+@media(min-width:900px){.app{min-height:100vh}}
+.screen{padding:0 20px calc(var(--tab-h) + 28px);animation:fade .4s var(--ease)}
+.screen.no-tab{padding-bottom:36px}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+.stagger>*{animation:fadeUp .5s var(--ease) both}
+.stagger>*:nth-child(2){animation-delay:.05s}
+.stagger>*:nth-child(3){animation-delay:.10s}
+.stagger>*:nth-child(4){animation-delay:.15s}
+.stagger>*:nth-child(5){animation-delay:.20s}
+.stagger>*:nth-child(6){animation-delay:.25s}
+
+/* top bar */
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:14px 20px 12px;
+  background:linear-gradient(var(--ground) 72%,transparent);backdrop-filter:saturate(1.4) blur(8px)}
+.topbar h2{font-size:21px;flex:1}
+.icon-btn{width:42px;height:42px;border-radius:var(--r-full);display:grid;place-items:center;background:var(--surface);
+  box-shadow:var(--shadow-1);color:var(--ink);transition:transform var(--dur) var(--ease),background var(--dur);border:1px solid var(--line)}
+.icon-btn:active{transform:scale(.9)}
+.icon-btn.plain{background:transparent;box-shadow:none;border:0}
+.badge-dot{position:absolute;top:9px;right:10px;width:9px;height:9px;border-radius:50%;background:var(--rose);border:2px solid var(--surface)}
+
+/* bottom tab bar */
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:460px;z-index:50;
+  display:flex;justify-content:space-around;padding:9px 10px calc(9px + env(safe-area-inset-bottom));
+  background:color-mix(in srgb,var(--surface) 86%,transparent);backdrop-filter:saturate(1.6) blur(20px);
+  border-top:1px solid var(--line)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 12px;border-radius:var(--r-m);color:var(--ink3);
+  font-size:10.5px;font-weight:600;transition:color var(--dur);flex:1;max-width:80px}
+.tab.on{color:var(--rose)}
+.tab svg{transition:transform var(--dur) var(--ease)}
+.tab.on svg{transform:translateY(-1px)}
+.tab .fab{margin-top:-26px;width:52px;height:52px;border-radius:var(--r-full);display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--rose),var(--rose-deep));color:var(--on-rose);box-shadow:var(--shadow-rose)}
+
+/* toast */
+#toast-wrap{position:fixed;left:0;right:0;bottom:calc(var(--tab-h) + 16px);z-index:200;display:flex;flex-direction:column;
+  align-items:center;gap:8px;pointer-events:none;padding:0 20px}
+.toast{background:var(--ink);color:var(--surface);padding:12px 18px;border-radius:var(--r-full);font-size:13.5px;font-weight:600;
+  box-shadow:var(--shadow-3);display:flex;align-items:center;gap:9px;animation:toastIn .4s var(--ease);max-width:100%}
+.toast .em{font-size:16px}
+@keyframes toastIn{from{opacity:0;transform:translateY(14px) scale(.94)}to{opacity:1;transform:none}}
+.toast.out{animation:toastOut .3s var(--ease) forwards}
+@keyframes toastOut{to{opacity:0;transform:translateY(10px) scale(.96)}}
+
+/* modal / sheet */
+.scrim{position:fixed;inset:0;z-index:100;background:rgba(50,30,35,.42);backdrop-filter:blur(3px);
+  display:flex;align-items:flex-end;justify-content:center;animation:fade .3s}
+@media(min-width:560px){.scrim{align-items:center}}
+.sheet{background:var(--surface);width:100%;max-width:460px;border-radius:var(--r-xl) var(--r-xl) 0 0;
+  max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-3);animation:sheetUp .4s var(--ease);padding-bottom:env(safe-area-inset-bottom)}
+@media(min-width:560px){.sheet{border-radius:var(--r-xl);max-height:88vh}}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+.sheet-grab{width:38px;height:5px;border-radius:9px;background:var(--line2);margin:10px auto 2px}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 6px}
+.sheet-h h3{font-size:21px}
+
+/* list rows */
+.lrow{display:flex;align-items:center;gap:13px;padding:13px 4px;border-bottom:1px solid var(--line)}
+.lrow:last-child{border-bottom:0}
+
+/* empty state */
+.empty{text-align:center;padding:52px 24px;color:var(--ink2)}
+.empty .em{font-size:44px;margin-bottom:12px}
+.empty h3{font-size:22px;color:var(--ink);margin-bottom:6px}
+
+/* segmented */
+.seg{display:flex;background:var(--surface3);border-radius:var(--r-full);padding:4px;gap:2px}
+.seg button{flex:1;padding:9px 6px;border-radius:var(--r-full);font-size:13px;font-weight:600;color:var(--ink2);transition:all var(--dur) var(--ease)}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-1)}
+
+/* skeleton shimmer for images while gradient loads (decorative) */
+.shine{position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.18) 50%,transparent 70%);
+  transform:translateX(-100%);animation:shine 2.4s infinite}
+@keyframes shine{to{transform:translateX(100%)}}
+
+/* checklist item */
+.check{display:flex;align-items:center;gap:13px;padding:15px 16px;background:var(--surface);border-radius:var(--r-m);
+  box-shadow:var(--shadow-1);border:1px solid var(--line);transition:all var(--dur) var(--ease)}
+.check.done{background:var(--surface2)}
+.check.done .ct{text-decoration:line-through;color:var(--ink3)}
+.cbox{width:26px;height:26px;border-radius:9px;border:2px solid var(--line2);display:grid;place-items:center;flex:none;transition:all var(--dur) var(--ease);color:transparent}
+.cbox.prog{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}
+.cbox.done{border-color:var(--good);background:var(--good);color:#fff}
+
+/* KPI tile */
+.kpi{background:var(--surface);border-radius:var(--r-l);padding:16px;box-shadow:var(--shadow-1);border:1px solid var(--line)}
+.kpi .v{font-family:var(--font-d);font-size:30px;font-weight:600;line-height:1}
+.kpi .k{font-size:12px;color:var(--ink2);font-weight:600;margin-top:5px}
+
+/* admin table */
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line2)}
+.tbl td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+
+/* confetti canvas */
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:150}
+
+/* hero countdown gradient card */
+.hero{position:relative;overflow:hidden;border-radius:var(--r-xl);color:#fff;padding:24px 22px;
+  background:linear-gradient(140deg,#C98A94 0%,#B76E79 45%,#9E5763 100%);box-shadow:var(--shadow-2)}
+.hero::after{content:"";position:absolute;inset:0;background:
+   radial-gradient(120px 120px at 85% 15%,rgba(255,255,255,.28),transparent 60%),
+   radial-gradient(160px 160px at 10% 95%,rgba(198,164,105,.35),transparent 60%);pointer-events:none}
+.hero .lbl2{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;opacity:.9}
+
+/* category grid tile */
+.cat{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 8px;background:var(--surface);
+  border-radius:var(--r-l);box-shadow:var(--shadow-1);border:1px solid var(--line);transition:transform var(--dur) var(--ease),box-shadow var(--dur)}
+.cat:active{transform:scale(.94)}
+.cat .em{width:52px;height:52px;border-radius:var(--r-full);display:grid;place-items:center;font-size:25px;
+  background:radial-gradient(circle at 35% 30%,var(--rose-tint),var(--rose-soft))}
+.cat .nm{font-size:12px;font-weight:600;text-align:center;line-height:1.2;color:var(--ink)}
+
+/* segmented status control on checklist sheet */
+.stat3{display:flex;gap:8px}
+.stat3 button{flex:1;padding:11px;border-radius:var(--r-m);font-weight:600;font-size:13px;border:1.5px solid var(--line2);color:var(--ink2)}
+.stat3 button.on-todo{background:var(--s-todo-soft);border-color:var(--s-todo);color:var(--s-todo)}
+.stat3 button.on-prog{background:var(--s-prog-soft);border-color:var(--s-prog);color:var(--s-prog)}
+.stat3 button.on-done{background:var(--s-done-soft);border-color:var(--s-done);color:var(--s-done)}
+
+/* gallery strip */
+.gal{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding:2px}
+.gal::-webkit-scrollbar{display:none}
+.gal>div{scroll-snap-align:start}
+
+/* fab */
+.fab-btn{position:fixed;right:calc(50% - 230px + 20px);bottom:calc(var(--tab-h) + 18px);z-index:45;width:56px;height:56px;
+  border-radius:var(--r-full);background:linear-gradient(135deg,var(--rose),var(--rose-deep));color:var(--on-rose);
+  display:grid;place-items:center;box-shadow:var(--shadow-rose);transition:transform var(--dur) var(--ease)}
+@media(max-width:480px){.fab-btn{right:20px}}
+.fab-btn:active{transform:scale(.92)}
+
+/* divider with text */
+.orline{display:flex;align-items:center;gap:12px;color:var(--ink3);font-size:12px;margin:6px 0}
+.orline::before,.orline::after{content:"";height:1px;background:var(--line2);flex:1}
+
+/* progress ring wrapper */
+.ring-wrap{position:relative;display:grid;place-items:center}
+.ring-wrap .ring-c{position:absolute;text-align:center}
+.ring-wrap .ring-c .v{font-family:var(--font-d);font-weight:600;line-height:1}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+/* ================= ZAFFA — SEED DATA =================
+   Realistic demo content for a wedding-planning marketplace (Oman).
+   Currency: Omani Rial (OMR). All prices illustrative. */
+
+const CITIES = ["Muscat","Salalah","Sohar","Nizwa","Sur","Barka"];
+
+/* ---- Categories (expandable; admin can add more) ---- */
+const SEED_CATEGORIES = [
+  ["dresses","Wedding Dresses","👰",1],
+  ["evening","Evening Dresses","💃",2],
+  ["tailors","Tailors","🧵",3],
+  ["boutiques","Bridal Boutiques","🛍️",4],
+  ["halls","Wedding Halls","🏛️",5],
+  ["hotels","Hotels","🏨",6],
+  ["decor","Wedding Decorations","🎀",7],
+  ["flowers","Flowers","🌸",8],
+  ["bouquets","Bridal Bouquets","💐",9],
+  ["makeup","Makeup Artists","💄",10],
+  ["hair","Hair Stylists","💇‍♀️",11],
+  ["henna","Henna","🌿",12],
+  ["photo","Photography","📸",13],
+  ["video","Videography","🎥",14],
+  ["booth","Photo Booth","🖼️",15],
+  ["catering","Catering","🍽️",16],
+  ["desserts","Desserts","🍰",17],
+  ["chocolates","Chocolates","🍫",18],
+  ["hospitality","Hospitality","🤍",19],
+  ["coffee","Coffee Corner","☕",20],
+  ["cake","Cake","🎂",21],
+  ["dj","DJ","🎧",22],
+  ["band","Band","🎺",23],
+  ["music","Live Music","🎻",24],
+  ["lighting","Lighting","✨",25],
+  ["cars","Luxury Cars","🚗",26],
+  ["planner","Wedding Planner","📋",27],
+  ["invitations","Invitations","💌",28],
+  ["printing","Printing","🖨️",29],
+  ["gifts","Gifts","🎁",30],
+  ["favors","Wedding Favors","🎉",31],
+  ["accessories","Accessories","👜",32],
+  ["jewelry","Jewelry","💍",33],
+  ["perfumes","Perfumes","🌷",34],
+  ["honeymoon","Honeymoon Packages","✈️",35],
+].map(([id,name,icon,order])=>({id,name,icon,order}));
+
+/* palette hints per category for generated cover art */
+const CAT_HUE = {
+  dresses:[345,25],evening:[300,20],tailors:[25,15],boutiques:[335,20],halls:[35,18],
+  hotels:[210,14],decor:[345,26],flowers:[330,32],bouquets:[340,30],makeup:[350,28],
+  hair:[20,18],henna:[95,26],photo:[215,14],video:[260,16],booth:[290,20],catering:[30,20],
+  desserts:[28,26],chocolates:[22,24],hospitality:[40,16],coffee:[25,22],cake:[335,22],
+  dj:[265,22],band:[45,20],music:[260,16],lighting:[48,30],cars:[210,10],planner:[340,18],
+  invitations:[40,22],printing:[210,12],gifts:[345,24],favors:[330,26],accessories:[300,16],
+  jewelry:[45,32],perfumes:[320,20],honeymoon:[195,26],
+};
+
+/* ---- helper to build vendors compactly ---- */
+let _vid=0;
+function V(catId,name,city,rating,reviews,priceLevel,short,opts={}){
+  _vid++;
+  const priceRanges={1:"OMR 40–120",2:"OMR 120–350",3:"OMR 350–900",4:"OMR 900+"};
+  return {
+    id:"v"+String(_vid).padStart(3,"0"),
+    catId,name,city,
+    rating,reviews,
+    priceLevel,                       // 1..4
+    priceRange:opts.price||priceRanges[priceLevel],
+    short,
+    desc:opts.desc||short+" Our team brings years of experience creating unforgettable wedding moments, with meticulous attention to every detail so your day feels effortless and truly yours.",
+    services:opts.services||["Private consultation","Bespoke packages","Day-of coordination","Flexible scheduling"],
+    hours:opts.hours||"Sat–Thu · 10:00 AM – 9:00 PM",
+    instagram:opts.ig||("@"+name.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"")),
+    whatsapp:opts.wa||"+968 9"+ (2000000+_vid*137%7999999),
+    phone:opts.phone||"+968 2"+ (4000000+_vid*211%3999999),
+    maps:opts.maps||(city+", Oman"),
+    featured:!!opts.featured,
+    approved:opts.approved!==false,
+    isNew:!!opts.isNew,
+    offer:opts.offer||null,          // {label, until}
+    popularity:opts.pop|| (rating*20 + reviews/12),
+    packages:opts.packages||[
+      {name:"Essential",price:priceRanges[priceLevel].split("–")[0].trim(),items:["Core service","1 revision","Standard timeline"]},
+      {name:"Signature",price:priceRanges[priceLevel].replace("–"," / ").split("/")[1]?.trim()||priceRanges[priceLevel],items:["Everything in Essential","Premium options","Priority booking","Extended session"],popular:true},
+    ],
+    reviewsList:opts.reviews||[
+      {by:"Aisha K.",stars:5,text:"Absolutely stunning experience. Everything was perfect and stress-free.",when:"2 weeks ago"},
+      {by:"Mariam S.",stars:rating>=4.6?5:4,text:"So happy we chose them. Professional, warm and truly talented.",when:"1 month ago"},
+      {by:"Latifa A.",stars:5,text:"Exceeded every expectation. Highly recommend to any bride.",when:"2 months ago"},
+    ],
+  };
+}
+
+const SEED_VENDORS = [
+  // Wedding Dresses
+  V("dresses","Maison Blanche","Muscat",4.9,214,4,"Couture bridal gowns handcrafted with imported French lace.",{featured:true,offer:{label:"Free veil with any gown",until:"2026-08-31"},services:["Made-to-measure couture","Imported lace & silk","3 fittings included","Veil & accessories"]}),
+  V("dresses","Rose & Ivory","Salalah",4.7,138,3,"Romantic ready-to-wear gowns with delicate beadwork.",{featured:true}),
+  V("dresses","Atelier Yasmin","Muscat",4.8,176,4,"Modern minimalist silhouettes for the contemporary bride.",{isNew:true}),
+  V("dresses","Pearl Bridal House","Sohar",4.5,92,2,"Affordable elegance with a wide seasonal collection.",{offer:{label:"15% off spring collection",until:"2026-07-30"}}),
+  // Evening Dresses
+  V("evening","Soirée Couture","Muscat",4.8,121,3,"Show-stopping evening gowns for the henna & reception.",{featured:true}),
+  V("evening","Velvet & Gold","Nizwa",4.6,74,2,"Rich colours and flowing fabrics for every celebration."),
+  // Tailors
+  V("tailors","Golden Needle","Muscat",4.7,203,2,"Master tailoring & alterations with same-week turnaround.",{services:["Alterations","Custom stitching","Bustle & hemming","Rush service"]}),
+  V("tailors","Stitch Atelier","Barka",4.4,58,1,"Reliable everyday tailoring for the whole bridal party."),
+  // Bridal Boutiques
+  V("boutiques","The Bridal Room","Muscat",4.9,167,3,"One-stop boutique: gowns, veils, shoes and accessories.",{featured:true}),
+  V("boutiques","Blush Boutique","Salalah",4.6,88,2,"Curated bridal edit with personal styling sessions."),
+  // Wedding Halls
+  V("halls","Al Bustan Ballroom","Muscat",4.9,341,4,"Grand seaside ballroom seating up to 600 guests.",{featured:true,services:["Up to 600 guests","In-house catering","Bridal suite","Valet & security"],price:"OMR 1,500+"}),
+  V("halls","Qasr Al Noor","Salalah",4.7,192,3,"Elegant garden hall wrapped in greenery and light.",{offer:{label:"Weekday 20% off",until:"2026-09-15"}}),
+  V("halls","Pearl Palace Hall","Sohar",4.5,124,3,"Modern hall with flexible layouts for 150–400 guests."),
+  V("halls","Nizwa Heritage Hall","Nizwa",4.6,97,2,"Traditional charm with contemporary comforts.",{isNew:true}),
+  // Hotels
+  V("hotels","Shangri-La Barr Al Jissah","Muscat",4.9,410,4,"Luxury resort weddings across three beachfront hotels.",{featured:true,price:"OMR 2,000+"}),
+  V("hotels","Kempinski Muscat","Muscat",4.8,286,4,"Beachfront elegance with award-winning catering."),
+  V("hotels","Alila Jabal Akhdar","Nizwa",4.9,178,4,"Dramatic mountain-top celebrations above the clouds.",{isNew:true,price:"OMR 2,500+"}),
+  // Decorations
+  V("decor","Lush Events","Muscat",4.8,156,3,"Full-scale wedding styling — stages, aisles & tablescapes.",{featured:true,services:["Stage & backdrop design","Floral installations","Table styling","Lighting concept"]}),
+  V("decor","Petal & Pearl Decor","Salalah",4.6,89,2,"Romantic soft styling with signature blush palettes."),
+  V("decor","Grand Affair","Sohar",4.5,63,3,"Bold, dramatic décor for statement celebrations."),
+  // Flowers
+  V("flowers","Bloom Studio","Muscat",4.9,198,2,"Seasonal florals arranged fresh for every event.",{featured:true}),
+  V("flowers","Jasmine & Co","Salalah",4.7,112,2,"Fragrant local blooms and lush greenery."),
+  // Bridal Bouquets
+  V("bouquets","The Bouquet Bar","Muscat",4.8,134,1,"Hand-tied bridal bouquets in your exact palette.",{price:"OMR 25–90"}),
+  V("bouquets","Wild Rose","Nizwa",4.6,71,1,"Garden-style bouquets with a natural, untamed feel.",{price:"OMR 20–75"}),
+  // Makeup
+  V("makeup","Glow by Reem","Muscat",4.9,321,3,"Signature bridal glam & natural soft-glam looks.",{featured:true,offer:{label:"Free trial with booking",until:"2026-08-15"},services:["Bridal trial","Wedding-day glam","Henna-night look","Touch-up kit"]}),
+  V("makeup","Noor Beauty","Salalah",4.7,187,2,"Flawless long-wear makeup for you and your guests."),
+  V("makeup","Muse Artistry","Sohar",4.6,96,2,"Editorial-inspired looks tailored to your features.",{isNew:true}),
+  V("makeup","Layali Glam","Muscat",4.8,142,3,"Luxury on-location bridal beauty team."),
+  // Hair
+  V("hair","Crown Hair Atelier","Muscat",4.8,163,2,"Bridal updos, waves and veil styling.",{featured:true}),
+  V("hair","Silk & Shine","Salalah",4.6,84,2,"Sleek, elegant styling for the whole bridal party."),
+  // Henna
+  V("henna","Henna by Huda","Muscat",4.9,241,1,"Intricate bridal henna in classic & modern styles.",{featured:true,price:"OMR 30–120"}),
+  V("henna","Naqsh Studio","Nizwa",4.7,109,1,"Fine-line contemporary henna artistry.",{price:"OMR 25–100"}),
+  // Photography
+  V("photo","Lumière Photography","Muscat",4.9,276,3,"Timeless, editorial wedding photography.",{featured:true,services:["Full-day coverage","Two photographers","Online gallery","Pre-wedding shoot"]}),
+  V("photo","Golden Hour Studio","Salalah",4.8,158,3,"Warm, candid storytelling of your day."),
+  V("photo","Frame & Light","Sohar",4.6,92,2,"Bright, natural photography with quick delivery.",{isNew:true}),
+  // Videography
+  V("video","Cinematic Vows","Muscat",4.8,144,3,"Film-style wedding highlights & full features.",{featured:true,services:["Cinematic highlight film","Full ceremony edit","Drone footage","Same-day teaser"]}),
+  V("video","Reel Memories","Salalah",4.6,77,2,"Heartfelt films that capture the real moments."),
+  // Photo Booth
+  V("booth","Snap & Smile","Muscat",4.7,131,1,"360° and classic booths with instant prints.",{price:"OMR 90–250"}),
+  // Catering
+  V("catering","Saffron Kitchen","Muscat",4.8,219,3,"Refined Omani & international wedding menus.",{featured:true,services:["Buffet & plated menus","Live cooking stations","Dietary options","Full service staff"]}),
+  V("catering","Feast & Co","Sohar",4.6,103,2,"Generous, crowd-pleasing spreads for large weddings."),
+  // Desserts
+  V("desserts","Sweet Symphony","Muscat",4.8,127,2,"Dessert tables, mini pastries & live stations."),
+  // Chocolates
+  V("chocolates","Cacao Muscat","Muscat",4.9,168,2,"Personalised luxury chocolates & favour boxes.",{featured:true}),
+  // Hospitality
+  V("hospitality","Karam Hospitality","Muscat",4.7,88,2,"Warm guest reception, ushers & welcome service."),
+  // Coffee Corner
+  V("coffee","Qahwa Corner","Muscat",4.8,142,1,"Traditional Omani coffee & dates stations.",{price:"OMR 60–180"}),
+  // Cake
+  V("cake","The Cake Room","Muscat",4.9,201,2,"Tiered couture wedding cakes, made to order.",{featured:true}),
+  V("cake","Buttercream Bliss","Salalah",4.6,79,1,"Delicious, beautifully simple celebration cakes.",{price:"OMR 40–150"}),
+  // DJ
+  V("dj","DJ Amir","Muscat",4.7,156,2,"High-energy sets blending Khaleeji & global hits."),
+  // Band
+  V("band","The Grand Ensemble","Muscat",4.8,94,3,"Live band & singers for an unforgettable reception."),
+  // Live Music
+  V("music","Oud & Strings","Nizwa",4.7,63,2,"Elegant live oud, violin & piano for ceremonies."),
+  // Lighting
+  V("lighting","Lumina Lighting","Muscat",4.8,118,2,"Ambient, architectural & dance-floor lighting design.",{featured:true}),
+  // Luxury Cars
+  V("cars","Royal Rides","Muscat",4.7,101,3,"Chauffeured luxury & classic bridal cars.",{services:["Rolls-Royce & Bentley","Classic vintage cars","Ribbon & décor","Professional chauffeur"]}),
+  // Wedding Planner
+  V("planner","Ever After Planners","Muscat",4.9,187,4,"Full-service planning from proposal to send-off.",{featured:true,services:["Full planning","Partial planning","Day-of coordination","Vendor management"]}),
+  V("planner","Blissful Beginnings","Salalah",4.7,96,3,"Calm, organised planning with a personal touch."),
+  // Invitations
+  V("invitations","Ink & Foil","Muscat",4.8,134,1,"Bespoke printed & digital wedding invitations.",{price:"OMR 2–8 / card"}),
+  // Printing
+  V("printing","Prestige Print","Muscat",4.6,88,1,"Menus, signage, seating charts & thank-you cards.",{price:"OMR 30–200"}),
+  // Gifts
+  V("gifts","The Gift Atelier","Muscat",4.7,76,2,"Curated luxury gifts for the couple & guests."),
+  // Wedding Favors
+  V("favors","Little Tokens","Salalah",4.6,64,1,"Personalised favours your guests will love.",{price:"OMR 1–5 / favour"}),
+  // Accessories
+  V("accessories","Adorn","Muscat",4.7,91,2,"Veils, belts, gloves & bridal hair pieces."),
+  // Jewelry
+  V("jewelry","Lustre Fine Jewellery","Muscat",4.9,203,4,"Bridal sets, bands & heirloom pieces.",{featured:true,price:"OMR 300+"}),
+  // Perfumes
+  V("perfumes","Attar House","Nizwa",4.8,117,2,"Signature bridal scents & bespoke attar blends."),
+  // Honeymoon
+  V("honeymoon","Voyage Weddings","Muscat",4.8,142,4,"Curated honeymoon escapes worldwide.",{featured:true,services:["Maldives & Zanzibar","Europe city breaks","All-inclusive resorts","Full itinerary planning"],price:"OMR 1,200+"}),
+];
+
+/* ---- Master checklist template with relationships ----
+   status: todo | prog | done
+   catId links a task to a vendor category (selecting a vendor completes it).
+   suggests: task ids to surface next when this one is completed. */
+const CHECKLIST_TEMPLATE = [
+  {id:"budget",  title:"Set your wedding budget", cat:null, phase:"Foundations", suggests:["planner"]},
+  {id:"planner", title:"Hire a wedding planner", catId:"planner", phase:"Foundations", suggests:["hall","guests"]},
+  {id:"date",    title:"Confirm the wedding date", cat:null, phase:"Foundations", suggests:["hall"]},
+  {id:"guests",  title:"Draft the guest list", cat:null, phase:"Foundations", suggests:["hall","invitations"]},
+
+  {id:"hall",    title:"Choose the wedding hall", catId:"halls", phase:"Venue & Vendors", suggests:["decor","catering","lighting","photo"]},
+  {id:"catering",title:"Book catering", catId:"catering", phase:"Venue & Vendors", suggests:["cake","desserts","coffee"]},
+  {id:"decor",   title:"Book decorations", catId:"decor", phase:"Venue & Vendors", suggests:["flowers","lighting"]},
+  {id:"lighting",title:"Arrange lighting", catId:"lighting", phase:"Venue & Vendors"},
+  {id:"flowers", title:"Order flowers", catId:"flowers", phase:"Venue & Vendors", suggests:["bouquet"]},
+
+  {id:"photo",   title:"Book the photographer", catId:"photo", phase:"Memories", suggests:["video","booth","preshoot"]},
+  {id:"video",   title:"Book videography", catId:"video", phase:"Memories", suggests:["drone"]},
+  {id:"preshoot",title:"Plan the pre-wedding shoot", cat:null, phase:"Memories"},
+  {id:"drone",   title:"Add drone footage", cat:null, phase:"Memories"},
+  {id:"album",   title:"Order the wedding album", cat:null, phase:"Memories"},
+  {id:"booth",   title:"Reserve a photo booth", catId:"booth", phase:"Memories"},
+
+  {id:"dress",   title:"Buy the wedding dress", catId:"dresses", phase:"Bridal Look", suggests:["shoes","accessories","jewelry","veil","bouquet"]},
+  {id:"shoes",   title:"Buy wedding shoes", cat:null, phase:"Bridal Look"},
+  {id:"accessories",title:"Choose accessories", catId:"accessories", phase:"Bridal Look"},
+  {id:"jewelry", title:"Select bridal jewellery", catId:"jewelry", phase:"Bridal Look"},
+  {id:"veil",    title:"Choose the veil", cat:null, phase:"Bridal Look"},
+  {id:"rings",   title:"Buy the wedding rings", catId:"jewelry", phase:"Bridal Look"},
+  {id:"makeup",  title:"Book makeup artist", catId:"makeup", phase:"Bridal Look", suggests:["hair","henna"]},
+  {id:"hair",    title:"Book hair stylist", catId:"hair", phase:"Bridal Look"},
+  {id:"henna",   title:"Book henna night", catId:"henna", phase:"Bridal Look"},
+  {id:"bouquet", title:"Order the bridal bouquet", catId:"bouquets", phase:"Bridal Look"},
+  {id:"perfume", title:"Choose your signature scent", catId:"perfumes", phase:"Bridal Look"},
+
+  {id:"invitations",title:"Send invitations", catId:"invitations", phase:"Guests & Details", suggests:["favors","printing"]},
+  {id:"favors",  title:"Order wedding favours", catId:"favors", phase:"Guests & Details"},
+  {id:"printing",title:"Print menus & signage", catId:"printing", phase:"Guests & Details"},
+  {id:"cake",    title:"Order the wedding cake", catId:"cake", phase:"Guests & Details", suggests:["desserts"]},
+  {id:"desserts",title:"Arrange desserts table", catId:"desserts", phase:"Guests & Details"},
+  {id:"coffee",  title:"Set up coffee corner", catId:"coffee", phase:"Guests & Details"},
+  {id:"hospitality",title:"Arrange hospitality & ushers", catId:"hospitality", phase:"Guests & Details"},
+
+  {id:"music",   title:"Book music / DJ", catId:"dj", phase:"The Celebration", suggests:["band","lighting"]},
+  {id:"band",    title:"Consider a live band", catId:"band", phase:"The Celebration"},
+  {id:"cars",    title:"Arrange the bridal car", catId:"cars", phase:"The Celebration"},
+  {id:"honeymoon",title:"Book the honeymoon", catId:"honeymoon", phase:"After the Day", suggests:[]},
+  {id:"gifts",   title:"Prepare thank-you gifts", catId:"gifts", phase:"After the Day"},
+];
+
+/* Wedding tips carousel */
+const SEED_TIPS = [
+  {t:"Book early, breathe easy",b:"The best halls and photographers are reserved 8–12 months ahead. Lock your date first, then your top three vendors.",em:"⏳"},
+  {t:"Always do a makeup trial",b:"A trial before the big day means zero surprises. Bring photos of looks you love and your dress neckline.",em:"💄"},
+  {t:"Build a 10% buffer",b:"Set aside a little extra in your budget for the lovely details you'll discover along the way.",em:"💰"},
+  {t:"Delegate the day-of",b:"Assign a trusted person (or planner) to handle vendors on the day so you can simply be present.",em:"🤍"},
+  {t:"Comfort is beauty",b:"Break in your shoes and pack a small kit: pins, plasters, and your favourite scent.",em:"👠"},
+];
+
+/* Advertisements / promoted banners */
+const SEED_ADS = [
+  {id:"ad1",title:"Summer Bridal Sale",body:"Up to 25% off gowns at Maison Blanche",vendorId:"v001",active:true,placement:"home"},
+  {id:"ad2",title:"Free Makeup Trial",body:"Book Glow by Reem this month",vendorId:"v025",active:true,placement:"home"},
+];
+
+/* Notification templates seeded on first run (generated dynamically too) */
+const SEED_NOTIFS = [
+  {id:"n1",em:"💄",title:"Don't forget your makeup artist",body:"You still haven't booked makeup — brides book this 4 months ahead.",taskId:"makeup",read:false,when:Date.now()-3600e3*5},
+  {id:"n2",em:"📸",title:"Book photography this week",body:"Your favourite photographers get reserved fast. Secure yours soon.",taskId:"photo",read:false,when:Date.now()-3600e3*26},
+  {id:"n3",em:"🎂",title:"Cake tasting pending",body:"Schedule your cake tasting to lock in the design.",taskId:"cake",read:true,when:Date.now()-3600e3*50},
+];
+
+/* Users for admin */
+const SEED_USERS = [
+  {id:"u1",name:"Sarah Al Balushi",email:"muhannad00002@gmail.com",role:"bride",date:"2026-10-04",joined:"2026-01-12",status:"active"},
+  {id:"u2",name:"Fatma Al Harthy",email:"fatma@example.com",role:"bride",date:"2026-09-20",joined:"2026-02-01",status:"active"},
+  {id:"u3",name:"Reem Al Said",email:"reem@example.com",role:"bride",date:"2026-12-15",joined:"2026-03-18",status:"active"},
+  {id:"u4",name:"Admin",email:"admin@zaffa.app",role:"admin",date:null,joined:"2025-11-01",status:"active"},
+];
+
+</script>
+<script>
+/* ================= ZAFFA — UI TOOLKIT ================= */
+
+/* Hyperscript-ish element builder.
+   h("div.card", {onclick}, [children])  or  h("div", "text") */
+function h(tag, props, kids){
+  if(Array.isArray(props)||typeof props==="string"||typeof props==="number"||(props&&props.nodeType)){kids=props;props={};}
+  props=props||{};
+  let cls="", id="";
+  const m=tag.match(/^([a-z0-9]+)?(#[\w-]+)?((?:\.[\w-]+)*)$/i);
+  const name=(m&&m[1])||"div";
+  if(m&&m[2])id=m[2].slice(1);
+  if(m&&m[3])cls=m[3].replace(/\./g," ").trim();
+  const e=document.createElement(name);
+  if(id)e.id=id;
+  if(cls)e.className=cls;
+  for(const k in props){
+    const v=props[k];
+    if(v==null||v===false)continue;
+    if(k==="class")e.className=(e.className+" "+v).trim();
+    else if(k==="html")e.innerHTML=v;
+    else if(k==="style"&&typeof v==="object")Object.assign(e.style,v);
+    else if(k.startsWith("on")&&typeof v==="function")e.addEventListener(k.slice(2).toLowerCase(),v);
+    else if(k==="dataset")Object.assign(e.dataset,v);
+    else if(k in e && k!=="list")try{e[k]=v;}catch{e.setAttribute(k,v);}
+    else e.setAttribute(k,v);
+  }
+  const add=(c)=>{
+    if(c==null||c===false||c===true)return;
+    if(Array.isArray(c)){c.forEach(add);return;}
+    e.appendChild(c.nodeType?c:document.createTextNode(c));
+  };
+  add(kids);
+  return e;
+}
+const frag=(kids)=>{const f=document.createDocumentFragment();(Array.isArray(kids)?kids:[kids]).forEach(c=>{if(c!=null&&c!==false)f.appendChild(c.nodeType?c:document.createTextNode(c));});return f;};
+const clear=(el)=>{while(el.firstChild)el.removeChild(el.firstChild);return el;};
+
+/* ---- SVG icon set (stroke, 24px) ---- */
+const ICONS={
+  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
+  heart:'<path d="M12 20.5S3.5 14.7 3.5 8.9A4.4 4.4 0 0 1 12 6a4.4 4.4 0 0 1 8.5 2.9C20.5 14.7 12 20.5 12 20.5Z"/>',
+  heartFill:'<path fill="currentColor" stroke="none" d="M12 20.5S3.5 14.7 3.5 8.9A4.4 4.4 0 0 1 12 6a4.4 4.4 0 0 1 8.5 2.9C20.5 14.7 12 20.5 12 20.5Z"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"/>',
+  bell:'<path d="M18 8a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 14 18 8Z"/><path d="M10.5 20a2 2 0 0 0 3 0"/>',
+  back:'<path d="M15 18 9 12l6-6"/>',
+  fwd:'<path d="m9 6 6 6-6 6"/>',
+  close:'<path d="M18 6 6 18M6 6l12 12"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  filter:'<path d="M3 5h18M6 12h12M10 19h4"/>',
+  star:'<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L4.5 9.7l5.9-.9Z"/>',
+  pin:'<path d="M12 21s-6.5-5.6-6.5-10.5A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.5C18.5 15.4 12 21 12 21Z"/><circle cx="12" cy="10.5" r="2.2"/>',
+  phone:'<path d="M6 3h3l1.5 5-2 1.2a12 12 0 0 0 6.3 6.3l1.2-2 5 1.5v3a2 2 0 0 1-2 2A17 17 0 0 1 4 5a2 2 0 0 1 2-2Z"/>',
+  chat:'<path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l.9-5A8 8 0 1 1 21 12Z"/>',
+  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.2 2"/>',
+  cal:'<rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
+  ig:'<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="1.2" fill="currentColor" stroke="none"/>',
+  share:'<path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 16V3M8 7l4-4 4 4"/>',
+  edit:'<path d="M16.5 4.5 19.5 7.5 8 19H5v-3z"/><path d="M14 7l3 3"/>',
+  trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14"/>',
+  grid:'<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>',
+  spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>',
+  chevD:'<path d="m6 9 6 6 6-6"/>',
+  settings:'<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M4.2 7l2.6 1.5M17.2 15.5 19.8 17M4.2 17l2.6-1.5M17.2 8.5 19.8 7"/>',
+  logout:'<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 12H3M6 8l-4 4 4 4"/>',
+  wallet:'<rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14h2"/>',
+  gift:'<rect x="3.5" y="8.5" width="17" height="12" rx="2"/><path d="M3.5 12.5h17M12 8.5v12M12 8.5S9 8.5 8 6.5 9 3.5 12 8.5Zm0 0s3 0 4-2-1-3-4 2Z"/>',
+  megaphone:'<path d="M3 11v2a1 1 0 0 0 1 1h2l9 5V5L6 10H4a1 1 0 0 0-1 1Z"/><path d="M18 8a4 4 0 0 1 0 8"/>',
+  chart:'<path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.2 2.9-5.5 6.5-5.5s6.5 2.3 6.5 5.5"/><path d="M16 5a3 3 0 0 1 0 6M17 14.3c2.4.6 4 2.3 4 4.7"/>',
+  tag:'<path d="M3 12V4a1 1 0 0 1 1-1h8l8.5 8.5a1.5 1.5 0 0 1 0 2.1l-6 6a1.5 1.5 0 0 1-2.1 0L3 12Z"/><circle cx="7.5" cy="7.5" r="1.4" fill="currentColor" stroke="none"/>',
+  camera:'<rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+  moon:'<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/>',
+  sliders:'<path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h8M16 18h4"/><circle cx="15" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="14" cy="18" r="2"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  send:'<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/>',
+};
+function icon(name,size=22,extra=""){
+  return h("span",{class:"ic "+extra,html:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||""}</svg>`});
+}
+
+/* ---- Generated cover art (deterministic gradient + soft blobs) ----
+   No external images → fully offline, always beautiful. */
+function hashStr(s){let hnum=0;for(let i=0;i<s.length;i++){hnum=(hnum*31+s.charCodeAt(i))>>>0;}return hnum;}
+function coverFor(vendorOrSeed, idx=0){
+  let seed, hueBase=340, spread=24, emoji="🌸";
+  if(typeof vendorOrSeed==="object"){
+    const v=vendorOrSeed; seed=v.id+(idx||"");
+    const ch=CAT_HUE[v.catId]||[340,24]; hueBase=ch[0]; spread=ch[1];
+    const cat=(typeof CATEGORIES!=="undefined"?CATEGORIES:SEED_CATEGORIES).find(c=>c.id===v.catId);
+    emoji=cat?cat.icon:"🌸";
+  }else{seed=String(vendorOrSeed);}
+  const hnum=hashStr(seed+idx);
+  const hue=(hueBase + (hnum%(spread*2)) - spread + 360)%360;
+  const hue2=(hue + 18 + (hnum>>3)%26)%360;
+  const l1=88-(hnum%8), l2=80-(hnum>>4)%12;
+  const x1=10+(hnum%70), y1=10+((hnum>>5)%70), x2=10+((hnum>>7)%70), y2=10+((hnum>>9)%70);
+  const bg=`radial-gradient(circle at ${x1}% ${y1}%, hsl(${hue} 55% ${l1}%), transparent 55%),`+
+           `radial-gradient(circle at ${x2}% ${y2}%, hsl(${hue2} 50% ${l2}%), transparent 60%),`+
+           `linear-gradient(140deg, hsl(${hue} 45% ${l1-4}%), hsl(${hue2} 42% ${l2-6}%))`;
+  return {bg,emoji,hue};
+}
+/* returns a thumb element with generated art + optional emoji watermark */
+function coverEl(vendor, cls="", idx=0, showEmoji=true){
+  const c=coverFor(vendor,idx);
+  const el=h("div.thumb "+cls,{style:{background:c.bg}});
+  if(showEmoji)el.appendChild(h("span",{style:{position:"absolute",right:"10px",bottom:"8px",fontSize:"22px",opacity:".55",filter:"saturate(1.2)"}},c.emoji));
+  return el;
+}
+
+/* ---- Stars ---- */
+function starsEl(rating){
+  return h("span.stars",{style:{"--v":rating}},h("i"));
+}
+
+/* ---- Progress ring (SVG) ---- */
+function ringEl(pct, size=120, label="Complete"){
+  const r=(size-16)/2, c=2*Math.PI*r, off=c*(1-pct/100);
+  const wrap=h("div.ring-wrap",{style:{width:size+"px",height:size+"px"}});
+  wrap.innerHTML=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <defs><linearGradient id="rg${size}" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="var(--rose)"/><stop offset="1" stop-color="var(--gold)"/></linearGradient></defs>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--surface3)" stroke-width="9"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="url(#rg${size})" stroke-width="9"
+      stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c}"
+      transform="rotate(-90 ${size/2} ${size/2})" style="transition:stroke-dashoffset 1.1s var(--ease)"/>
+  </svg>`;
+  const val=h("div.ring-c",[h("div.v",{style:{fontSize:(size*0.26)+"px",color:"var(--rose-deep)"}},pct+"%"),
+    label?h("div.tiny.muted",{style:{marginTop:"2px",fontWeight:"600"}},label):null]);
+  wrap.appendChild(val);
+  requestAnimationFrame(()=>{const circ=wrap.querySelectorAll("circle")[1];if(circ)circ.style.strokeDashoffset=off;});
+  return wrap;
+}
+
+/* ---- Toast ---- */
+let _toastWrap;
+function toast(msg, em="✨"){
+  if(!_toastWrap){_toastWrap=h("div#toast-wrap");document.body.appendChild(_toastWrap);}
+  const t=h("div.toast",[em?h("span.em",em):null,h("span",msg)]);
+  _toastWrap.appendChild(t);
+  setTimeout(()=>{t.classList.add("out");setTimeout(()=>t.remove(),320);},2400);
+}
+
+/* ---- Modal / bottom sheet ---- */
+function sheet({title,body,actions,onClose,maxWidth}){
+  const scrim=h("div.scrim",{onclick:e=>{if(e.target===scrim)close();}});
+  const s=h("div.sheet",maxWidth?{style:{maxWidth}}:{});
+  s.appendChild(h("div.sheet-grab"));
+  if(title)s.appendChild(h("div.sheet-h",[h("h3",title),h("button.icon-btn.plain",{onclick:()=>close(),"aria-label":"Close"},icon("close",22))]));
+  const content=h("div",{style:{padding:"6px 20px 22px"}});
+  content.appendChild(typeof body==="function"?body(close):body);
+  s.appendChild(content);
+  if(actions)s.appendChild(h("div",{style:{padding:"0 20px 22px",display:"flex",gap:"10px"}},actions));
+  scrim.appendChild(s);
+  document.body.appendChild(scrim);
+  document.body.style.overflow="hidden";
+  function close(){s.style.animation="sheetUp .3s var(--ease) reverse";scrim.style.animation="fade .3s reverse";
+    setTimeout(()=>{scrim.remove();document.body.style.overflow="";},260);onClose&&onClose();}
+  return {close,el:s};
+}
+function confirmSheet(title,text,confirmLabel,onOk,danger){
+  let ref;
+  ref=sheet({title,body:h("p.muted",{style:{margin:"4px 3px 6px"}},text),
+    actions:[
+      h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
+      h("button.btn.grow "+(danger?"":"btn-pri"),{style:danger?{background:"var(--crit)",color:"#fff"}:{},onclick:()=>{ref.close();onOk();}},confirmLabel),
+    ]});
+  return ref;
+}
+
+/* ---- Confetti (rose/gold) ---- */
+function confetti(){
+  let cv=document.getElementById("confetti");
+  if(!cv){cv=h("canvas#confetti");document.body.appendChild(cv);}
+  const ctx=cv.getContext("2d"), W=cv.width=innerWidth, H=cv.height=innerHeight;
+  const cols=["#B76E79","#C6A469","#E7D3BE","#F7E3E6","#9E5763","#E8D5C4"];
+  const P=Array.from({length:140},()=>({x:Math.random()*W,y:-20-Math.random()*H*0.4,
+    r:4+Math.random()*6,c:cols[(Math.random()*cols.length)|0],
+    vx:(Math.random()-.5)*3,vy:2+Math.random()*4,a:Math.random()*6,va:(Math.random()-.5)*.3,sh:Math.random()<.5}));
+  let t=0;
+  (function frame(){t++;ctx.clearRect(0,0,W,H);
+    P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.03;p.a+=p.va;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);ctx.fillStyle=p.c;
+      if(p.sh)ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.6);else{ctx.beginPath();ctx.ellipse(0,0,p.r,p.r*.6,0,0,7);ctx.fill();}
+      ctx.restore();});
+    if(t<150)requestAnimationFrame(frame);else ctx.clearRect(0,0,W,H);
+  })();
+}
+
+/* ---- Toggle switch (labeled) ---- */
+function toggle(label,on,onChange){
+  let state=!!on;
+  const knob=h("span",{style:{position:"absolute",top:"3px",left:state?"23px":"3px",width:"20px",height:"20px",borderRadius:"50%",
+    background:"#fff",boxShadow:"0 1px 3px rgba(0,0,0,.25)",transition:"left var(--dur) var(--ease)"}});
+  const track=h("button",{style:{position:"relative",width:"46px",height:"26px",borderRadius:"999px",flex:"none",
+    background:state?"var(--rose)":"var(--line2)",transition:"background var(--dur)"},"aria-label":label,
+    onclick:()=>{state=!state;track.style.background=state?"var(--rose)":"var(--line2)";knob.style.left=state?"23px":"3px";onChange&&onChange(state);}},knob);
+  return h("div.between",{style:{padding:"6px 2px"}},[h("span",{style:{fontWeight:"600"}},label),track]);
+}
+
+/* ---- misc helpers ---- */
+const money=(n)=>"OMR "+Number(n).toLocaleString("en",{minimumFractionDigits:0});
+const priceDots=(lvl)=>"·".repeat(0)+"OMR".slice(0,0)+ Array.from({length:4},(_,i)=>i<lvl?"$":"").join("");
+function priceLabel(lvl){return ["","Budget","Mid-range","Premium","Luxury"][lvl]||"";}
+function timeAgo(ts){const d=(Date.now()-ts)/1000;if(d<3600)return Math.max(1,d/60|0)+"m ago";if(d<86400)return (d/3600|0)+"h ago";return (d/86400|0)+"d ago";}
+function initials(name){return name.split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase();}
+
+</script>
+<script>
+/* ================= ZAFFA — CORE (state · router · shell) ================= */
+
+const LS_KEY="zaffa.v1";
+
+/* Live collections (mutable; admin edits these) */
+let CATEGORIES, VENDORS, TIPS, ADS, USERS;
+
+/* Persistent app state */
+let S;
+
+function defaultState(){
+  return {
+    onboarded:false,
+    role:"bride",                 // bride | admin
+    theme:"auto",
+    bride:{name:"Sarah", date:null, budget:6000, currency:"OMR"},
+    checklist:{},                 // taskId -> "todo"|"prog"|"done"
+    selectedVendor:{},            // taskId -> vendorId (when a vendor completes a task)
+    favorites:[],                 // vendorId[]
+    notifs:[],
+    dismissedTips:false,
+    seenSuggest:[],               // suggestion task ids already surfaced
+    _catSeed:null,_vendorSeed:null,
+  };
+}
+
+function load(){
+  let raw=null;
+  try{raw=JSON.parse(localStorage.getItem(LS_KEY));}catch{}
+  // hydrate mutable collections (admin changes persist)
+  CATEGORIES = raw?._categories || SEED_CATEGORIES.map(c=>({...c}));
+  VENDORS    = raw?._vendors    || SEED_VENDORS.map(v=>({...v}));
+  TIPS       = raw?._tips       || SEED_TIPS.map(t=>({...t}));
+  ADS        = raw?._ads        || SEED_ADS.map(a=>({...a}));
+  USERS      = raw?._users      || SEED_USERS.map(u=>({...u}));
+  S = raw?.state ? {...defaultState(), ...raw.state, bride:{...defaultState().bride, ...(raw.state.bride||{})}} : defaultState();
+  if(!S.checklist||!Object.keys(S.checklist).length){
+    S.checklist={}; CHECKLIST_TEMPLATE.forEach(t=>S.checklist[t.id]="todo");
+  }
+  if(!S.notifs||!S.notifs.length)S.notifs=SEED_NOTIFS.map(n=>({...n}));
+}
+
+function save(){
+  try{localStorage.setItem(LS_KEY,JSON.stringify({
+    state:S,_categories:CATEGORIES,_vendors:VENDORS,_tips:TIPS,_ads:ADS,_users:USERS,
+  }));}catch(e){}
+}
+
+/* ---- derived data ---- */
+function catById(id){return CATEGORIES.find(c=>c.id===id);}
+function vendorById(id){return VENDORS.find(v=>v.id===id);}
+function vendorsInCat(id){return VENDORS.filter(v=>v.catId===id && v.approved);}
+function templateById(id){return CHECKLIST_TEMPLATE.find(t=>t.id===id);}
+
+function progressPct(){
+  const ids=CHECKLIST_TEMPLATE.map(t=>t.id);
+  const done=ids.filter(id=>S.checklist[id]==="done").length;
+  const prog=ids.filter(id=>S.checklist[id]==="prog").length;
+  return Math.round((done + prog*0.4)/ids.length*100);
+}
+function counts(){
+  const v=Object.values(S.checklist);
+  return {done:v.filter(x=>x==="done").length,prog:v.filter(x=>x==="prog").length,
+    todo:v.filter(x=>x==="todo").length,total:CHECKLIST_TEMPLATE.length};
+}
+function daysLeft(){
+  if(!S.bride.date)return null;
+  const d=new Date(S.bride.date+"T00:00:00"); const now=new Date(); now.setHours(0,0,0,0);
+  return Math.max(0,Math.round((d-now)/86400000));
+}
+
+/* Suggested next tasks: incomplete items unlocked by recently completed ones,
+   falling back to high-priority foundational tasks. */
+function suggestedTasks(limit=3){
+  const out=[]; const seen=new Set();
+  // 1. relationship-driven: tasks suggested by completed tasks, still not done
+  CHECKLIST_TEMPLATE.forEach(t=>{
+    if(S.checklist[t.id]==="done" && t.suggests){
+      t.suggests.forEach(sid=>{
+        if(S.checklist[sid] && S.checklist[sid]!=="done" && !seen.has(sid)){seen.add(sid);out.push(sid);}
+      });
+    }
+  });
+  // 2. fill with earliest incomplete tasks
+  for(const t of CHECKLIST_TEMPLATE){
+    if(out.length>=limit*2)break;
+    if(S.checklist[t.id]!=="done" && !seen.has(t.id)){seen.add(t.id);out.push(t.id);}
+  }
+  return out.slice(0,limit).map(templateById).filter(Boolean);
+}
+
+/* set task status + cascade notifications/suggestions */
+function setTask(id,status,opts={}){
+  const prev=S.checklist[id];
+  S.checklist[id]=status;
+  if(status!=="done") delete S.selectedVendor[id];
+  save();
+  if(status==="done" && prev!=="done" && !opts.silent){
+    const t=templateById(id);
+    // surface newly-unlocked suggestions as a gentle notification
+    if(t&&t.suggests){
+      const fresh=t.suggests.filter(sid=>S.checklist[sid]==="todo").map(templateById).filter(Boolean).slice(0,3);
+      if(fresh.length){
+        pushNotif({em:"💡",title:`Nice! What's next after “${t.title.replace(/^\w+\s/,"")}”`,
+          body:"Suggested: "+fresh.map(f=>f.title.replace(/^(Book|Buy|Order|Choose|Arrange|Send|Set up|Reserve|Select|Consider|Prepare|Confirm|Draft|Print|Add|Plan) /,"")).join(", "),taskId:fresh[0].id});
+      }
+    }
+  }
+}
+
+function selectVendorForTask(vendorId, taskId){
+  S.selectedVendor[taskId]=vendorId;
+  setTask(taskId,"done");
+  save();
+}
+
+function toggleFav(vendorId){
+  const i=S.favorites.indexOf(vendorId);
+  if(i>=0){S.favorites.splice(i,1);toast("Removed from favourites","🤍");}
+  else{S.favorites.unshift(vendorId);toast("Saved to favourites","💗");}
+  save();
+}
+
+function pushNotif(n){
+  S.notifs.unshift({id:"n"+Date.now()+Math.random().toString(36).slice(2,5),read:false,when:Date.now(),em:"🔔",...n});
+  if(S.notifs.length>40)S.notifs.length=40;
+  save();
+}
+function unreadNotifs(){return S.notifs.filter(n=>!n.read).length;}
+
+/* theme */
+function applyTheme(){
+  const t=S.theme;
+  if(t==="auto")document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme",t);
+}
+
+/* ================= ROUTER ================= */
+const routes={};
+function route(path,fn){routes[path]=fn;}
+function go(path){location.hash="#"+path;}
+function back(){if(history.length>1)history.back();else go("/home");}
+
+function parseHash(){
+  const raw=(location.hash||"#/home").slice(1);
+  const [path,q]=raw.split("?");
+  const query=Object.fromEntries(new URLSearchParams(q||""));
+  return {path,query,raw};
+}
+
+let _scrollMem={};
+function render(){
+  const {path,query}=parseHash();
+  // remember scroll of previous
+  const root=document.getElementById("root");
+  // find matching route: exact, then prefix with :param
+  let fn=routes[path], params={};
+  if(!fn){
+    for(const r in routes){
+      const rp=r.split("/"), pp=path.split("/");
+      if(rp.length!==pp.length)continue;
+      let ok=true,pm={};
+      for(let i=0;i<rp.length;i++){
+        if(rp[i].startsWith(":"))pm[rp[i].slice(1)]=decodeURIComponent(pp[i]);
+        else if(rp[i]!==pp[i]){ok=false;break;}
+      }
+      if(ok){fn=routes[r];params=pm;break;}
+    }
+  }
+  if(!fn)fn=routes["/home"];
+  clear(root);
+  applyTheme();
+  const view=fn({...query},params);
+  root.appendChild(view);
+  window.scrollTo(0,0);
+}
+window.addEventListener("hashchange",render);
+
+/* ================= SHELL PIECES ================= */
+function topbar(title,{back:showBack,right,large}={}){
+  const bar=h("div.topbar");
+  if(showBack)bar.appendChild(h("button.icon-btn",{onclick:()=>back(),"aria-label":"Back"},icon("back",22)));
+  bar.appendChild(h("h2",title));
+  if(right)bar.appendChild(right);
+  else bar.appendChild(h("span",{style:{width:showBack?"0":"0"}}));
+  return bar;
+}
+
+function brideTabs(active){
+  const tabs=[
+    ["/home","home","Home"],
+    ["/categories","grid","Explore"],
+    ["/checklist","list","Plan"],
+    ["/favorites","heart","Saved"],
+    ["/profile","user","You"],
+  ];
+  return h("nav.tabbar",tabs.map(([path,ic,label])=>
+    h("button.tab"+(active===path?".on":""),{onclick:()=>go(path)},[
+      icon(ic,23),h("span",label),
+    ])
+  ));
+}
+function adminTabs(active){
+  const tabs=[
+    ["/admin","chart","Overview"],
+    ["/admin/vendors","tag","Vendors"],
+    ["/admin/categories","grid","Categories"],
+    ["/admin/users","users","Users"],
+    ["/admin/more","settings","More"],
+  ];
+  return h("nav.tabbar",tabs.map(([path,ic,label])=>
+    h("button.tab"+(active===path?".on":""),{onclick:()=>go(path)},[
+      icon(ic,22),h("span",label),
+    ])
+  ));
+}
+
+/* wrap a screen in the phone app frame with optional tabbar */
+function appFrame(children,{tabs,noTab}={}){
+  const app=h("div.app");
+  const screen=h("div.screen"+(noTab?".no-tab":""));
+  (Array.isArray(children)?children:[children]).forEach(c=>c&&screen.appendChild(c));
+  app.appendChild(screen);
+  if(tabs)app.appendChild(tabs);
+  return app;
+}
+
+/* vendor card (used in lists & horizontal rails) */
+function vendorCard(v,{horizontal}={}){
+  const cat=catById(v.catId);
+  const fav=S.favorites.includes(v.id);
+  const heart=h("button.icon-btn",{style:{position:"absolute",top:"10px",right:"10px",width:"38px",height:"38px",background:"rgba(255,255,255,.82)",backdropFilter:"blur(4px)"},
+    onclick:e=>{e.stopPropagation();toggleFav(v.id);heart.querySelector(".ic").replaceWith(icon(S.favorites.includes(v.id)?"heartFill":"heart",20));heart.style.color=S.favorites.includes(v.id)?"var(--rose)":"var(--ink2)";},
+    "aria-label":"Save"},icon(fav?"heartFill":"heart",20));
+  heart.style.color=fav?"var(--rose)":"var(--ink2)";
+  const cover=coverEl(v,"",0,true);
+  cover.style.height=horizontal?"128px":"172px";
+  cover.style.width="100%";
+  cover.style.borderRadius="var(--r-l) var(--r-l) 0 0";
+  cover.appendChild(heart);
+  if(v.offer)cover.appendChild(h("span.tag.tag-gold",{style:{position:"absolute",left:"10px",top:"10px"}},["🎁 ",v.offer.label.length>18?"Offer":v.offer.label]));
+  else if(v.isNew)cover.appendChild(h("span.tag.tag-rose",{style:{position:"absolute",left:"10px",top:"10px"}},"✦ New"));
+  else if(v.featured)cover.appendChild(h("span.tag.tag-gold",{style:{position:"absolute",left:"10px",top:"10px"}},"★ Featured"));
+
+  const card=h("div.card.card-2",{style:{overflow:"hidden",cursor:"pointer",width:horizontal?"244px":"auto",flex:horizontal?"none":"",scrollSnapAlign:"start"},
+    onclick:()=>go("/vendor/"+v.id)},[
+    cover,
+    h("div.pad-s",[
+      h("div.between",[h("h4",{style:{fontSize:"17px"}},v.name),
+        h("span.row.gap6",{style:{flex:"none"}},[h("span",{style:{color:"var(--gold)",fontSize:"13px"}},"★"),h("b.small",v.rating.toFixed(1))])]),
+      h("div.row.gap6",{style:{marginTop:"3px",color:"var(--ink2)"}},[icon("pin",13),h("span.small",v.city),h("span.faint",{style:{margin:"0 2px"}},"·"),h("span.small",cat?cat.name:"")]),
+      h("p.small.muted",{style:{margin:"7px 0 0",display:"-webkit-box",WebkitLineClamp:"2",WebkitBoxOrient:"vertical",overflow:"hidden"}},v.short),
+      h("div.between",{style:{marginTop:"10px"}},[
+        h("b.small",{style:{color:"var(--rose-deep)"}},v.priceRange),
+        h("span.tiny.faint",v.reviews+" reviews"),
+      ]),
+    ]),
+  ]);
+  return card;
+}
+
+</script>
+<script>
+/* ============ ZAFFA — BRIDE SCREENS · A (onboarding · home · explore · checklist) ============ */
+
+/* ---------- SPLASH / ROLE LAUNCHER ---------- */
+route("/",()=>{ if(S.onboarded) return routes[S.role==="admin"?"/admin":"/home"](); return routes["/welcome"](); });
+
+route("/welcome",()=>{
+  const app=h("div.app");
+  const s=h("div.screen.no-tab",{style:{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",
+    background:"linear-gradient(160deg,var(--rose-tint),var(--ground) 55%,var(--gold-soft))"}});
+  s.appendChild(h("div.stagger",{style:{textAlign:"center"}},[
+    h("div",{style:{fontSize:"58px",marginBottom:"6px"}},"💍"),
+    h("div.eyebrow",{style:{marginBottom:"10px"}},"Your personal wedding planner"),
+    h("h1",{style:{fontSize:"52px",lineHeight:"1",marginBottom:"14px"}},"Zaffa"),
+    h("p.muted",{style:{maxWidth:"320px",margin:"0 auto 30px",fontSize:"16px"}},
+      "Every vendor, every task, every detail of your big day — beautifully in one place."),
+    h("button.btn.btn-pri.btn-lg.btn-block",{style:{maxWidth:"300px",margin:"0 auto"},onclick:()=>go("/onboard")},["Start planning ",icon("fwd",18)]),
+    h("button.btn.btn-quiet",{style:{margin:"14px auto 0",display:"flex"},onclick:()=>{S.role="admin";S.onboarded=true;save();go("/admin");}},"I'm an administrator"),
+  ]));
+  app.appendChild(s);
+  return app;
+});
+
+/* ---------- ONBOARDING (name + date → generates checklist) ---------- */
+route("/onboard",()=>{
+  let step=0; const data={name:S.bride.name||"",date:S.bride.date||"",budget:S.bride.budget||6000};
+  const app=h("div.app");
+  const s=h("div.screen.no-tab",{style:{minHeight:"100vh",display:"flex",flexDirection:"column"}});
+  app.appendChild(s);
+
+  const steps=[
+    {em:"🌸",h:"What's your name?",sub:"So we can make Zaffa truly yours.",field:()=>{
+      const i=h("input.field",{placeholder:"e.g. Sarah",value:data.name,style:{fontSize:"18px",textAlign:"center"},
+        oninput:e=>{data.name=e.target.value;next.disabled=!data.name.trim();}}); setTimeout(()=>i.focus(),200); return i;},
+      valid:()=>data.name.trim()},
+    {em:"📅",h:"When's the big day?",sub:"We'll count down and pace your plan for you.",field:()=>{
+      const i=h("input.field",{type:"date",value:data.date,min:new Date().toISOString().slice(0,10),style:{fontSize:"17px",textAlign:"center"},
+        oninput:e=>{data.date=e.target.value;next.disabled=!data.date;}}); return i;},
+      valid:()=>!!data.date},
+    {em:"💰",h:"Your budget?",sub:"A guide — you can change it anytime.",field:()=>{
+      const wrap=h("div");
+      const view=h("div.center",{style:{fontFamily:"var(--font-d)",fontSize:"40px",color:"var(--rose-deep)",margin:"6px 0 14px"}},money(data.budget));
+      const r=h("input",{type:"range",min:1000,max:20000,step:500,value:data.budget,style:{width:"100%",accentColor:"var(--rose)"},
+        oninput:e=>{data.budget=+e.target.value;view.textContent=money(data.budget);}});
+      wrap.append(view,r,h("div.between.small.faint",{style:{marginTop:"6px"}},[h("span","OMR 1,000"),h("span","OMR 20,000")]));
+      return wrap;},valid:()=>true},
+  ];
+
+  const dots=h("div.row",{style:{justifyContent:"center",gap:"7px",padding:"18px 0 8px"}});
+  const body=h("div",{style:{flex:"1",display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 6px"}});
+  const next=h("button.btn.btn-pri.btn-lg.btn-block");
+  const bar=h("div",{style:{padding:"10px 0 26px"}},next);
+  const topRow=h("div.between",{style:{padding:"6px 0"}},[
+    h("button.icon-btn.plain",{onclick:()=>{if(step===0)go("/welcome");else{step--;draw();}}},icon("back",22)),
+    h("span.small.faint",{},()=>`${step+1} of ${steps.length}`),
+  ]);
+  s.append(topRow,dots,body,bar);
+
+  function draw(){
+    clear(dots); steps.forEach((_,i)=>dots.appendChild(h("span",{style:{width:i===step?"22px":"7px",height:"7px",borderRadius:"9px",
+      background:i<=step?"var(--rose)":"var(--line2)",transition:"all .3s var(--ease)"}})));
+    topRow.querySelector(".small").textContent=`${step+1} of ${steps.length}`;
+    const st=steps[step]; clear(body);
+    body.appendChild(h("div.stagger",{style:{textAlign:"center"}},[
+      h("div",{style:{fontSize:"48px",marginBottom:"10px"}},st.em),
+      h("h1",{style:{fontSize:"34px",marginBottom:"8px"}},st.h),
+      h("p.muted",{style:{marginBottom:"26px"}},st.sub),
+      st.field(),
+    ]));
+    next.textContent = step===steps.length-1?"Create my plan ✨":"Continue";
+    next.disabled=!st.valid();
+  }
+  next.onclick=()=>{
+    if(step<steps.length-1){step++;draw();return;}
+    // finish
+    S.bride.name=data.name.trim(); S.bride.date=data.date; S.bride.budget=data.budget;
+    S.onboarded=true; S.role="bride";
+    S.checklist={}; CHECKLIST_TEMPLATE.forEach(t=>S.checklist[t.id]="todo");
+    // give the demo a realistic head-start so the app feels lived-in
+    ["budget","date","guests","hall","planner"].forEach(id=>S.checklist[id]="done");
+    ["photo","makeup","dress"].forEach(id=>S.checklist[id]="prog");
+    S.selectedVendor={hall:"v011",planner:"v053"};
+    save();
+    go("/home"); setTimeout(confetti,250); setTimeout(()=>toast("Your wedding plan is ready 💗"),500);
+  };
+  draw();
+  return app;
+});
+
+/* ---------- HOME ---------- */
+route("/home",()=>{
+  const d=daysLeft(), pct=progressPct(), c=counts();
+  const hour=new Date().getHours();
+  const greet=hour<12?"Good morning":hour<18?"Good afternoon":"Good evening";
+  const feat=VENDORS.filter(v=>v.featured&&v.approved).slice(0,8);
+  const homeCats=CATEGORIES.slice(0,7);
+
+  const kids=[];
+  // header
+  kids.push(h("div.between",{style:{padding:"18px 0 10px"}},[
+    h("div",[
+      h("div.small.muted",greet),
+      h("h1",{style:{fontSize:"27px",marginTop:"2px"}},[S.bride.name+" ",h("span",{style:{fontSize:"20px"}},"🌸")]),
+    ]),
+    h("button.icon-btn",{onclick:()=>go("/notifications"),"aria-label":"Notifications",style:{position:"relative"}},
+      [icon("bell",21), unreadNotifs()?h("span.badge-dot"):null]),
+  ]));
+
+  // countdown hero
+  const hero=h("div.hero",{style:{cursor:"pointer"},onclick:()=>go("/checklist")});
+  if(d===null){
+    hero.append(h("div.lbl2","Set your date"),h("h2",{style:{fontSize:"30px",margin:"6px 0 10px",color:"#fff"}},"When's the big day?"),
+      h("button.btn.btn-sec.btn-sm",{onclick:e=>{e.stopPropagation();go("/profile/edit");}},"Add wedding date"));
+  }else{
+    const wk=Math.floor(d/7), mo=Math.floor(d/30.4);
+    hero.append(
+      h("div.lbl2","Your wedding is in"),
+      h("div.row",{style:{alignItems:"baseline",gap:"10px",margin:"4px 0 2px"}},[
+        h("span",{style:{fontFamily:"var(--font-d)",fontSize:"64px",fontWeight:"600",color:"#fff",lineHeight:"1"}},d),
+        h("span",{style:{fontSize:"20px",color:"rgba(255,255,255,.9)"}},d===1?"day":"days"),
+      ]),
+      h("div.row",{style:{gap:"16px",marginTop:"12px",position:"relative"}},[
+        countChip(mo,"months"),countChip(wk,"weeks"),countChip(d,"days"),
+      ]),
+    );
+  }
+  kids.push(hero);
+
+  // progress ring + suggested tasks card
+  const suggest=suggestedTasks(3);
+  const planCard=h("div.card.pad",{style:{marginTop:"16px",display:"flex",gap:"18px",alignItems:"center",cursor:"pointer"},onclick:()=>go("/checklist")},[
+    ringEl(pct,104,""),
+    h("div.grow",[
+      h("div.eyebrow","Wedding progress"),
+      h("div.row",{style:{alignItems:"baseline",gap:"7px",margin:"3px 0 6px"}},[
+        h("span",{style:{fontFamily:"var(--font-d)",fontSize:"30px",fontWeight:"600"}},pct+"%"),
+        h("span.small.muted","complete")]),
+      h("div.row.wrap.gap6",[
+        h("span.tag.tag-done",[c.done+" done"]),
+        h("span.tag.tag-prog",[c.prog+" in progress"]),
+        h("span.tag.tag-todo",[c.todo+" to do"]),
+      ]),
+    ]),
+  ]);
+  kids.push(planCard);
+
+  // Today's suggested tasks
+  if(suggest.length){
+    kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Suggested for you"),h("span.link",{onclick:()=>go("/checklist")},"See plan")]));
+    kids.push(h("div.col.gap8",suggest.map(t=>{
+      const cat=t.catId?catById(t.catId):null;
+      return h("div.check",{onclick:()=>openTaskSheet(t.id),style:{cursor:"pointer"}},[
+        h("span",{style:{fontSize:"22px",width:"34px",textAlign:"center"}},cat?cat.icon:"📝"),
+        h("div.grow",[h("div",{style:{fontWeight:"600"}},t.title),
+          h("div.tiny.faint",t.catId?"Tap to browse "+cat.name.toLowerCase():"Tap to update")]),
+        icon("fwd",18,"faint"),
+      ]);
+    })));
+  }
+
+  // Vendor categories grid
+  kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Browse vendors"),h("span.link",{onclick:()=>go("/categories")},"All categories")]));
+  const grid=h("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"11px"}});
+  homeCats.forEach(cat=>grid.appendChild(catTile(cat)));
+  grid.appendChild(h("button.cat",{onclick:()=>go("/categories")},[
+    h("span.em",{style:{background:"var(--gold-soft)"}},icon("grid",22)),h("span.nm","More")]));
+  kids.push(grid);
+
+  // Featured vendors rail
+  kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Featured vendors"),h("span.link",{onclick:()=>go("/search")},"See all")]));
+  kids.push(h("div.scroll-x",{style:{display:"flex",gap:"14px",padding:"2px 0 4px",margin:"0 -20px",paddingLeft:"20px",paddingRight:"20px"}},
+    feat.map(v=>vendorCard(v,{horizontal:true}))));
+
+  // Ad banner
+  const ad=ADS.find(a=>a.active&&a.placement==="home");
+  if(ad){
+    const av=vendorById(ad.vendorId);
+    kids.push(h("div.card.card-2",{style:{marginTop:"24px",overflow:"hidden",display:"flex",cursor:"pointer",alignItems:"stretch"},
+      onclick:()=>av&&go("/vendor/"+av.id)},[
+      (()=>{const c=coverEl(av||"ad",""); c.style.width="96px"; c.style.borderRadius="0"; return c;})(),
+      h("div.pad-s.grow",[h("span.tag.tag-gold","Sponsored"),
+        h("h4",{style:{fontSize:"17px",margin:"6px 0 2px"}},ad.title),
+        h("p.small.muted",ad.body)]),
+    ]));
+  }
+
+  // Wedding tips carousel
+  kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Wedding tips"),h("span.faint.small","Swipe →")]));
+  kids.push(h("div.scroll-x",{style:{display:"flex",gap:"12px",margin:"0 -20px",padding:"2px 20px 4px"}},
+    TIPS.map((t,i)=>h("div.card.pad",{style:{minWidth:"270px",maxWidth:"270px",scrollSnapAlign:"start",
+      background:i%2?"linear-gradient(145deg,var(--gold-soft),var(--surface))":"linear-gradient(145deg,var(--rose-soft),var(--surface))"}},[
+      h("div",{style:{fontSize:"28px",marginBottom:"8px"}},t.em),
+      h("h4",{style:{fontSize:"18px",marginBottom:"6px"}},t.t),
+      h("p.small.muted",t.b),
+    ]))));
+
+  kids.push(h("div",{style:{textAlign:"center",padding:"30px 0 6px"}},
+    h("span.faint.tiny","Made with 💗 for your big day")));
+
+  return appFrame(h("div.stagger",kids),{tabs:brideTabs("/home")});
+
+  function countChip(n,l){return h("div",{style:{flex:"1",background:"rgba(255,255,255,.16)",borderRadius:"var(--r-m)",padding:"9px 4px",textAlign:"center"}},
+    [h("div",{style:{fontFamily:"var(--font-d)",fontSize:"22px",fontWeight:"600",color:"#fff"}},n),
+     h("div",{style:{fontSize:"10.5px",color:"rgba(255,255,255,.85)",letterSpacing:".06em",textTransform:"uppercase"}},l)]);}
+});
+
+function catTile(cat){
+  return h("button.cat",{onclick:()=>go("/category/"+cat.id)},[
+    h("span.em",cat.icon),h("span.nm",cat.name),
+  ]);
+}
+
+/* ---------- CATEGORIES (all) ---------- */
+route("/categories",()=>{
+  const kids=[topbar("Explore",{right:h("button.icon-btn",{onclick:()=>go("/search")},icon("search",21))})];
+  const search=h("input.field",{placeholder:"Search vendors, categories, cities…",style:{marginBottom:"18px"},
+    onfocus:()=>go("/search")});
+  kids.push(h("div",{style:{padding:"0 0 4px"}},search));
+  kids.push(h("div.eyebrow",{style:{margin:"4px 3px 12px"}},CATEGORIES.length+" categories"));
+  const grid=h("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"12px"}});
+  CATEGORIES.forEach(cat=>{
+    const n=vendorsInCat(cat.id).length;
+    grid.appendChild(h("button.cat",{onclick:()=>go("/category/"+cat.id),style:{padding:"18px 8px",gap:"9px"}},[
+      h("span.em",{style:{width:"56px",height:"56px",fontSize:"27px"}},cat.icon),
+      h("span.nm",cat.name),
+      h("span.tiny.faint",n+(n===1?" vendor":" vendors")),
+    ]));
+  });
+  kids.push(grid);
+  return appFrame(h("div.stagger",kids),{tabs:brideTabs("/categories")});
+});
+
+/* ---------- CHECKLIST (core feature) ---------- */
+route("/checklist",()=>{
+  const c=counts(), pct=progressPct();
+  const kids=[];
+  kids.push(topbar("Your plan",{right:h("button.icon-btn",{onclick:()=>go("/notifications"),style:{position:"relative"}},
+    [icon("bell",21),unreadNotifs()?h("span.badge-dot"):null])}));
+
+  // progress summary card
+  kids.push(h("div.card.pad",{style:{display:"flex",gap:"16px",alignItems:"center"}},[
+    ringEl(pct,96,""),
+    h("div.grow",[
+      h("h3",{style:{fontSize:"20px"}},pct<25?"Just getting started":pct<60?"You're making progress":pct<90?"Almost there!":"So close! ✨"),
+      h("p.small.muted",{style:{margin:"4px 0 8px"}},`${c.done} of ${c.total} tasks complete`),
+      h("div.bar",h("i",{style:{width:pct+"%"}})),
+    ]),
+  ]));
+
+  // filter segmented
+  let filter="all";
+  const seg=h("div.seg",{style:{margin:"16px 0 4px"}});
+  const listWrap=h("div.col.gap16",{style:{marginTop:"14px"}});
+  [["all","All"],["todo","To do"],["prog","In progress"],["done","Done"]].forEach(([k,l])=>{
+    seg.appendChild(h("button"+(k==="all"?".on":""),{onclick:e=>{filter=k;[...seg.children].forEach(b=>b.classList.remove("on"));e.target.classList.add("on");drawList();}},l));
+  });
+  kids.push(seg); kids.push(listWrap);
+
+  function drawList(){
+    clear(listWrap);
+    // group by phase
+    const phases=[...new Set(CHECKLIST_TEMPLATE.map(t=>t.phase))];
+    phases.forEach(phase=>{
+      const items=CHECKLIST_TEMPLATE.filter(t=>t.phase===phase && (filter==="all"||S.checklist[t.id]===filter));
+      if(!items.length)return;
+      const doneN=CHECKLIST_TEMPLATE.filter(t=>t.phase===phase&&S.checklist[t.id]==="done").length;
+      const totN=CHECKLIST_TEMPLATE.filter(t=>t.phase===phase).length;
+      const grp=h("div");
+      grp.appendChild(h("div.between",{style:{margin:"2px 3px 10px"}},[
+        h("div.eyebrow",phase),h("span.tiny.faint",doneN+"/"+totN)]));
+      const col=h("div.col.gap8");
+      items.forEach(t=>col.appendChild(checkRow(t,drawList)));
+      grp.appendChild(col);
+      listWrap.appendChild(grp);
+    });
+    if(!listWrap.children.length)listWrap.appendChild(h("div.empty",[h("div.em","🎉"),h("h3","Nothing here"),h("p.muted","No tasks match this filter.")]));
+  }
+  drawList();
+  return appFrame(kids,{tabs:brideTabs("/checklist")});
+});
+
+function checkRow(t,rerender){
+  const st=S.checklist[t.id]||"todo";
+  const cat=t.catId?catById(t.catId):null;
+  const sv=S.selectedVendor[t.id]?vendorById(S.selectedVendor[t.id]):null;
+  const box=h("button.cbox"+(st==="done"?".done":st==="prog"?".prog":""),{"aria-label":"Toggle status",
+    onclick:e=>{e.stopPropagation();
+      const nxt= st==="todo"?"prog":st==="prog"?"done":"todo";
+      setTask(t.id,nxt);
+      if(nxt==="done")confetti();
+      rerender();
+    }},st==="done"?icon("check",17):st==="prog"?h("span",{style:{fontSize:"11px",fontWeight:"800"}},"~"):null);
+  return h("div.check"+(st==="done"?".done":""),{onclick:()=>openTaskSheet(t.id,rerender),style:{cursor:"pointer"}},[
+    box,
+    h("div.grow",[
+      h("div.ct",{style:{fontWeight:"600"}},t.title),
+      h("div.tiny.faint",{style:{marginTop:"2px"}}, sv?("✓ "+sv.name) : cat?("Browse "+cat.name.toLowerCase()) : statusLabel(st)),
+    ]),
+    st!=="done"&&cat ? h("span.tag.tag-rose",{style:{flex:"none"},onclick:e=>{e.stopPropagation();go("/category/"+cat.id);}},"Browse") : h("span.tag "+statusTag(st),{style:{flex:"none"}},statusLabel(st)),
+  ]);
+}
+const statusLabel=s=>({todo:"Not started",prog:"In progress",done:"Done"})[s]||s;
+const statusTag=s=>({todo:"tag-todo",prog:"tag-prog",done:"tag-done"})[s]||"tag-todo";
+
+/* task detail sheet: change status, jump to vendors, see suggestions */
+function openTaskSheet(taskId,rerender){
+  const t=templateById(taskId); if(!t)return;
+  const cat=t.catId?catById(t.catId):null;
+  const sv=S.selectedVendor[taskId]?vendorById(S.selectedVendor[taskId]):null;
+  let ref;
+  ref=sheet({title:t.title, body:(close)=>{
+    const b=h("div.col.gap16");
+    b.appendChild(h("div.row.gap8",[cat?h("span",{style:{fontSize:"26px"}},cat.icon):h("span",{style:{fontSize:"26px"}},"📝"),
+      h("div",[h("div.eyebrow",t.phase),h("div.small.muted",cat?("Category · "+cat.name):"Personal task")])]));
+    // status control
+    const cur=S.checklist[taskId];
+    const stat=h("div.stat3");
+    [["todo","Not started","on-todo"],["prog","In progress","on-prog"],["done","Done","on-done"]].forEach(([k,l,onc])=>{
+      stat.appendChild(h("button"+(cur===k?"."+onc:""),{onclick:()=>{
+        setTask(taskId,k); if(k==="done")confetti();
+        [...stat.children].forEach(x=>x.className="");
+        stat.children[k==="todo"?0:k==="prog"?1:2].className=onc.replace("on-","on-"); // reflect
+        [...stat.children].forEach((x,i)=>{x.className=(["todo","prog","done"][i]===k)?onc:"";});
+        rerender&&rerender();
+      }},l));
+    });
+    b.appendChild(h("div",[h("div.lbl","Status"),stat]));
+    if(sv){
+      b.appendChild(h("div.card.pad-s",{style:{display:"flex",gap:"12px",alignItems:"center",background:"var(--good-soft)"},onclick:()=>{close();go("/vendor/"+sv.id);}},[
+        (()=>{const cv=coverEl(sv,""); cv.style.width="52px";cv.style.height="52px"; return cv;})(),
+        h("div.grow",[h("div.small",{style:{fontWeight:"700"}},"Selected vendor"),h("div",{style:{fontWeight:"600"}},sv.name)]),
+        icon("fwd",18,"faint"),
+      ]));
+    }
+    if(cat){
+      b.appendChild(h("button.btn.btn-pri.btn-block",{onclick:()=>{close();go("/category/"+cat.id);}},["Browse "+cat.name," ",icon("fwd",16)]));
+    }
+    // suggestions unlocked
+    if(t.suggests&&t.suggests.length){
+      const nexts=t.suggests.map(templateById).filter(Boolean);
+      b.appendChild(h("div",[h("div.lbl","💡 What comes next"),
+        h("div.col.gap8",nexts.map(n=>h("button.lrow",{style:{cursor:"pointer",width:"100%",textAlign:"left"},onclick:()=>{close();setTimeout(()=>openTaskSheet(n.id,rerender),260);}},[
+          h("span",{style:{fontSize:"18px"}},n.catId?catById(n.catId).icon:"📝"),
+          h("span.grow.small",{style:{fontWeight:"600"}},n.title),
+          h("span.tag "+statusTag(S.checklist[n.id]),statusLabel(S.checklist[n.id])),
+        ])))]));
+    }
+    return b;
+  }});
+}
+
+</script>
+<script>
+/* ============ ZAFFA — BRIDE SCREENS · B (vendors · detail · search · saved · profile) ============ */
+
+/* shared filter state for a category / search view */
+function makeFilters(){return {city:"",price:0,rating:0,sort:"popular",offers:false};}
+
+function applyFilters(list,f,q){
+  let r=list.slice();
+  if(q){const s=q.toLowerCase();r=r.filter(v=>v.name.toLowerCase().includes(s)||v.city.toLowerCase().includes(s)||(catById(v.catId)?.name.toLowerCase().includes(s))||v.short.toLowerCase().includes(s));}
+  if(f.city)r=r.filter(v=>v.city===f.city);
+  if(f.price)r=r.filter(v=>v.priceLevel===f.price);
+  if(f.rating)r=r.filter(v=>v.rating>=f.rating);
+  if(f.offers)r=r.filter(v=>v.offer);
+  const sorters={
+    popular:(a,b)=>b.popularity-a.popularity,
+    rating:(a,b)=>b.rating-a.rating,
+    priceLow:(a,b)=>a.priceLevel-b.priceLevel,
+    priceHigh:(a,b)=>b.priceLevel-a.priceLevel,
+    newest:(a,b)=>(b.isNew-a.isNew)||(b.id>a.id?1:-1),
+  };
+  r.sort(sorters[f.sort]||sorters.popular);
+  return r;
+}
+
+function filterBar(f,onChange){
+  const activeCount=[f.city,f.price,f.rating,f.offers].filter(Boolean).length;
+  const bar=h("div.scroll-x",{style:{display:"flex",gap:"8px",padding:"2px 20px 12px",margin:"0 -20px"}});
+  bar.appendChild(h("button.chip"+(activeCount?".on":""),{onclick:()=>openFilterSheet(f,onChange)},
+    [icon("sliders",15),"Filters",activeCount?h("span",{style:{background:"rgba(255,255,255,.3)",borderRadius:"9px",padding:"0 6px",fontSize:"11px"}},activeCount):null]));
+  const sortLabels={popular:"Popular",rating:"Top rated",priceLow:"Price ↑",priceHigh:"Price ↓",newest:"Newest"};
+  bar.appendChild(h("button.chip",{onclick:()=>{
+    let ref; ref=sheet({title:"Sort by",body:(close)=>h("div.col.gap8",Object.entries(sortLabels).map(([k,l])=>
+      h("button.lrow",{style:{cursor:"pointer",width:"100%"},onclick:()=>{f.sort=k;close();onChange();}},[
+        h("span.grow",{style:{fontWeight:f.sort===k?"700":"500",color:f.sort===k?"var(--rose-deep)":""}},l),
+        f.sort===k?icon("check",18,"faint"):null])))});
+  }},[icon("filter",15),sortLabels[f.sort]]));
+  bar.appendChild(h("button.chip"+(f.offers?".on":""),{onclick:()=>{f.offers=!f.offers;onChange();}},"🎁 Offers"));
+  CITIES.forEach(city=>bar.appendChild(h("button.chip"+(f.city===city?".on":""),{onclick:()=>{f.city=f.city===city?"":city;onChange();}},city)));
+  return bar;
+}
+
+function openFilterSheet(f,onChange){
+  let ref;
+  ref=sheet({title:"Filters",body:(close)=>{
+    const b=h("div.col.gap16",{style:{marginTop:"6px"}});
+    // city
+    b.appendChild(fGroup("City",["",...CITIES].map(c=>chip(c||"All cities",f.city===c,()=>{f.city=c;refreshMarks();}))));
+    // price
+    b.appendChild(fGroup("Price",[0,1,2,3,4].map(p=>chip(p?priceLabel(p):"Any",f.price===p,()=>{f.price=p;refreshMarks();}))));
+    // rating
+    b.appendChild(fGroup("Minimum rating",[0,4,4.5,4.8].map(rt=>chip(rt?("★ "+rt+"+"):"Any",f.rating===rt,()=>{f.rating=rt;refreshMarks();}))));
+    // offers
+    b.appendChild(fGroup("Only show",[chip("🎁 Special offers",f.offers,()=>{f.offers=!f.offers;refreshMarks();})]));
+    function refreshMarks(){ref.close();setTimeout(()=>openFilterSheet(f,onChange),10);} // simple re-render
+    return b;
+  },actions:[
+    h("button.btn.btn-sec.grow",{onclick:()=>{Object.assign(f,makeFilters());ref.close();onChange();}},"Reset"),
+    h("button.btn.btn-pri.grow",{onclick:()=>{ref.close();onChange();}},"Show results"),
+  ]});
+  function fGroup(label,chips){return h("div",[h("div.lbl",label),h("div.row.wrap.gap8",chips)]);}
+  function chip(label,on,fn){return h("button.chip"+(on?".on":""),{onclick:fn},label);}
+}
+
+/* ---------- CATEGORY / VENDOR LIST ---------- */
+route("/category/:id",(q,p)=>{
+  const cat=catById(p.id);
+  if(!cat)return appFrame([topbar("Not found",{back:true}),h("div.empty",[h("div.em","🔍"),h("h3","Category not found")])],{tabs:brideTabs("/categories")});
+  const f=makeFilters();
+  const kids=[topbar(cat.name,{back:true,right:h("button.icon-btn",{onclick:()=>go("/search?cat="+cat.id)},icon("search",21))})];
+  const header=h("div.row.gap12",{style:{padding:"2px 3px 14px"}},[
+    h("span.em",{class:"em",style:{width:"52px",height:"52px",borderRadius:"var(--r-full)",display:"grid",placeItems:"center",fontSize:"26px",background:"var(--rose-soft)"}},cat.icon),
+    h("div",[h("div.small.muted","Curated vendors"),h("h3",{style:{fontSize:"20px"}},cat.name)]),
+  ]);
+  kids.push(header);
+  let bar=filterBar(f,()=>redraw()); kids.push(bar);
+  const listWrap=h("div.col.gap16",{style:{marginTop:"2px"}});
+  kids.push(listWrap);
+  const app=appFrame(kids,{tabs:brideTabs("/categories")});
+  function redraw(){
+    // rebuild filter bar (chips reflect state) and list
+    const nb=filterBar(f,()=>redraw()); bar.replaceWith(nb); bar=nb;
+    clear(listWrap);
+    const res=applyFilters(vendorsInCat(cat.id),f);
+    listWrap.appendChild(h("div.small.faint",{style:{margin:"0 3px 4px"}},res.length+(res.length===1?" vendor":" vendors")));
+    if(!res.length)listWrap.appendChild(h("div.empty",[h("div.em","🌿"),h("h3","No matches"),h("p.muted","Try adjusting your filters."),
+      h("button.btn.btn-ghost",{style:{marginTop:"14px"},onclick:()=>{Object.assign(f,makeFilters());redraw();}},"Clear filters")]));
+    else res.forEach(v=>listWrap.appendChild(vendorCard(v)));
+  }
+  redraw();
+  return app;
+});
+
+/* ---------- VENDOR DETAIL ---------- */
+route("/vendor/:id",(q,p)=>{
+  const v=vendorById(p.id);
+  if(!v)return appFrame([topbar("Not found",{back:true}),h("div.empty",[h("div.em","🔍"),h("h3","Vendor not found")])],{noTab:true});
+  const cat=catById(v.catId);
+  const fav=S.favorites.includes(v.id);
+  // find which checklist task this vendor could complete
+  const linkedTask=CHECKLIST_TEMPLATE.find(t=>t.catId===v.catId);
+  const isSelected=linkedTask&&S.selectedVendor[linkedTask.id]===v.id;
+
+  const kids=[];
+  // cover with floating back / actions
+  const cover=coverEl(v,"",1,true); cover.style.height="270px"; cover.style.width="100%"; cover.style.borderRadius="0 0 var(--r-xl) var(--r-xl)";
+  cover.appendChild(h("div",{style:{position:"absolute",inset:"0",background:"linear-gradient(to bottom,rgba(0,0,0,.18),transparent 40%,transparent 70%,rgba(0,0,0,.15))"}}));
+  const backBtn=h("button.icon-btn",{style:{position:"absolute",top:"calc(14px + env(safe-area-inset-top))",left:"16px",background:"rgba(255,255,255,.85)",backdropFilter:"blur(6px)"},onclick:()=>back()},icon("back",22));
+  const favBtn=h("button.icon-btn",{style:{position:"absolute",top:"calc(14px + env(safe-area-inset-top))",right:"64px",background:"rgba(255,255,255,.85)",backdropFilter:"blur(6px)",color:fav?"var(--rose)":"var(--ink2)"},
+    onclick:()=>{toggleFav(v.id);const on=S.favorites.includes(v.id);clear(favBtn).appendChild(icon(on?"heartFill":"heart",21));favBtn.style.color=on?"var(--rose)":"var(--ink2)";}},icon(fav?"heartFill":"heart",21));
+  const shareBtn=h("button.icon-btn",{style:{position:"absolute",top:"calc(14px + env(safe-area-inset-top))",right:"16px",background:"rgba(255,255,255,.85)",backdropFilter:"blur(6px)"},
+    onclick:()=>{const url=location.href; if(navigator.share)navigator.share({title:v.name,url}).catch(()=>{}); else{navigator.clipboard?.writeText(url);toast("Link copied","🔗");}}},icon("share",20));
+  cover.append(backBtn,favBtn,shareBtn);
+  if(v.featured)cover.appendChild(h("span.tag.tag-gold",{style:{position:"absolute",left:"16px",bottom:"16px"}},"★ Featured vendor"));
+
+  // wrap cover so it can bleed to edges
+  const coverWrap=h("div",{style:{margin:"0 -20px"}},cover);
+  kids.push(coverWrap);
+
+  // title block
+  kids.push(h("div",{style:{padding:"16px 2px 4px"}},[
+    h("div.between",[
+      h("div",[h("h1",{style:{fontSize:"27px"}},v.name),
+        h("div.row.gap6",{style:{marginTop:"5px",color:"var(--ink2)"}},[icon("pin",14),h("span.small",v.city),
+          h("span.faint","·"),h("span.small",cat?cat.name:"")])]),
+    ]),
+    h("div.row.gap12",{style:{marginTop:"12px",flexWrap:"wrap"}},[
+      h("span.row.gap6",[starsEl(v.rating),h("b.small",v.rating.toFixed(1)),h("span.small.faint","("+v.reviews+")")]),
+      h("span.faint","·"),
+      h("span.small",{style:{fontWeight:"700",color:"var(--rose-deep)"}},v.priceRange),
+      h("span.tag "+(v.priceLevel>=3?"tag-gold":"tag-rose"),priceLabel(v.priceLevel)),
+    ]),
+  ]));
+
+  // offer banner
+  if(v.offer)kids.push(h("div.card.pad-s",{style:{background:"linear-gradient(135deg,var(--gold-soft),var(--rose-soft))",display:"flex",gap:"10px",alignItems:"center",marginTop:"8px"}},
+    [h("span",{style:{fontSize:"24px"}},"🎁"),h("div",[h("b.small","Special offer"),h("div.small.muted",v.offer.label)])]));
+
+  // quick actions
+  kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"9px",margin:"16px 0 4px"}},[
+    actionBtn("chat","WhatsApp",()=>openLink("https://wa.me/"+v.whatsapp.replace(/[^0-9]/g,""))),
+    actionBtn("phone","Call",()=>openLink("tel:"+v.phone.replace(/\s/g,""))),
+    actionBtn("ig","Instagram",()=>openLink("https://instagram.com/"+v.instagram.replace("@",""))),
+    actionBtn("pin","Map",()=>openLink("https://maps.google.com/?q="+encodeURIComponent(v.maps))),
+  ]));
+
+  // gallery
+  kids.push(sectionTitle("Gallery"));
+  kids.push(h("div.scroll-x",{style:{display:"flex",gap:"10px",margin:"0 -20px",padding:"2px 20px 4px"}},
+    Array.from({length:6},(_,i)=>{const g=coverEl(v,"",i+2,i%3===0);g.style.width="150px";g.style.height="190px";g.style.flex="none";g.style.scrollSnapAlign="start";return g;})));
+
+  // about
+  kids.push(sectionTitle("About"));
+  kids.push(h("p.muted",{style:{lineHeight:"1.6"}},v.desc));
+
+  // services
+  kids.push(sectionTitle("Services"));
+  kids.push(h("div.row.wrap.gap8",v.services.map(s=>h("span.chip",[icon("check",14),s]))));
+
+  // packages
+  kids.push(sectionTitle("Packages & pricing"));
+  kids.push(h("div.col.gap12",v.packages.map(pk=>h("div.card.pad"+(pk.popular?"":""),{style:pk.popular?{border:"1.5px solid var(--rose)",background:"var(--rose-tint)"}:{}},[
+    h("div.between",[h("h4",{style:{fontSize:"18px"}},[pk.name,pk.popular?h("span.tag.tag-rose",{style:{marginLeft:"8px"}},"Popular"):null]),
+      h("b",{style:{color:"var(--rose-deep)",fontFamily:"var(--font-d)",fontSize:"18px"}},pk.price)]),
+    h("div.col.gap6",{style:{marginTop:"10px"}},pk.items.map(it=>h("div.row.gap8.small.muted",[icon("check",15,"faint"),it]))),
+  ]))));
+
+  // working hours
+  kids.push(sectionTitle("Working hours"));
+  kids.push(h("div.card.pad-s.row.gap12",[icon("clock",20,"faint"),h("span",v.hours)]));
+
+  // reviews
+  kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Reviews"),h("span.small.muted",[starsEl(v.rating)," ",v.rating.toFixed(1)])]));
+  kids.push(h("div.col.gap12",v.reviewsList.map(r=>h("div.card.pad-s",[
+    h("div.between",[h("div.row.gap8",[h("span.avatar",{style:{width:"36px",height:"36px",fontSize:"14px",background:"linear-gradient(135deg,var(--rose),var(--gold))"}},initials(r.by)),
+      h("div",[h("b.small",r.by),h("div.tiny.faint",r.when)])]),
+      h("span.stars",{style:{"--v":r.stars}},h("i"))]),
+    h("p.small.muted",{style:{marginTop:"9px"}},r.text),
+  ]))));
+
+  // spacer for sticky bar
+  kids.push(h("div",{style:{height:"92px"}}));
+
+  const app=appFrame(kids,{noTab:true});
+  app.querySelector(".screen").style.padding="0 20px 20px";
+
+  // sticky select bar
+  if(linkedTask){
+    const selBtn=h("button.btn.btn-block "+(isSelected?"btn-sec":"btn-pri btn-lg"),{onclick:()=>{
+      if(S.selectedVendor[linkedTask.id]===v.id){
+        delete S.selectedVendor[linkedTask.id]; setTask(linkedTask.id,"prog"); save();
+        toast("Selection removed");
+      }else{
+        selectVendorForTask(v.id,linkedTask.id); confetti();
+        toast(`${linkedTask.title.replace(/^(Book|Buy|Order|Choose|Arrange|Send|Set up|Reserve|Select|Consider|Prepare|Confirm|Draft|Print|Add|Plan) /,"")} — done ✓`,"💗");
+      }
+      go("/vendor/"+v.id); // re-render
+    }},isSelected?[icon("check",18),"Selected — tap to undo"]:["Select this vendor",h("span",{style:{opacity:.85}}," · completes “"+shortTask(linkedTask.title)+"”")]);
+    const bar=h("div",{style:{position:"fixed",bottom:"0",left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"460px",zIndex:"48",
+      padding:"12px 20px calc(14px + env(safe-area-inset-bottom))",background:"color-mix(in srgb,var(--surface) 90%,transparent)",
+      backdropFilter:"blur(14px)",borderTop:"1px solid var(--line)"}},selBtn);
+    app.appendChild(bar);
+  }
+  return app;
+
+  function actionBtn(ic,label,fn){return h("button",{style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"6px"},onclick:fn},
+    [h("span.icon-btn",{style:{width:"48px",height:"48px",color:"var(--rose-deep)",background:"var(--rose-soft)",border:"0"}},icon(ic,21)),
+     h("span.tiny.muted",{style:{fontWeight:"600"}},label)]);}
+});
+function sectionTitle(t){return h("h3",{style:{fontSize:"20px",margin:"26px 0 12px"}},t);}
+function shortTask(t){return t.replace(/^(Book|Buy|Order|Choose|Arrange|Send|Set up|Reserve|Select|Consider|Prepare|Confirm|Draft|Print|Add|Plan|Hire) /,"");}
+function openLink(url){try{window.open(url,"_blank");}catch{location.href=url;}}
+
+/* ---------- GLOBAL SEARCH ---------- */
+route("/search",(q)=>{
+  const f=makeFilters();
+  if(q.cat){/* preset category filter via query when arriving from a category */}
+  let query="";
+  const kids=[];
+  const input=h("input.field",{placeholder:"Search vendors, categories, cities…",style:{paddingLeft:"44px"},
+    oninput:e=>{query=e.target.value;redraw();}});
+  const inputWrap=h("div",{style:{position:"relative"}},[
+    h("span",{style:{position:"absolute",left:"15px",top:"50%",transform:"translateY(-50%)",color:"var(--ink3)"}},icon("search",19)),
+    input,
+  ]);
+  kids.push(h("div.row.gap8",{style:{padding:"14px 0 12px"}},[
+    h("button.icon-btn",{onclick:()=>back()},icon("back",22)),
+    h("div.grow",inputWrap),
+  ]));
+  let bar=filterBar(f,()=>redraw()); kids.push(bar);
+  const results=h("div",{style:{marginTop:"4px"}});
+  kids.push(results);
+  const app=appFrame(kids,{tabs:brideTabs("/categories")});
+  setTimeout(()=>input.focus(),150);
+
+  function redraw(){
+    const nb=filterBar(f,()=>redraw()); bar.replaceWith(nb); bar=nb;
+    clear(results);
+    if(!query.trim() && !f.city && !f.price && !f.rating && !f.offers){
+      // suggestions state: popular categories + trending vendors
+      results.appendChild(h("div.eyebrow",{style:{margin:"6px 3px 12px"}},"Popular categories"));
+      const grid=h("div.row.wrap.gap8");
+      CATEGORIES.slice(0,10).forEach(c=>grid.appendChild(h("button.chip",{onclick:()=>go("/category/"+c.id)},[c.icon+" "+c.name])));
+      results.appendChild(grid);
+      results.appendChild(h("div.eyebrow",{style:{margin:"22px 3px 12px"}},"Trending vendors"));
+      results.appendChild(h("div.col.gap16",VENDORS.slice().sort((a,b)=>b.popularity-a.popularity).slice(0,4).map(v=>vendorCard(v))));
+      return;
+    }
+    const res=applyFilters(VENDORS.filter(v=>v.approved),f,query);
+    results.appendChild(h("div.small.faint",{style:{margin:"4px 3px 10px"}},res.length+" result"+(res.length===1?"":"s")+(query?` for “${query}”`:"")));
+    if(!res.length)results.appendChild(h("div.empty",[h("div.em","🔎"),h("h3","No results"),h("p.muted","Try a different search or clear filters.")]));
+    else results.appendChild(h("div.col.gap16",res.map(v=>vendorCard(v))));
+  }
+  redraw();
+  return app;
+});
+
+/* ---------- FAVORITES ---------- */
+route("/favorites",()=>{
+  const kids=[topbar("Saved",{right:h("button.icon-btn",{onclick:()=>go("/search")},icon("search",21))})];
+  const favs=S.favorites.map(vendorById).filter(Boolean);
+  if(!favs.length){
+    kids.push(h("div.empty",{style:{paddingTop:"70px"}},[h("div.em","🤍"),h("h3","No favourites yet"),
+      h("p.muted",{style:{maxWidth:"260px",margin:"0 auto 18px"}},"Tap the heart on any vendor to save them here for later."),
+      h("button.btn.btn-pri",{onclick:()=>go("/categories")},"Browse vendors")]));
+  }else{
+    kids.push(h("div.small.faint",{style:{margin:"0 3px 12px"}},favs.length+" saved vendor"+(favs.length===1?"":"s")));
+    kids.push(h("div.col.gap16",favs.map(v=>vendorCard(v))));
+  }
+  return appFrame(h("div.stagger",kids),{tabs:brideTabs("/favorites")});
+});
+
+/* ---------- NOTIFICATIONS ---------- */
+route("/notifications",()=>{
+  // regenerate a couple of smart reminders based on plan state
+  generateSmartReminders();
+  const kids=[topbar("Notifications",{back:true,right:S.notifs.some(n=>!n.read)?h("button.btn.btn-sm.btn-ghost",{onclick:()=>{S.notifs.forEach(n=>n.read=true);save();go("/notifications");}},"Mark all read"):null})];
+  if(!S.notifs.length){
+    kids.push(h("div.empty",{style:{paddingTop:"70px"}},[h("div.em","🔔"),h("h3","All caught up"),h("p.muted","We'll nudge you about upcoming tasks.")]));
+  }else{
+    kids.push(h("div.col.gap12",S.notifs.map(n=>h("div.card.pad-s",{style:{display:"flex",gap:"12px",cursor:"pointer",opacity:n.read?".72":"1",
+      borderLeft:n.read?"":"3px solid var(--rose)"},onclick:()=>{n.read=true;save();if(n.taskId){openTaskSheet(n.taskId);} else go("/checklist");
+        [...kids];}},[
+      h("span",{style:{fontSize:"24px",width:"36px",textAlign:"center"}},n.em),
+      h("div.grow",[h("div.between",[h("b.small",n.title),h("span.tiny.faint",timeAgo(n.when))]),
+        h("p.small.muted",{style:{marginTop:"3px"}},n.body)]),
+    ]))));
+  }
+  return appFrame(kids,{tabs:brideTabs("/home")});
+});
+
+function generateSmartReminders(){
+  const d=daysLeft();
+  const critical=["makeup","photo","hall","catering","dress","cake","henna"];
+  const already=new Set(S.notifs.map(n=>n.taskId));
+  critical.forEach(id=>{
+    if(S.checklist[id]==="todo" && !already.has(id) && S.notifs.length<8){
+      const t=templateById(id);
+      const dtxt=d!=null?`Your wedding is in ${d} days. `:"";
+      pushNotif({em:catById(t.catId)?.icon||"🔔",title:`Still to book: ${shortTask(t.title)}`,
+        body:`${dtxt}Brides usually secure this early — tap to browse ${catById(t.catId)?.name.toLowerCase()||"vendors"}.`,taskId:id});
+    }
+  });
+}
+
+/* ---------- PROFILE ---------- */
+route("/profile",()=>{
+  const c=counts(), pct=progressPct(), d=daysLeft();
+  const kids=[topbar("You",{right:h("button.icon-btn",{onclick:()=>go("/profile/edit")},icon("edit",20))})];
+  // header card
+  kids.push(h("div.card.pad-l",{style:{textAlign:"center",background:"linear-gradient(160deg,var(--rose-tint),var(--surface))"}},[
+    h("span.avatar",{style:{width:"84px",height:"84px",fontSize:"30px",margin:"0 auto 12px",background:"linear-gradient(135deg,var(--rose),var(--gold))"}},initials(S.bride.name)),
+    h("h2",{style:{fontSize:"25px"}},S.bride.name),
+    S.bride.date?h("p.muted",{style:{marginTop:"4px"}},["💍 ",new Date(S.bride.date+"T00:00:00").toLocaleDateString("en",{weekday:"long",day:"numeric",month:"long",year:"numeric"})]):h("p.muted",{style:{marginTop:"4px"}},"No date set yet"),
+    d!=null?h("span.tag.tag-rose",{style:{marginTop:"10px"}},d+" days to go"):null,
+  ]));
+  // stats
+  kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"11px",marginTop:"16px"}},[
+    kpi(pct+"%","Complete"),kpi(c.done,"Tasks done"),kpi(S.favorites.length,"Saved"),
+  ]));
+  // budget
+  kids.push(h("div.card.pad",{style:{marginTop:"16px"}},[
+    h("div.between",[h("div.row.gap8",[icon("wallet",20,"faint"),h("b","Budget")]),
+      h("b",{style:{color:"var(--rose-deep)"}},money(S.bride.budget))]),
+    h("p.tiny.faint",{style:{marginTop:"6px"}},"Estimated total for your wedding"),
+  ]));
+  // menu
+  const menu=[
+    ["heart","Saved vendors",()=>go("/favorites"),S.favorites.length+""],
+    ["list","My checklist",()=>go("/checklist"),c.done+"/"+c.total],
+    ["bell","Notifications",()=>go("/notifications"),unreadNotifs()?unreadNotifs()+" new":""],
+    ["cal","Wedding details",()=>go("/profile/edit"),""],
+  ];
+  kids.push(h("div.card",{style:{marginTop:"16px",overflow:"hidden"}},menu.map(([ic,label,fn,meta])=>
+    h("button.lrow",{style:{width:"100%",padding:"15px 16px",cursor:"pointer"},onclick:fn},[
+      h("span.icon-btn",{style:{width:"38px",height:"38px",background:"var(--rose-soft)",color:"var(--rose-deep)",border:"0"}},icon(ic,19)),
+      h("span.grow",{style:{fontWeight:"600",textAlign:"left"}},label),
+      meta?h("span.small.faint",meta):null, icon("fwd",18,"faint"),
+    ]))));
+  // theme + admin
+  kids.push(h("div.card",{style:{marginTop:"16px",overflow:"hidden"}},[
+    h("div.lrow",{style:{padding:"14px 16px"}},[
+      h("span.icon-btn",{style:{width:"38px",height:"38px",background:"var(--gold-soft)",color:"var(--gold)",border:"0"}},icon("sun",19)),
+      h("span.grow",{style:{fontWeight:"600"}},"Appearance"),
+      themeSeg(),
+    ]),
+    h("button.lrow",{style:{width:"100%",padding:"15px 16px",cursor:"pointer"},onclick:()=>{S.role="admin";save();go("/admin");}},[
+      h("span.icon-btn",{style:{width:"38px",height:"38px",background:"var(--surface3)",color:"var(--ink2)",border:"0"}},icon("settings",19)),
+      h("span.grow",{style:{fontWeight:"600",textAlign:"left"}},"Admin dashboard"),
+      icon("fwd",18,"faint"),
+    ]),
+  ]));
+  kids.push(h("button.btn.btn-sec.btn-block",{style:{marginTop:"16px",color:"var(--crit)"},onclick:()=>{
+    confirmSheet("Reset demo?","This clears your plan and restores the original demo data.","Reset",()=>{
+      localStorage.removeItem(LS_KEY);location.hash="#/welcome";load();render();toast("Demo reset");},true);
+  }},[icon("logout",18),"Reset demo data"]));
+  kids.push(h("p.center.faint.tiny",{style:{padding:"22px 0 6px"}},"Zaffa · Version 1.0"));
+
+  return appFrame(h("div.stagger",kids),{tabs:brideTabs("/profile")});
+
+  function kpi(v,k){return h("div.kpi",{style:{textAlign:"center"}},[h("div.v",{style:{color:"var(--rose-deep)"}},v),h("div.k",k)]);}
+  function themeSeg(){
+    const seg=h("div.seg",{style:{width:"140px"}});
+    [["auto","Auto"],["light","☀"],["dark","☾"]].forEach(([k,l])=>{
+      seg.appendChild(h("button"+(S.theme===k?".on":""),{onclick:e=>{S.theme=k;save();applyTheme();[...seg.children].forEach(b=>b.classList.remove("on"));e.target.classList.add("on");}},l));
+    });
+    return seg;
+  }
+});
+
+/* ---------- EDIT WEDDING DETAILS ---------- */
+route("/profile/edit",()=>{
+  const data={name:S.bride.name,date:S.bride.date||"",budget:S.bride.budget};
+  const kids=[topbar("Wedding details",{back:true})];
+  const nameI=h("input.field",{value:data.name,oninput:e=>data.name=e.target.value});
+  const dateI=h("input.field",{type:"date",value:data.date,min:new Date().toISOString().slice(0,10),oninput:e=>data.date=e.target.value});
+  const budView=h("b",{style:{color:"var(--rose-deep)",fontFamily:"var(--font-d)",fontSize:"22px"}},money(data.budget));
+  const budI=h("input",{type:"range",min:1000,max:20000,step:500,value:data.budget,style:{width:"100%",accentColor:"var(--rose)"},
+    oninput:e=>{data.budget=+e.target.value;budView.textContent=money(data.budget);}});
+  kids.push(h("div.card.pad.col.gap16",{style:{marginTop:"6px"}},[
+    h("div",[h("label.lbl","Your name"),nameI]),
+    h("div",[h("label.lbl","Wedding date"),dateI]),
+    h("div",[h("div.between",{style:{marginBottom:"6px"}},[h("label.lbl",{style:{margin:0}},"Budget"),budView]),budI]),
+  ]));
+  kids.push(h("button.btn.btn-pri.btn-lg.btn-block",{style:{marginTop:"18px"},onclick:()=>{
+    S.bride.name=data.name.trim()||S.bride.name; S.bride.date=data.date||null; S.bride.budget=data.budget;
+    save();toast("Saved 💗");go("/profile");
+  }},"Save changes"));
+  return appFrame(kids,{noTab:true});
+});
+
+</script>
+<script>
+/* ============ ZAFFA — ADMIN DASHBOARD ============ */
+
+function adminTop(title,right){
+  return h("div.topbar",[
+    h("div.grow",[h("div.eyebrow",{style:{color:"var(--gold)"}},"Admin"),h("h2",{style:{fontSize:"22px"}},title)]),
+    right||null,
+  ]);
+}
+
+/* ---------- OVERVIEW / ANALYTICS ---------- */
+route("/admin",()=>{
+  const activeVendors=VENDORS.filter(v=>v.approved).length;
+  const pending=VENDORS.filter(v=>!v.approved).length;
+  const featured=VENDORS.filter(v=>v.featured).length;
+  const brides=USERS.filter(u=>u.role==="bride").length;
+  const avgRating=(VENDORS.reduce((s,v)=>s+v.rating,0)/VENDORS.length).toFixed(2);
+
+  const kids=[adminTop("Overview",h("button.icon-btn",{onclick:()=>{S.role="bride";save();go("/home");}},icon("logout",20)))];
+
+  // greeting
+  kids.push(h("div.hero",{style:{background:"linear-gradient(140deg,#C6A469,#B76E79 60%,#9E5763)"}},[
+    h("div.lbl2","Welcome back"),
+    h("h2",{style:{fontSize:"26px",color:"#fff",margin:"4px 0 6px"}},"Zaffa Control Center"),
+    h("p",{style:{color:"rgba(255,255,255,.9)",fontSize:"14px"}},`${activeVendors} vendors live · ${brides} brides planning`),
+  ]));
+
+  // KPI grid
+  kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"11px",marginTop:"16px"}},[
+    kpiCard(activeVendors,"Active vendors","tag",()=>go("/admin/vendors")),
+    kpiCard(CATEGORIES.length,"Categories","grid",()=>go("/admin/categories")),
+    kpiCard(brides,"Brides","users",()=>go("/admin/users")),
+    kpiCard(featured,"Featured","star",()=>go("/admin/vendors")),
+    kpiCard(pending,"Pending approval","clock",()=>go("/admin/vendors")),
+    kpiCard(avgRating,"Avg rating","spark",null),
+  ]));
+
+  // vendors by category chart
+  kids.push(h("h3",{style:{fontSize:"20px",margin:"26px 0 12px"}},"Vendors by category"));
+  const top=CATEGORIES.map(c=>({c,n:vendorsInCat(c.id).length})).filter(x=>x.n).sort((a,b)=>b.n-a.n).slice(0,8);
+  const max=Math.max(...top.map(x=>x.n),1);
+  kids.push(h("div.card.pad.col.gap12",top.map(({c,n})=>h("div",[
+    h("div.between.small",{style:{marginBottom:"5px"}},[h("span",[c.icon+" ",c.name]),h("b.faint",n)]),
+    h("div.bar",h("i",{style:{width:(n/max*100)+"%"}})),
+  ]))));
+
+  // quick actions
+  kids.push(h("h3",{style:{fontSize:"20px",margin:"26px 0 12px"}},"Quick actions"));
+  kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"11px"}},[
+    quickAction("plus","Add vendor","var(--rose)",()=>openVendorForm()),
+    quickAction("grid","Add category","var(--gold)",()=>openCategoryForm()),
+    quickAction("megaphone","New notification","var(--rose)",()=>openBroadcastForm()),
+    quickAction("tag","Manage ads","var(--gold)",()=>go("/admin/ads")),
+  ]));
+
+  return appFrame(h("div.stagger",kids),{tabs:adminTabs("/admin")});
+
+  function kpiCard(v,k,ic,fn){return h("div.kpi",{style:{cursor:fn?"pointer":"default"},onclick:fn||undefined},[
+    h("div.row.between",[h("div.v",{style:{color:"var(--ink)"}},v),h("span",{style:{color:"var(--rose)",opacity:.5}},icon(ic,20))]),
+    h("div.k",k)]);}
+  function quickAction(ic,label,col,fn){return h("button.card.pad",{style:{display:"flex",flexDirection:"column",gap:"10px",alignItems:"flex-start",cursor:"pointer"},onclick:fn},[
+    h("span.icon-btn",{style:{width:"42px",height:"42px",background:col,color:"#fff",border:"0"}},icon(ic,20)),
+    h("b.small",label)]);}
+});
+
+/* ---------- VENDORS MANAGEMENT ---------- */
+route("/admin/vendors",()=>{
+  let q="",tab="all";
+  const kids=[adminTop("Vendors",h("button.icon-btn",{onclick:()=>openVendorForm()},icon("plus",22)))];
+  const search=h("input.field",{placeholder:"Search vendors…",style:{marginBottom:"12px"},oninput:e=>{q=e.target.value;draw();}});
+  kids.push(search);
+  const seg=h("div.seg",{style:{marginBottom:"14px"}});
+  [["all","All"],["featured","Featured"],["pending","Pending"]].forEach(([k,l])=>seg.appendChild(
+    h("button"+(k==="all"?".on":""),{onclick:e=>{tab=k;[...seg.children].forEach(b=>b.classList.remove("on"));e.target.classList.add("on");draw();}},l)));
+  kids.push(seg);
+  const list=h("div.col.gap12");
+  kids.push(list);
+  function draw(){
+    clear(list);
+    let r=VENDORS.slice();
+    if(tab==="featured")r=r.filter(v=>v.featured);
+    if(tab==="pending")r=r.filter(v=>!v.approved);
+    if(q){const s=q.toLowerCase();r=r.filter(v=>v.name.toLowerCase().includes(s)||catById(v.catId)?.name.toLowerCase().includes(s));}
+    list.appendChild(h("div.small.faint",{style:{margin:"0 3px"}},r.length+" vendors"));
+    r.forEach(v=>list.appendChild(adminVendorRow(v,draw)));
+    if(!r.length)list.appendChild(h("div.empty",[h("div.em","📭"),h("h3","No vendors")]));
+  }
+  draw();
+  return appFrame(kids,{tabs:adminTabs("/admin/vendors")});
+});
+
+function adminVendorRow(v,rerender){
+  const cat=catById(v.catId);
+  const cover=coverEl(v,""); cover.style.width="54px"; cover.style.height="54px";
+  return h("div.card.pad-s",{style:{display:"flex",gap:"12px",alignItems:"center"}},[
+    cover,
+    h("div.grow",{style:{minWidth:0}},[
+      h("div.row.gap6",[h("b",{style:{fontSize:"15px"}},v.name),
+        !v.approved?h("span.tag.tag-warn","Pending"):null,
+        v.featured?h("span.tag.tag-gold","★"):null]),
+      h("div.tiny.faint",{style:{marginTop:"2px"}},[cat?.name," · ",v.city," · ★",v.rating.toFixed(1)]),
+    ]),
+    h("button.icon-btn.plain",{onclick:()=>openVendorActions(v,rerender)},icon("sliders",20)),
+  ]);
+}
+
+function openVendorActions(v,rerender){
+  let ref;
+  ref=sheet({title:v.name,body:(close)=>h("div.col.gap8",[
+    actionRow("edit","Edit vendor",()=>{close();openVendorForm(v,rerender);}),
+    actionRow("star",v.featured?"Remove from featured":"Mark as featured",()=>{v.featured=!v.featured;save();close();toast(v.featured?"Featured ★":"Unfeatured");rerender();}),
+    actionRow("check",v.approved?"Unapprove":"Approve vendor",()=>{v.approved=!v.approved;save();close();toast(v.approved?"Approved ✓":"Set to pending");rerender();}),
+    actionRow("gift",v.offer?"Remove offer":"Add offer",()=>{close();openOfferForm(v,rerender);}),
+    actionRow("fwd","Preview as bride",()=>{close();go("/vendor/"+v.id);}),
+    h("div",{style:{height:"1px",background:"var(--line)",margin:"4px 0"}}),
+    actionRow("trash","Delete vendor",()=>{close();confirmSheet("Delete vendor?",`“${v.name}” will be permanently removed.`,"Delete",()=>{
+      const i=VENDORS.indexOf(v);if(i>=0)VENDORS.splice(i,1);save();toast("Vendor deleted");rerender();},true);},true),
+  ])});
+  function actionRow(ic,label,fn,danger){return h("button.lrow",{style:{width:"100%",cursor:"pointer",padding:"13px 4px"},onclick:fn},[
+    h("span.icon-btn",{style:{width:"38px",height:"38px",background:danger?"var(--crit-soft)":"var(--rose-soft)",color:danger?"var(--crit)":"var(--rose-deep)",border:"0"}},icon(ic,18)),
+    h("span.grow",{style:{fontWeight:"600",textAlign:"left",color:danger?"var(--crit)":""}},label)]);}
+}
+
+function openVendorForm(v,rerender){
+  const isNew=!v;
+  const d=v?{...v}:{name:"",catId:CATEGORIES[0].id,city:CITIES[0],rating:4.7,reviews:0,priceLevel:2,short:"",desc:"",
+    services:["Consultation","Bespoke packages"],hours:"Sat–Thu · 10:00 AM – 9:00 PM",instagram:"",whatsapp:"+968 ",phone:"+968 ",
+    maps:"",featured:false,approved:true,isNew:true,offer:null,packages:[],reviewsList:[],popularity:94};
+  let ref;
+  ref=sheet({title:isNew?"Add vendor":"Edit vendor",body:(close)=>{
+    const b=h("div.col.gap12",{style:{marginTop:"4px"}});
+    const F=(label,el)=>h("div",[h("label.lbl",label),el]);
+    const name=h("input.field",{value:d.name,placeholder:"Vendor name",oninput:e=>d.name=e.target.value});
+    const catSel=h("select.field",CATEGORIES.map(c=>h("option",{value:c.id,selected:c.id===d.catId},c.icon+" "+c.name)));
+    catSel.onchange=e=>d.catId=e.target.value;
+    const citySel=h("select.field",CITIES.map(c=>h("option",{value:c,selected:c===d.city},c)));
+    citySel.onchange=e=>d.city=e.target.value;
+    const priceSel=h("select.field",[1,2,3,4].map(p=>h("option",{value:p,selected:p===d.priceLevel},priceLabel(p))));
+    priceSel.onchange=e=>d.priceLevel=+e.target.value;
+    const rating=h("input.field",{type:"number",min:1,max:5,step:.1,value:d.rating,oninput:e=>d.rating=Math.min(5,Math.max(1,+e.target.value||0))});
+    const reviews=h("input.field",{type:"number",min:0,value:d.reviews,oninput:e=>d.reviews=+e.target.value||0});
+    const short=h("input.field",{value:d.short,placeholder:"One-line description",oninput:e=>d.short=e.target.value});
+    const desc=h("textarea.field",{placeholder:"Full description (optional)",oninput:e=>d.desc=e.target.value},d.desc||"");
+    const ig=h("input.field",{value:d.instagram,placeholder:"@handle",oninput:e=>d.instagram=e.target.value});
+    const wa=h("input.field",{value:d.whatsapp,placeholder:"+968 …",oninput:e=>d.whatsapp=e.target.value});
+    const phone=h("input.field",{value:d.phone,placeholder:"+968 …",oninput:e=>d.phone=e.target.value});
+    const feat=toggle("Featured vendor",d.featured,x=>d.featured=x);
+    const appr=toggle("Approved & visible",d.approved,x=>d.approved=x);
+    b.append(
+      F("Name",name),
+      h("div.row.gap8",[h("div.grow",F("Category",catSel)),h("div.grow",F("City",citySel))]),
+      h("div.row.gap8",[h("div.grow",F("Price tier",priceSel)),h("div.grow",F("Rating",rating)),h("div.grow",F("Reviews",reviews))]),
+      F("Short description",short),F("Full description",desc),
+      h("div.row.gap8",[h("div.grow",F("Instagram",ig)),h("div.grow",F("WhatsApp",wa))]),
+      F("Phone",phone),feat,appr,
+    );
+    return b;
+  },actions:[
+    h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
+    h("button.btn.btn-pri.grow",{onclick:()=>{
+      if(!d.name.trim()){toast("Please enter a name","⚠️");return;}
+      d.priceRange=d.priceRange||({1:"OMR 40–120",2:"OMR 120–350",3:"OMR 350–900",4:"OMR 900+"})[d.priceLevel];
+      if(isNew){
+        _vid++; d.id="v"+String(Date.now()).slice(-6);
+        d.services=d.services||["Consultation"]; d.hours=d.hours||"Sat–Thu · 10:00 AM – 9:00 PM";
+        d.maps=d.maps||d.city+", Oman"; d.popularity=d.rating*20+d.reviews/12;
+        d.packages=d.packages&&d.packages.length?d.packages:[{name:"Signature",price:d.priceRange,items:["Full service","Consultation included"],popular:true}];
+        d.reviewsList=d.reviewsList&&d.reviewsList.length?d.reviewsList:[{by:"Aisha K.",stars:5,text:"Wonderful experience!",when:"Recently"}];
+        VENDORS.unshift(d); toast("Vendor added ✓","🎉");
+      }else{
+        Object.assign(v,d); toast("Vendor updated ✓");
+      }
+      save(); ref.close(); rerender?rerender():render();
+    }},isNew?"Add vendor":"Save"),
+  ]});
+}
+
+function openOfferForm(v,rerender){
+  const d={label:v.offer?.label||"",until:v.offer?.until||""};
+  let ref;
+  ref=sheet({title:v.offer?"Edit offer":"Add offer",body:(close)=>h("div.col.gap12",[
+    h("div",[h("label.lbl","Offer text"),h("input.field",{value:d.label,placeholder:"e.g. 15% off this month",oninput:e=>d.label=e.target.value})]),
+    h("div",[h("label.lbl","Valid until"),h("input.field",{type:"date",value:d.until,oninput:e=>d.until=e.target.value})]),
+  ]),actions:[
+    v.offer?h("button.btn.btn-sec.grow",{style:{color:"var(--crit)"},onclick:()=>{v.offer=null;save();ref.close();toast("Offer removed");rerender();}},"Remove"):null,
+    h("button.btn.btn-pri.grow",{onclick:()=>{if(!d.label.trim()){toast("Enter offer text","⚠️");return;}v.offer={label:d.label,until:d.until};save();ref.close();toast("Offer saved 🎁");rerender();}},"Save offer"),
+  ].filter(Boolean)});
+}
+
+/* ---------- CATEGORIES MANAGEMENT ---------- */
+route("/admin/categories",()=>{
+  const kids=[adminTop("Categories",h("button.icon-btn",{onclick:()=>openCategoryForm()},icon("plus",22)))];
+  kids.push(h("p.small.muted",{style:{margin:"0 3px 14px"}},"Create unlimited categories. Tap to edit or reorder."));
+  const list=h("div.col.gap8");
+  kids.push(list);
+  function draw(){
+    clear(list);
+    CATEGORIES.slice().sort((a,b)=>a.order-b.order).forEach((c,i)=>{
+      const n=vendorsInCat(c.id).length;
+      list.appendChild(h("div.card.pad-s",{style:{display:"flex",gap:"12px",alignItems:"center"}},[
+        h("span",{style:{fontSize:"24px",width:"40px",height:"40px",display:"grid",placeItems:"center",background:"var(--rose-soft)",borderRadius:"var(--r-m)"}},c.icon),
+        h("div.grow",[h("b",c.name),h("div.tiny.faint",n+" vendors")]),
+        h("button.icon-btn.plain",{onclick:()=>openCategoryForm(c,draw)},icon("edit",18)),
+        h("button.icon-btn.plain",{style:{color:"var(--crit)"},onclick:()=>{
+          if(n>0){toast("Move or delete its vendors first","⚠️");return;}
+          confirmSheet("Delete category?",`“${c.name}” will be removed.`,"Delete",()=>{const idx=CATEGORIES.indexOf(c);CATEGORIES.splice(idx,1);save();toast("Category deleted");draw();},true);
+        }},icon("trash",18)),
+      ]));
+    });
+  }
+  draw();
+  return appFrame(kids,{tabs:adminTabs("/admin/categories")});
+});
+
+function openCategoryForm(c,rerender){
+  const isNew=!c;
+  const emojis=["💍","👰","💐","🌸","💄","💇‍♀️","📸","🎥","🍰","🎂","🎀","✨","🚗","💌","🎁","💎","🌷","✈️","🍫","☕","🎧","🎻","🏛️","🏨","🧵","🛍️","🌿","🍽️","🖼️","🤍","🎉","👜","💃","🎺","🖨️","🔥","🕊️","🥂"];
+  const d=c?{...c}:{id:"",name:"",icon:"🌸",order:(Math.max(0,...CATEGORIES.map(x=>x.order))+1)};
+  let picked=d.icon;
+  let ref;
+  ref=sheet({title:isNew?"New category":"Edit category",body:(close)=>{
+    const b=h("div.col.gap16",{style:{marginTop:"4px"}});
+    const name=h("input.field",{value:d.name,placeholder:"Category name",oninput:e=>d.name=e.target.value});
+    const grid=h("div",{style:{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"8px"}});
+    emojis.forEach(em=>{
+      const btn=h("button",{style:{fontSize:"22px",padding:"9px 0",borderRadius:"var(--r-m)",background:em===picked?"var(--rose-soft)":"var(--surface2)",
+        border:em===picked?"1.5px solid var(--rose)":"1.5px solid transparent"},onclick:()=>{picked=em;d.icon=em;[...grid.children].forEach(x=>{x.style.background="var(--surface2)";x.style.border="1.5px solid transparent";});btn.style.background="var(--rose-soft)";btn.style.border="1.5px solid var(--rose)";}},em);
+      grid.appendChild(btn);
+    });
+    b.append(h("div",[h("label.lbl","Name"),name]),h("div",[h("label.lbl","Icon"),grid]));
+    return b;
+  },actions:[
+    h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
+    h("button.btn.btn-pri.grow",{onclick:()=>{
+      if(!d.name.trim()){toast("Enter a name","⚠️");return;}
+      d.icon=picked;
+      if(isNew){d.id="c"+Date.now().toString(36);CATEGORIES.push(d);toast("Category created ✓","🎉");}
+      else{Object.assign(c,d);toast("Category updated ✓");}
+      save();ref.close();rerender?rerender():render();
+    }},isNew?"Create":"Save"),
+  ]});
+}
+
+/* ---------- USERS ---------- */
+route("/admin/users",()=>{
+  const kids=[adminTop("Users")];
+  const brides=USERS.filter(u=>u.role==="bride");
+  kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"11px",marginBottom:"16px"}},[
+    h("div.kpi.center",[h("div.v",{style:{color:"var(--rose-deep)"}},USERS.length),h("div.k","Total")]),
+    h("div.kpi.center",[h("div.v",{style:{color:"var(--rose-deep)"}},brides.length),h("div.k","Brides")]),
+    h("div.kpi.center",[h("div.v",{style:{color:"var(--rose-deep)"}},USERS.filter(u=>u.status==="active").length),h("div.k","Active")]),
+  ]));
+  kids.push(h("div.col.gap12",USERS.map(u=>h("div.card.pad-s",{style:{display:"flex",gap:"12px",alignItems:"center"}},[
+    h("span.avatar",{style:{width:"44px",height:"44px",fontSize:"15px",background:u.role==="admin"?"linear-gradient(135deg,var(--gold),var(--rose-deep))":"linear-gradient(135deg,var(--rose),var(--gold))"}},initials(u.name)),
+    h("div.grow",{style:{minWidth:0}},[h("div.row.gap6",[h("b",u.name),u.role==="admin"?h("span.tag.tag-gold","Admin"):null]),
+      h("div.tiny.faint",{style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},u.email),
+      u.date?h("div.tiny.faint",["💍 ",new Date(u.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short",year:"numeric"})]):null]),
+    h("button.icon-btn.plain",{onclick:()=>{
+      let ref;ref=sheet({title:u.name,body:(close)=>h("div.col.gap8",[
+        h("div.lrow",[h("span.grow.muted","Email"),h("b.small",u.email)]),
+        h("div.lrow",[h("span.grow.muted","Role"),h("b.small",u.role)]),
+        h("div.lrow",[h("span.grow.muted","Joined"),h("b.small",u.joined)]),
+        h("div.lrow",[h("span.grow.muted","Status"),h("span.tag "+(u.status==="active"?"tag-done":"tag-todo"),u.status)]),
+        h("button.btn.btn-sec.btn-block",{style:{marginTop:"8px"},onclick:()=>{u.status=u.status==="active"?"suspended":"active";save();ref.close();toast("User "+u.status);render();}},u.status==="active"?"Suspend user":"Reactivate user"),
+        h("button.btn.btn-block",{style:{background:"var(--rose-soft)",color:"var(--rose-deep)"},onclick:()=>{close();openBroadcastForm(u);}},"Send notification"),
+      ])});
+    }},icon("sliders",20)),
+  ]))));
+  return appFrame(kids,{tabs:adminTabs("/admin/users")});
+});
+
+/* ---------- MORE (notifications · ads · tips · featured · templates) ---------- */
+route("/admin/more",()=>{
+  const kids=[adminTop("Manage",h("button.icon-btn",{onclick:()=>{S.role="bride";save();go("/home");}},icon("logout",20)))];
+  const items=[
+    ["megaphone","Send notification","Broadcast to brides",()=>openBroadcastForm()],
+    ["tag","Advertisements",ADS.filter(a=>a.active).length+" active",()=>go("/admin/ads")],
+    ["spark","Wedding tips",TIPS.length+" tips",()=>go("/admin/tips")],
+    ["star","Featured vendors",VENDORS.filter(v=>v.featured).length+" featured",()=>go("/admin/vendors")],
+    ["list","Checklist template",CHECKLIST_TEMPLATE.length+" default tasks",()=>go("/admin/template")],
+    ["chart","Analytics","View overview",()=>go("/admin")],
+  ];
+  kids.push(h("div.card",{style:{overflow:"hidden"}},items.map(([ic,label,meta,fn])=>
+    h("button.lrow",{style:{width:"100%",padding:"16px",cursor:"pointer"},onclick:fn},[
+      h("span.icon-btn",{style:{width:"40px",height:"40px",background:"var(--rose-soft)",color:"var(--rose-deep)",border:"0"}},icon(ic,19)),
+      h("div.grow",{style:{textAlign:"left"}},[h("b",label),h("div.tiny.faint",meta)]),
+      icon("fwd",18,"faint"),
+    ]))));
+  kids.push(h("button.btn.btn-sec.btn-block",{style:{marginTop:"16px"},onclick:()=>go("/home")},"Switch to bride app"));
+  return appFrame(kids,{tabs:adminTabs("/admin/more")});
+});
+
+function openBroadcastForm(user){
+  const d={em:"💌",title:"",body:""};
+  const emojis=["💌","🔔","🎁","💄","📸","🎂","🏛️","✨","💗"];
+  let ref;
+  ref=sheet({title:user?("Notify "+user.name):"Send notification",body:(close)=>{
+    const emRow=h("div.row.wrap.gap8");
+    emojis.forEach(em=>{const b=h("button.chip"+(em===d.em?".on":""),{onclick:()=>{d.em=em;[...emRow.children].forEach(x=>x.classList.remove("on"));b.classList.add("on");}},em);emRow.appendChild(b);});
+    return h("div.col.gap12",[
+      h("div",[h("label.lbl","Icon"),emRow]),
+      h("div",[h("label.lbl","Title"),h("input.field",{placeholder:"Notification title",oninput:e=>d.title=e.target.value})]),
+      h("div",[h("label.lbl","Message"),h("textarea.field",{placeholder:"Message to brides…",oninput:e=>d.body=e.target.value})]),
+    ]);
+  },actions:[
+    h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
+    h("button.btn.btn-pri.grow",{onclick:()=>{if(!d.title.trim()){toast("Enter a title","⚠️");return;}
+      pushNotif({em:d.em,title:d.title,body:d.body}); ref.close(); toast("Notification sent 📨");}},[icon("send",16),"Send"]),
+  ]});
+}
+
+/* ---------- ADS ---------- */
+route("/admin/ads",()=>{
+  const kids=[adminTop("Advertisements",h("button.icon-btn",{onclick:()=>openAdForm()},icon("plus",22)))];
+  const list=h("div.col.gap12"); kids.push(list);
+  function draw(){clear(list);
+    if(!ADS.length)list.appendChild(h("div.empty",[h("div.em","📢"),h("h3","No ads"),h("p.muted","Create a promoted banner for the home screen.")]));
+    ADS.forEach(a=>{const av=vendorById(a.vendorId);
+      list.appendChild(h("div.card.pad-s",[
+        h("div.between",[h("div.row.gap8",[h("span.tag "+(a.active?"tag-gold":"tag-todo"),a.active?"Active":"Paused"),h("b",a.title)]),
+          h("button.icon-btn.plain",{onclick:()=>{
+            let ref;ref=sheet({title:a.title,body:(close)=>h("div.col.gap8",[
+              h("button.lrow",{style:{width:"100%",cursor:"pointer"},onclick:()=>{a.active=!a.active;save();ref.close();toast(a.active?"Ad activated":"Ad paused");draw();}},[icon("check",18,"faint"),h("span.grow",{style:{fontWeight:600}},a.active?"Pause ad":"Activate ad")]),
+              h("button.lrow",{style:{width:"100%",cursor:"pointer"},onclick:()=>{ref.close();openAdForm(a,draw);}},[icon("edit",18,"faint"),h("span.grow",{style:{fontWeight:600}},"Edit ad")]),
+              h("button.lrow",{style:{width:"100%",cursor:"pointer",color:"var(--crit)"},onclick:()=>{const i=ADS.indexOf(a);ADS.splice(i,1);save();ref.close();toast("Ad deleted");draw();}},[icon("trash",18),h("span.grow",{style:{fontWeight:600}},"Delete ad")]),
+            ])});
+          }},icon("sliders",20))]),
+        h("p.small.muted",{style:{marginTop:"6px"}},a.body),
+        av?h("div.tiny.faint",{style:{marginTop:"4px"}},["Links to: ",av.name]):null,
+      ]));
+    });
+  }
+  draw();
+  return appFrame(kids,{tabs:adminTabs("/admin/more")});
+});
+function openAdForm(a,rerender){
+  const isNew=!a; const d=a?{...a}:{title:"",body:"",vendorId:VENDORS[0].id,active:true,placement:"home"};
+  let ref;
+  ref=sheet({title:isNew?"New ad":"Edit ad",body:(close)=>{
+    const vSel=h("select.field",VENDORS.map(v=>h("option",{value:v.id,selected:v.id===d.vendorId},v.name)));
+    vSel.onchange=e=>d.vendorId=e.target.value;
+    return h("div.col.gap12",[
+      h("div",[h("label.lbl","Title"),h("input.field",{value:d.title,oninput:e=>d.title=e.target.value})]),
+      h("div",[h("label.lbl","Body"),h("input.field",{value:d.body,oninput:e=>d.body=e.target.value})]),
+      h("div",[h("label.lbl","Links to vendor"),vSel]),
+    ]);
+  },actions:[
+    h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
+    h("button.btn.btn-pri.grow",{onclick:()=>{if(!d.title.trim()){toast("Enter a title","⚠️");return;}
+      if(isNew){d.id="ad"+Date.now().toString(36);ADS.push(d);toast("Ad created ✓");}else{Object.assign(a,d);toast("Ad updated ✓");}
+      save();ref.close();rerender?rerender():render();}},isNew?"Create":"Save"),
+  ]});
+}
+
+/* ---------- TIPS ---------- */
+route("/admin/tips",()=>{
+  const kids=[adminTop("Wedding tips",h("button.icon-btn",{onclick:()=>openTipForm()},icon("plus",22)))];
+  const list=h("div.col.gap12"); kids.push(list);
+  function draw(){clear(list);
+    TIPS.forEach((t,i)=>list.appendChild(h("div.card.pad-s",[
+      h("div.between",[h("div.row.gap8",[h("span",{style:{fontSize:"22px"}},t.em),h("b",t.t)]),
+        h("div.row.gap6",[h("button.icon-btn.plain",{onclick:()=>openTipForm(t,draw)},icon("edit",18)),
+          h("button.icon-btn.plain",{style:{color:"var(--crit)"},onclick:()=>{TIPS.splice(i,1);save();toast("Tip removed");draw();}},icon("trash",18))])]),
+      h("p.small.muted",{style:{marginTop:"6px"}},t.b),
+    ])));
+  }
+  draw();
+  return appFrame(kids,{tabs:adminTabs("/admin/more")});
+});
+function openTipForm(t,rerender){
+  const isNew=!t; const d=t?{...t}:{em:"💡",t:"",b:""};
+  let ref;
+  ref=sheet({title:isNew?"New tip":"Edit tip",body:(close)=>h("div.col.gap12",[
+    h("div",[h("label.lbl","Emoji"),h("input.field",{value:d.em,maxlength:2,oninput:e=>d.em=e.target.value})]),
+    h("div",[h("label.lbl","Title"),h("input.field",{value:d.t,oninput:e=>d.t=e.target.value})]),
+    h("div",[h("label.lbl","Body"),h("textarea.field",{oninput:e=>d.b=e.target.value},d.b||"")]),
+  ]),actions:[
+    h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
+    h("button.btn.btn-pri.grow",{onclick:()=>{if(!d.t.trim()){toast("Enter a title","⚠️");return;}
+      if(isNew)TIPS.push(d);else Object.assign(t,d);save();ref.close();toast("Tip saved ✓");rerender?rerender():render();}},isNew?"Add":"Save"),
+  ]});
+}
+
+/* ---------- CHECKLIST TEMPLATE (read-only overview) ---------- */
+route("/admin/template",()=>{
+  const kids=[adminTop("Checklist template")];
+  kids.push(h("p.small.muted",{style:{margin:"0 3px 16px"}},"The default plan generated for every new bride, grouped by phase. "+CHECKLIST_TEMPLATE.length+" tasks."));
+  const phases=[...new Set(CHECKLIST_TEMPLATE.map(t=>t.phase))];
+  phases.forEach(ph=>{
+    kids.push(h("div.eyebrow",{style:{margin:"18px 3px 10px"}},ph));
+    kids.push(h("div.card",{style:{overflow:"hidden"}},CHECKLIST_TEMPLATE.filter(t=>t.phase===ph).map(t=>{
+      const cat=t.catId?catById(t.catId):null;
+      return h("div.lrow",{style:{padding:"13px 14px"}},[
+        h("span",{style:{fontSize:"18px",width:"28px"}},cat?cat.icon:"📝"),
+        h("div.grow",[h("b.small",t.title),t.suggests&&t.suggests.length?h("div.tiny.faint",{style:{marginTop:"2px"}},"→ unlocks "+t.suggests.map(s=>shortTask(templateById(s).title)).join(", ")):null]),
+        cat?h("span.tag.tag-rose",{style:{flex:"none"}},cat.name):h("span.tag.tag-todo",{style:{flex:"none"}},"Personal"),
+      ]);
+    })));
+  });
+  return appFrame(kids,{tabs:adminTabs("/admin/more")});
+});
+
+</script>
+<script>
+/* ============ ZAFFA — BOOT ============ */
+load();
+if(!location.hash) location.hash = S.onboarded ? (S.role==="admin"?"#/admin":"#/home") : "#/welcome";
+render();
+
+// keep theme in sync with system when in auto mode
+if(window.matchMedia){
+  window.matchMedia("(prefers-color-scheme:dark)").addEventListener?.("change",()=>{if(S.theme==="auto")applyTheme();});
+}
+
+</script>
+</body>
+</html>
