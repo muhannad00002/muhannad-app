@@ -9,6 +9,25 @@ Personal projects workspace.
 
 ## Projects
 
+### wedding (Zaffa)
+
+A complete, production-quality wedding-planning app and vendor marketplace —
+the bride's personal planner. Live day-by-day countdown, an intelligent
+checklist that understands relationships between tasks, 35 vendor categories
+with 60+ curated demo vendors, rich vendor detail pages, favourites, global
+search & filters, notifications, and a full admin dashboard (vendor &
+category CRUD, users, ads, tips, broadcasts). Elegant, feminine, minimal
+design with full light/dark themes.
+
+**Run it:**
+
+```sh
+node wedding/app/serve.js
+# → http://localhost:8742
+```
+
+Details in [wedding/README.md](wedding/README.md).
+
 ### scan-and-go (Sayr)
 
 An interactive prototype of a multi-tenant "scan & go" retail platform for
