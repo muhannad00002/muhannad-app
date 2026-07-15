@@ -16,7 +16,7 @@ const s = sp.createSession({ planId: "monthly", orderId: "ZF-TEST-1",
   customer: { name: "Sarah", email: "s@x.com", userId: "u1" } });
 ok("session has action URL", s.action === process.env.SMARTPAY_TXN_URL);
 ok("session posts access_code", s.fields.access_code === "TEST_ACCESS_CODE");
-ok("session posts encRequest (hex)", /^[0-9A-F]+$/.test(s.fields.encRequest));
+ok("session posts encRequest (hex)", /^[0-9a-f]+$/.test(s.fields.encRequest));
 ok("encRequest decrypts back to request string", (() => {
   const str = sp.decrypt(s.fields.encRequest);
   return str.includes("merchant_id=123456") && str.includes("amount=1.150") &&
