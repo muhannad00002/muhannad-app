@@ -42,7 +42,15 @@ in one elegant place — no more hunting through Instagram.
 - Free tier: browse **3 vendor categories** and send **3 assistant messages**;
   beyond that an elegant paywall invites the bride to **Zaffa Premium**, which
   unlocks unlimited categories, unlimited AI chat, calendar sync and smart
-  reminders. (Payment is simulated in the demo — subscribing unlocks instantly.)
+  reminders.
+- **Real payment providers, integration-ready:** the checkout layer
+  (`app/parts/08-payments.js`) auto-selects **Apple In-App Purchase** on the
+  native iOS app and **Bank Muscat SmartPay** (hosted redirect) on the web,
+  falling back to a simulated **demo** unlock when no backend is configured
+  (so the standalone HTML still works). A dependency-free reference **backend**
+  lives in [`server/`](server/) — it implements SmartPay's AES-256-GCM
+  request/response contract and Apple receipt verification, with a self-test
+  (`node server/test.js`). Full setup in [INTEGRATION.md](INTEGRATION.md).
 
 **Admin dashboard**
 - Analytics overview, full **vendor CRUD** (add / edit / delete / approve /
@@ -89,5 +97,10 @@ node wedding/app/build.js
 | `05-bride-a.js`| Onboarding, home, explore, smart checklist |
 | `06-bride-b.js`| Vendor lists, vendor detail, search, favourites, notifications, profile |
 | `07-assistant.js`| Aya AI assistant, premium paywall, appointment booking & calendar export |
-| `08-admin.js`  | Admin dashboard & all management screens |
-| `09-boot.js`   | Boot & initial render |
+| `08-payments.js`| Client checkout layer (Apple IAP · Bank Muscat SmartPay · demo) + return route |
+| `09-admin.js`  | Admin dashboard & all management screens |
+| `10-boot.js`   | Boot & initial render |
+
+Backend (payments): [`server/`](server/) — `smartpay.js` (Bank Muscat SmartPay,
+AES-256-GCM), `apple.js` (Apple receipt/JWS verification), `server.js` (wiring),
+`test.js` (self-test). See [INTEGRATION.md](INTEGRATION.md).

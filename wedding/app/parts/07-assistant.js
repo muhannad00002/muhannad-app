@@ -52,11 +52,19 @@ function openPaywall(reason){
       });
     }
     drawPlans(); b.appendChild(planWrap);
-    b.appendChild(h("button.btn.btn-pri.btn-lg.btn-block",{style:{marginTop:"10px"},onclick:()=>{
-      goPremium(chosen); ref.close(); confetti(); toast("Welcome to Premium 💗","✨");
-      setTimeout(render,120);
-    }},"Start Premium"));
-    b.appendChild(h("p.center.tiny.faint",{style:{margin:"12px 0 2px"}},"Demo — no real payment is taken. Both plans stay under $3 / month."));
+    const prov=paymentProvider();
+    const payLabel=prov==="apple"?"Subscribe with Apple":prov==="smartpay"?"Pay with Bank Muscat":"Start Premium";
+    const payBtn=h("button.btn.btn-pri.btn-lg.btn-block",{style:{marginTop:"10px"},onclick:async()=>{
+      payBtn.disabled=true; clear(payBtn).appendChild(h("span","Processing…"));
+      try{
+        await payCheckout(chosen);          // demo resolves instantly; smartpay redirects; apple awaits StoreKit
+        ref.close(); confetti(); toast("Welcome to Premium 💗","✨"); setTimeout(render,120);
+      }catch(e){ payBtn.disabled=false; clear(payBtn).appendChild(h("span",payLabel)); }
+    }},payLabel);
+    b.appendChild(payBtn);
+    b.appendChild(h("p.center.tiny.faint",{style:{margin:"12px 0 2px"}},
+      prov==="demo" ? "Demo — no real payment is taken. Both plans stay under $3 / month."
+                    : "Secured by "+providerLabel()+" · both plans stay under $3 / month."));
     b.appendChild(h("button.btn.btn-quiet.btn-block",{style:{marginTop:"6px"},onclick:()=>ref.close()},"Maybe later"));
     return b;
   }});

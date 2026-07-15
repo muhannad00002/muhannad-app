@@ -1,0 +1,10 @@
+{
+  "appId": "com.zaffa.app",
+  "appName": "Zaffa",
+  "webDir": "app",
+  "server": { "iosScheme": "zaffa" },
+  "ios": { "contentInset": "always" },
+  "plugins": {
+    "SplashScreen": { "backgroundColor": "#FBF6F2", "showSpinner": false }
+  }
+}
