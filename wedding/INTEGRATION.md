@@ -47,12 +47,22 @@ chars as the IV. `server/smartpay.js` matches this exactly — verified two ways
 interop check against the bank's own kit code (Node-encrypted ciphertext
 decrypts with the kit's Python `ccavutil.py`, and vice versa).
 
-**Endpoints** (from the official integration kits):
+**Endpoints**:
 
-| Environment | Transaction URL |
-|-------------|-----------------|
-| UAT (test)  | `https://spayuattrns.bmtest.om/transaction.do?command=initiateTransaction` |
-| Production  | `https://mti.bankmuscat.com:6443/transaction.do?command=initiateTransaction` |
+| Environment | Transaction URL | Source |
+|-------------|-----------------|--------|
+| UAT (test)  | `https://spayuattrns.bmtest.om/transaction.do?command=initiateTransaction` | official integration kit |
+| Production  | `https://smartpaytrns.bankmuscat.com/transaction.do?command=initiateTransaction` | merchant onboarding (confirmed) |
+
+> The PHP kit also references a legacy `mti.bankmuscat.com:6443` URL — use the
+> `smartpaytrns.bankmuscat.com` endpoint from your onboarding instead.
+
+**Credential self-test**: with the backend running, open
+`http://localhost:8787/api/payments/smartpay/testpage` in a browser and click
+the button — it fires a single initiation request at the configured gateway.
+If the credentials pair with that environment, the Bank Muscat hosted payment
+page appears (abandoning it costs nothing); otherwise the gateway shows the
+exact error (e.g. 10002 = credential/environment mismatch).
 
 > A request that reaches the gateway but fails with **Error 10002 — Merchant
 > Authentication failed** means the `access_code` / working key pair is not

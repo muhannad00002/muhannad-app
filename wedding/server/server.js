@@ -65,6 +65,31 @@ const server = http.createServer(async (req, res) => {
         plans: smartpay.PLANS,
       });
 
+    /* Credential self-test page — open in YOUR browser to fire one initiation
+       request at the configured gateway and see the hosted page (or the exact
+       gateway error). Keeps the live-fire action in the merchant's hands.
+       Usage: GET /api/payments/smartpay/testpage?plan=monthly */
+    if (p === "/api/payments/smartpay/testpage" && req.method === "GET") {
+      const planId = url.searchParams.get("plan") || "monthly";
+      const orderId = "ZF-TEST-" + Date.now();
+      ORDERS.set(orderId, { userId: "credential-test", planId });
+      const s = smartpay.createSession({ planId, orderId,
+        customer: { name: "Credential Test", email: "", userId: "credential-test" } });
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      return res.end(`<!doctype html><meta charset="utf-8"><title>SmartPay credential test</title>
+<body style="font-family:sans-serif;padding:40px;max-width:520px;margin:auto">
+<h2>SmartPay credential test</h2>
+<p>Order <b>${orderId}</b> · plan <b>${planId}</b> · gateway:<br><code>${s.action}</code></p>
+<p>Click to send one initiation request. If the credentials pair with this
+environment you'll see the Bank Muscat payment page — <b>do not enter a card</b>
+unless you intend to pay. An abandoned initiation costs nothing.</p>
+<form method="POST" action="${s.action}">
+  <input type="hidden" name="access_code" value="${s.fields.access_code}">
+  <input type="hidden" name="encRequest" value="${s.fields.encRequest}">
+  <button type="submit" style="padding:12px 22px;font-size:16px">Open Bank Muscat payment page</button>
+</form></body>`);
+    }
+
     /* SmartPay: create a payment session → client auto-submits the redirect form */
     if (p === "/api/payments/smartpay/session" && req.method === "POST") {
       const b = parseBody(await body(req), req.headers["content-type"]);
