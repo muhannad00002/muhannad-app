@@ -101,6 +101,9 @@ node wedding/app/build.js
 | `09-admin.js`  | Admin dashboard & all management screens |
 | `10-boot.js`   | Boot & initial render |
 
-Backend (payments): [`server/`](server/) — `smartpay.js` (Bank Muscat SmartPay,
-AES-256-GCM), `apple.js` (Apple receipt/JWS verification), `server.js` (wiring),
-`test.js` (self-test). See [INTEGRATION.md](INTEGRATION.md).
+Backend: [`server/`](server/) — accounts (email/password, scrypt), PostgreSQL
+storage with local JSON fallback (`db.js`), cloud catalog API, `smartpay.js`
+(Bank Muscat SmartPay, AES-256-GCM), `apple.js` (Apple receipt/JWS
+verification), `test.js` (self-test). Deploy it in one click with the Render
+blueprint — see [DEPLOY.md](DEPLOY.md); payment details in
+[INTEGRATION.md](INTEGRATION.md).

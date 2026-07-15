@@ -328,6 +328,22 @@ route("/profile",()=>{
   kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"11px",marginTop:"16px"}},[
     kpi(pct+"%","Complete"),kpi(c.done,"Tasks done"),kpi(S.favorites.length,"Saved"),
   ]));
+  // account card (only when a cloud backend is configured)
+  if(typeof apiBase==="function" && apiBase()){
+    if(S.account){
+      kids.push(h("div.card.pad",{style:{marginTop:"16px",display:"flex",gap:"12px",alignItems:"center"}},[
+        h("span.icon-btn",{style:{width:"40px",height:"40px",background:"var(--good-soft)",color:"var(--good)",border:"0",flex:"none"}},icon("check",19)),
+        h("div.grow",{style:{minWidth:0}},[h("b","Signed in"),h("div.tiny.faint",{style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},S.account.email)]),
+        h("button.chip",{onclick:()=>confirmSheet("Sign out?","Your plan stays saved to your account in the cloud.","Sign out",()=>{S.account=null;save();toast("Signed out");go("/profile");})},"Sign out"),
+      ]));
+    }else{
+      kids.push(h("button.card.pad",{style:{marginTop:"16px",width:"100%",textAlign:"left",cursor:"pointer",display:"flex",gap:"12px",alignItems:"center"},onclick:()=>openAccountSheet()},[
+        h("span.icon-btn",{style:{width:"40px",height:"40px",background:"var(--rose-soft)",color:"var(--rose-deep)",border:"0",flex:"none"}},icon("user",19)),
+        h("div.grow",[h("b","Create account / Sign in"),h("div.tiny.faint","Keep your plan & Premium on any device")]),
+        icon("fwd",18,"faint"),
+      ]));
+    }
+  }
   // subscription card
   if(isPremium()){
     kids.push(h("div.card.pad",{style:{marginTop:"16px",background:"linear-gradient(135deg,var(--gold-soft),var(--rose-soft))",border:"0",display:"flex",gap:"12px",alignItems:"center"}},[

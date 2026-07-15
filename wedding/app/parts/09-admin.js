@@ -271,14 +271,27 @@ route("/admin/users",()=>{
 /* ---------- MORE (notifications · ads · tips · featured · templates) ---------- */
 route("/admin/more",()=>{
   const kids=[adminTop("Manage",h("button.icon-btn",{onclick:()=>{S.role="bride";save();go("/home");}},icon("logout",20)))];
-  const items=[
+  const items=[];
+  // cloud publishing (when a backend is configured)
+  if(typeof apiBase==="function" && apiBase()){
+    if(S.account&&S.account.role==="admin"){
+      items.push(["share","Publish catalog to cloud","Push vendors, categories, tips & ads live",async()=>{
+        toast("Publishing…","☁️");
+        try{await publishCatalog();toast("Catalog published — live for all users ✓","🎉");}
+        catch(e){toast(e.message,"⚠️");}
+      }]);
+    }else{
+      items.push(["user","Admin sign in","Required to publish changes to the cloud",()=>openAccountSheet()]);
+    }
+  }
+  items.push(
     ["megaphone","Send notification","Broadcast to brides",()=>openBroadcastForm()],
     ["tag","Advertisements",ADS.filter(a=>a.active).length+" active",()=>go("/admin/ads")],
     ["spark","Wedding tips",TIPS.length+" tips",()=>go("/admin/tips")],
     ["star","Featured vendors",VENDORS.filter(v=>v.featured).length+" featured",()=>go("/admin/vendors")],
     ["list","Checklist template",CHECKLIST_TEMPLATE.length+" default tasks",()=>go("/admin/template")],
     ["chart","Analytics","View overview",()=>go("/admin")],
-  ];
+  );
   kids.push(h("div.card",{style:{overflow:"hidden"}},items.map(([ic,label,meta,fn])=>
     h("button.lrow",{style:{width:"100%",padding:"16px",cursor:"pointer"},onclick:fn},[
       h("span.icon-btn",{style:{width:"40px",height:"40px",background:"var(--rose-soft)",color:"var(--rose-deep)",border:"0"}},icon(ic,19)),

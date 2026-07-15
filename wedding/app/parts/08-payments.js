@@ -8,10 +8,83 @@
    Configure once, here. Leaving `backendBase` empty keeps the app in demo mode
    so the standalone HTML and hosted preview still work end-to-end. */
 const PAY_CONFIG = {
-  backendBase: "",                        // e.g. "https://api.zaffa.app"  (blank = demo)
+  backendBase: "",                        // e.g. "https://zaffa-backend.onrender.com"  (blank = demo)
   appleProducts: { monthly: "com.zaffa.premium.monthly", annual: "com.zaffa.premium.annual" },
   prices: { monthly: "$2.99", annual: "$24" },
 };
+
+/* Backend base: build-time constant, overridable at runtime via localStorage
+   (lets us point an installed app at a new backend without rebuilding). */
+function apiBase(){
+  try{ const o=localStorage.getItem("zaffa.backend"); if(o) return o.replace(/\/$/,""); }catch{}
+  return PAY_CONFIG.backendBase.replace(/\/$/,"");
+}
+async function api(path,{method="GET",body:payload}={}){
+  const headers={"Content-Type":"application/json"};
+  if(S.account&&S.account.token)headers.Authorization="Bearer "+S.account.token;
+  const r=await fetch(apiBase()+path,{method,headers,body:payload?JSON.stringify(payload):undefined});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.error||("Request failed ("+r.status+")"));
+  return data;
+}
+
+/* ---- cloud sync: catalog down, entitlement down, admin catalog up ---- */
+async function cloudInit(){
+  if(!apiBase())return;
+  try{
+    const cat=await api("/api/catalog");
+    let changed=false;
+    if(Array.isArray(cat.categories)&&cat.categories.length){CATEGORIES.length=0;CATEGORIES.push(...cat.categories);changed=true;}
+    if(Array.isArray(cat.vendors)&&cat.vendors.length){VENDORS.length=0;VENDORS.push(...cat.vendors);changed=true;}
+    if(Array.isArray(cat.tips)&&cat.tips.length){TIPS.length=0;TIPS.push(...cat.tips);changed=true;}
+    if(Array.isArray(cat.ads)){ADS.length=0;ADS.push(...cat.ads);changed=true;}
+    if(S.account&&S.account.token){
+      const me=await api("/api/me").catch(()=>null);
+      if(me&&me.subscription){S.subscription={plan:me.subscription.plan,tier:me.subscription.tier||null,since:me.subscription.since||null};changed=true;}
+      else if(me===null){S.account=null;} // token expired
+    }
+    if(changed){save();render();}
+  }catch(e){/* offline or backend down — local data keeps working */}
+}
+async function publishCatalog(){
+  await api("/api/admin/catalog",{method:"PUT",body:{categories:CATEGORIES,vendors:VENDORS,tips:TIPS,ads:ADS,version:Date.now()}});
+}
+
+/* ---- account sheet (register / sign in) ---- */
+function openAccountSheet(onDone){
+  let mode="login"; const d={name:"",email:"",password:""};
+  let ref;
+  ref=sheet({title:"Your account",body:(close)=>{
+    const wrap=h("div.col.gap12",{style:{marginTop:"4px"}});
+    function draw(){
+      clear(wrap);
+      const seg=h("div.seg");
+      [["login","Sign in"],["register","Create account"]].forEach(([k,l])=>
+        seg.appendChild(h("button"+(mode===k?".on":""),{onclick:()=>{mode=k;draw();}},l)));
+      wrap.appendChild(seg);
+      if(mode==="register")wrap.appendChild(h("div",[h("label.lbl","Your name"),
+        h("input.field",{value:d.name,placeholder:"e.g. Sarah",oninput:e=>d.name=e.target.value})]));
+      wrap.appendChild(h("div",[h("label.lbl","Email"),
+        h("input.field",{type:"email",value:d.email,placeholder:"you@example.com",oninput:e=>d.email=e.target.value})]));
+      wrap.appendChild(h("div",[h("label.lbl","Password"),
+        h("input.field",{type:"password",value:d.password,placeholder:mode==="register"?"At least 6 characters":"Your password",oninput:e=>d.password=e.target.value})]));
+      const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
+        btn.disabled=true;btn.textContent="One moment…";
+        try{
+          const r=await api(mode==="register"?"/api/auth/register":"/api/auth/login",{method:"POST",body:d});
+          S.account={email:r.user.email,name:r.user.name,role:r.user.role,token:r.token};
+          if(r.user.name&&mode==="register"&&!S.bride.name)S.bride.name=r.user.name;
+          save(); ref.close(); toast(mode==="register"?"Welcome to Zaffa 💗":"Signed in ✓");
+          cloudInit(); onDone&&onDone(); render();
+        }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent=mode==="register"?"Create account":"Sign in";}
+      }},mode==="register"?"Create account":"Sign in");
+      wrap.appendChild(btn);
+      wrap.appendChild(h("p.center.tiny.faint","Your plan and Premium follow your account on any device."));
+    }
+    draw(); return wrap;
+  }});
+  return ref;
+}
 
 /* Detect the native iOS wrapper + a StoreKit purchase bridge, if present. */
 function nativeIAP(){
@@ -25,7 +98,7 @@ function nativeIAP(){
 
 function paymentProvider(){
   if(nativeIAP()) return "apple";
-  if(PAY_CONFIG.backendBase) return "smartpay";
+  if(apiBase()) return "smartpay";
   return "demo";
 }
 function providerLabel(){
@@ -60,10 +133,8 @@ async function checkoutApple(planId){
   const result = await iap.purchase({ productId });      // native bridge resolves on success
   // Verify the receipt/transaction server-side before granting entitlement.
   const proof = result.jws ? {jws:result.jws} : {receipt:result.receipt};
-  if(PAY_CONFIG.backendBase){
-    const v = await fetch(PAY_CONFIG.backendBase+"/api/payments/apple/verify",{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({...proof,userId:currentUserId(),planId})}).then(r=>r.json());
+  if(apiBase()){
+    const v = await api("/api/payments/apple/verify",{method:"POST",body:{...proof,userId:currentUserId(),planId}});
     if(!v.ok) throw new Error(v.reason||"Receipt could not be verified");
   }
   goPremium(planId);
@@ -72,10 +143,11 @@ async function checkoutApple(planId){
 
 /* ---- Bank Muscat SmartPay (server creates session → we redirect) ---- */
 async function checkoutSmartPay(planId){
-  const session = await fetch(PAY_CONFIG.backendBase+"/api/payments/smartpay/session",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({planId,userId:currentUserId(),name:S.bride.name,email:S.bride.email||""})
-  }).then(r=>r.json());
+  // paying is nicer with an account: Premium then follows the user anywhere
+  if(!S.account)await new Promise(res=>openAccountSheet(res));
+  if(!S.account)throw new Error("Sign in to continue");
+  const session = await api("/api/payments/smartpay/session",{method:"POST",
+    body:{planId,userId:currentUserId(),name:S.bride.name}});
   if(!session || !session.action) throw new Error("Could not start payment");
   // remember intent so /premium/return can confirm after the redirect bounce
   try{ localStorage.setItem("zaffa.pendingPlan", planId); }catch{}
@@ -89,12 +161,15 @@ async function checkoutSmartPay(planId){
   return new Promise(()=>{}); // navigation leaves the page
 }
 
-function currentUserId(){ return (S.bride && S.bride.name ? S.bride.name : "anon")+"|"+(S.bride.date||""); }
+function currentUserId(){
+  if(S.account&&S.account.email)return S.account.email;
+  return (S.bride && S.bride.name ? S.bride.name : "anon")+"|"+(S.bride.date||"");
+}
 
 /* ---- Return handler: the SmartPay callback bounces here after payment ---- */
 route("/premium/return",(q)=>{
   const success = q.status==="success";
-  if(success){ const plan=q.plan||localStorage.getItem("zaffa.pendingPlan")||"monthly"; goPremium(plan); }
+  if(success){ const plan=q.plan||localStorage.getItem("zaffa.pendingPlan")||"monthly"; goPremium(plan); cloudInit(); }
   try{ localStorage.removeItem("zaffa.pendingPlan"); }catch{}
   const kids=[h("div",{style:{height:"14px"}}),
     h("div.card.pad-l.center",{style:{marginTop:"40px"}},[
