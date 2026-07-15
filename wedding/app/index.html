@@ -843,6 +843,7 @@ function defaultState(){
     dismissedTips:false,
     seenSuggest:[],               // suggestion task ids already surfaced
     subscription:{plan:"free",tier:null,since:null}, // free | premium
+    account:null,                 // {email,name,role,token} when signed in to the cloud backend
     viewedCats:[],                // distinct category ids opened on free tier
     bookings:{},                  // taskId -> {vendorId,date,time,note}
     assistant:{msgs:[],used:0},   // chat history + free-message counter
@@ -1880,6 +1881,22 @@ route("/profile",()=>{
   kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"11px",marginTop:"16px"}},[
     kpi(pct+"%","Complete"),kpi(c.done,"Tasks done"),kpi(S.favorites.length,"Saved"),
   ]));
+  // account card (only when a cloud backend is configured)
+  if(typeof apiBase==="function" && apiBase()){
+    if(S.account){
+      kids.push(h("div.card.pad",{style:{marginTop:"16px",display:"flex",gap:"12px",alignItems:"center"}},[
+        h("span.icon-btn",{style:{width:"40px",height:"40px",background:"var(--good-soft)",color:"var(--good)",border:"0",flex:"none"}},icon("check",19)),
+        h("div.grow",{style:{minWidth:0}},[h("b","Signed in"),h("div.tiny.faint",{style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},S.account.email)]),
+        h("button.chip",{onclick:()=>confirmSheet("Sign out?","Your plan stays saved to your account in the cloud.","Sign out",()=>{S.account=null;save();toast("Signed out");go("/profile");})},"Sign out"),
+      ]));
+    }else{
+      kids.push(h("button.card.pad",{style:{marginTop:"16px",width:"100%",textAlign:"left",cursor:"pointer",display:"flex",gap:"12px",alignItems:"center"},onclick:()=>openAccountSheet()},[
+        h("span.icon-btn",{style:{width:"40px",height:"40px",background:"var(--rose-soft)",color:"var(--rose-deep)",border:"0",flex:"none"}},icon("user",19)),
+        h("div.grow",[h("b","Create account / Sign in"),h("div.tiny.faint","Keep your plan & Premium on any device")]),
+        icon("fwd",18,"faint"),
+      ]));
+    }
+  }
   // subscription card
   if(isPremium()){
     kids.push(h("div.card.pad",{style:{marginTop:"16px",background:"linear-gradient(135deg,var(--gold-soft),var(--rose-soft))",border:"0",display:"flex",gap:"12px",alignItems:"center"}},[
@@ -2376,10 +2393,83 @@ route("/appointments",()=>{
    Configure once, here. Leaving `backendBase` empty keeps the app in demo mode
    so the standalone HTML and hosted preview still work end-to-end. */
 const PAY_CONFIG = {
-  backendBase: "",                        // e.g. "https://api.zaffa.app"  (blank = demo)
+  backendBase: "",                        // e.g. "https://zaffa-backend.onrender.com"  (blank = demo)
   appleProducts: { monthly: "com.zaffa.premium.monthly", annual: "com.zaffa.premium.annual" },
   prices: { monthly: "$2.99", annual: "$24" },
 };
+
+/* Backend base: build-time constant, overridable at runtime via localStorage
+   (lets us point an installed app at a new backend without rebuilding). */
+function apiBase(){
+  try{ const o=localStorage.getItem("zaffa.backend"); if(o) return o.replace(/\/$/,""); }catch{}
+  return PAY_CONFIG.backendBase.replace(/\/$/,"");
+}
+async function api(path,{method="GET",body:payload}={}){
+  const headers={"Content-Type":"application/json"};
+  if(S.account&&S.account.token)headers.Authorization="Bearer "+S.account.token;
+  const r=await fetch(apiBase()+path,{method,headers,body:payload?JSON.stringify(payload):undefined});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.error||("Request failed ("+r.status+")"));
+  return data;
+}
+
+/* ---- cloud sync: catalog down, entitlement down, admin catalog up ---- */
+async function cloudInit(){
+  if(!apiBase())return;
+  try{
+    const cat=await api("/api/catalog");
+    let changed=false;
+    if(Array.isArray(cat.categories)&&cat.categories.length){CATEGORIES.length=0;CATEGORIES.push(...cat.categories);changed=true;}
+    if(Array.isArray(cat.vendors)&&cat.vendors.length){VENDORS.length=0;VENDORS.push(...cat.vendors);changed=true;}
+    if(Array.isArray(cat.tips)&&cat.tips.length){TIPS.length=0;TIPS.push(...cat.tips);changed=true;}
+    if(Array.isArray(cat.ads)){ADS.length=0;ADS.push(...cat.ads);changed=true;}
+    if(S.account&&S.account.token){
+      const me=await api("/api/me").catch(()=>null);
+      if(me&&me.subscription){S.subscription={plan:me.subscription.plan,tier:me.subscription.tier||null,since:me.subscription.since||null};changed=true;}
+      else if(me===null){S.account=null;} // token expired
+    }
+    if(changed){save();render();}
+  }catch(e){/* offline or backend down — local data keeps working */}
+}
+async function publishCatalog(){
+  await api("/api/admin/catalog",{method:"PUT",body:{categories:CATEGORIES,vendors:VENDORS,tips:TIPS,ads:ADS,version:Date.now()}});
+}
+
+/* ---- account sheet (register / sign in) ---- */
+function openAccountSheet(onDone){
+  let mode="login"; const d={name:"",email:"",password:""};
+  let ref;
+  ref=sheet({title:"Your account",body:(close)=>{
+    const wrap=h("div.col.gap12",{style:{marginTop:"4px"}});
+    function draw(){
+      clear(wrap);
+      const seg=h("div.seg");
+      [["login","Sign in"],["register","Create account"]].forEach(([k,l])=>
+        seg.appendChild(h("button"+(mode===k?".on":""),{onclick:()=>{mode=k;draw();}},l)));
+      wrap.appendChild(seg);
+      if(mode==="register")wrap.appendChild(h("div",[h("label.lbl","Your name"),
+        h("input.field",{value:d.name,placeholder:"e.g. Sarah",oninput:e=>d.name=e.target.value})]));
+      wrap.appendChild(h("div",[h("label.lbl","Email"),
+        h("input.field",{type:"email",value:d.email,placeholder:"you@example.com",oninput:e=>d.email=e.target.value})]));
+      wrap.appendChild(h("div",[h("label.lbl","Password"),
+        h("input.field",{type:"password",value:d.password,placeholder:mode==="register"?"At least 6 characters":"Your password",oninput:e=>d.password=e.target.value})]));
+      const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
+        btn.disabled=true;btn.textContent="One moment…";
+        try{
+          const r=await api(mode==="register"?"/api/auth/register":"/api/auth/login",{method:"POST",body:d});
+          S.account={email:r.user.email,name:r.user.name,role:r.user.role,token:r.token};
+          if(r.user.name&&mode==="register"&&!S.bride.name)S.bride.name=r.user.name;
+          save(); ref.close(); toast(mode==="register"?"Welcome to Zaffa 💗":"Signed in ✓");
+          cloudInit(); onDone&&onDone(); render();
+        }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent=mode==="register"?"Create account":"Sign in";}
+      }},mode==="register"?"Create account":"Sign in");
+      wrap.appendChild(btn);
+      wrap.appendChild(h("p.center.tiny.faint","Your plan and Premium follow your account on any device."));
+    }
+    draw(); return wrap;
+  }});
+  return ref;
+}
 
 /* Detect the native iOS wrapper + a StoreKit purchase bridge, if present. */
 function nativeIAP(){
@@ -2393,7 +2483,7 @@ function nativeIAP(){
 
 function paymentProvider(){
   if(nativeIAP()) return "apple";
-  if(PAY_CONFIG.backendBase) return "smartpay";
+  if(apiBase()) return "smartpay";
   return "demo";
 }
 function providerLabel(){
@@ -2428,10 +2518,8 @@ async function checkoutApple(planId){
   const result = await iap.purchase({ productId });      // native bridge resolves on success
   // Verify the receipt/transaction server-side before granting entitlement.
   const proof = result.jws ? {jws:result.jws} : {receipt:result.receipt};
-  if(PAY_CONFIG.backendBase){
-    const v = await fetch(PAY_CONFIG.backendBase+"/api/payments/apple/verify",{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({...proof,userId:currentUserId(),planId})}).then(r=>r.json());
+  if(apiBase()){
+    const v = await api("/api/payments/apple/verify",{method:"POST",body:{...proof,userId:currentUserId(),planId}});
     if(!v.ok) throw new Error(v.reason||"Receipt could not be verified");
   }
   goPremium(planId);
@@ -2440,10 +2528,11 @@ async function checkoutApple(planId){
 
 /* ---- Bank Muscat SmartPay (server creates session → we redirect) ---- */
 async function checkoutSmartPay(planId){
-  const session = await fetch(PAY_CONFIG.backendBase+"/api/payments/smartpay/session",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({planId,userId:currentUserId(),name:S.bride.name,email:S.bride.email||""})
-  }).then(r=>r.json());
+  // paying is nicer with an account: Premium then follows the user anywhere
+  if(!S.account)await new Promise(res=>openAccountSheet(res));
+  if(!S.account)throw new Error("Sign in to continue");
+  const session = await api("/api/payments/smartpay/session",{method:"POST",
+    body:{planId,userId:currentUserId(),name:S.bride.name}});
   if(!session || !session.action) throw new Error("Could not start payment");
   // remember intent so /premium/return can confirm after the redirect bounce
   try{ localStorage.setItem("zaffa.pendingPlan", planId); }catch{}
@@ -2457,12 +2546,15 @@ async function checkoutSmartPay(planId){
   return new Promise(()=>{}); // navigation leaves the page
 }
 
-function currentUserId(){ return (S.bride && S.bride.name ? S.bride.name : "anon")+"|"+(S.bride.date||""); }
+function currentUserId(){
+  if(S.account&&S.account.email)return S.account.email;
+  return (S.bride && S.bride.name ? S.bride.name : "anon")+"|"+(S.bride.date||"");
+}
 
 /* ---- Return handler: the SmartPay callback bounces here after payment ---- */
 route("/premium/return",(q)=>{
   const success = q.status==="success";
-  if(success){ const plan=q.plan||localStorage.getItem("zaffa.pendingPlan")||"monthly"; goPremium(plan); }
+  if(success){ const plan=q.plan||localStorage.getItem("zaffa.pendingPlan")||"monthly"; goPremium(plan); cloudInit(); }
   try{ localStorage.removeItem("zaffa.pendingPlan"); }catch{}
   const kids=[h("div",{style:{height:"14px"}}),
     h("div.card.pad-l.center",{style:{marginTop:"40px"}},[
@@ -2753,14 +2845,27 @@ route("/admin/users",()=>{
 /* ---------- MORE (notifications · ads · tips · featured · templates) ---------- */
 route("/admin/more",()=>{
   const kids=[adminTop("Manage",h("button.icon-btn",{onclick:()=>{S.role="bride";save();go("/home");}},icon("logout",20)))];
-  const items=[
+  const items=[];
+  // cloud publishing (when a backend is configured)
+  if(typeof apiBase==="function" && apiBase()){
+    if(S.account&&S.account.role==="admin"){
+      items.push(["share","Publish catalog to cloud","Push vendors, categories, tips & ads live",async()=>{
+        toast("Publishing…","☁️");
+        try{await publishCatalog();toast("Catalog published — live for all users ✓","🎉");}
+        catch(e){toast(e.message,"⚠️");}
+      }]);
+    }else{
+      items.push(["user","Admin sign in","Required to publish changes to the cloud",()=>openAccountSheet()]);
+    }
+  }
+  items.push(
     ["megaphone","Send notification","Broadcast to brides",()=>openBroadcastForm()],
     ["tag","Advertisements",ADS.filter(a=>a.active).length+" active",()=>go("/admin/ads")],
     ["spark","Wedding tips",TIPS.length+" tips",()=>go("/admin/tips")],
     ["star","Featured vendors",VENDORS.filter(v=>v.featured).length+" featured",()=>go("/admin/vendors")],
     ["list","Checklist template",CHECKLIST_TEMPLATE.length+" default tasks",()=>go("/admin/template")],
     ["chart","Analytics","View overview",()=>go("/admin")],
-  ];
+  );
   kids.push(h("div.card",{style:{overflow:"hidden"}},items.map(([ic,label,meta,fn])=>
     h("button.lrow",{style:{width:"100%",padding:"16px",cursor:"pointer"},onclick:fn},[
       h("span.icon-btn",{style:{width:"40px",height:"40px",background:"var(--rose-soft)",color:"var(--rose-deep)",border:"0"}},icon(ic,19)),
@@ -2887,6 +2992,7 @@ route("/admin/template",()=>{
 load();
 if(!location.hash) location.hash = S.onboarded ? (S.role==="admin"?"#/admin":"#/home") : "#/welcome";
 render();
+cloudInit();   // pulls the live catalog + account entitlement when a backend is configured
 
 // keep theme in sync with system when in auto mode
 if(window.matchMedia){

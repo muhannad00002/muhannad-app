@@ -21,6 +21,7 @@ function defaultState(){
     dismissedTips:false,
     seenSuggest:[],               // suggestion task ids already surfaced
     subscription:{plan:"free",tier:null,since:null}, // free | premium
+    account:null,                 // {email,name,role,token} when signed in to the cloud backend
     viewedCats:[],                // distinct category ids opened on free tier
     bookings:{},                  // taskId -> {vendorId,date,time,note}
     assistant:{msgs:[],used:0},   // chat history + free-message counter

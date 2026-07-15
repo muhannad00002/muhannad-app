@@ -1,10 +1,11 @@
 /* ============================================================================
-   Zaffa payments backend — minimal, dependency-free reference server.
-   Wires Bank Muscat SmartPay (redirect) and Apple IAP (receipt verify) to a
-   subscription store. Replace the JSON-file store with your real database.
+   Zaffa backend — accounts, catalog, subscriptions, payments.
 
-   Run:  node wedding/server/server.js         (reads wedding/server/.env if present)
-   Port: PORT (default 8787)
+   Storage: PostgreSQL when DATABASE_URL is set (production), JSON file locally.
+   Auth:    email/password (scrypt) with HMAC bearer tokens — see auth.js.
+   Payments: Bank Muscat SmartPay (hosted redirect) + Apple IAP verification.
+
+   Run:  node wedding/server/server.js     (reads wedding/server/.env if present)
    ============================================================================ */
 const http = require("http");
 const fs = require("fs");
@@ -21,28 +22,31 @@ const crypto = require("crypto");
     if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
   });
 })();
+// Render provides RENDER_EXTERNAL_URL automatically — use it as the public base.
+if (!process.env.PUBLIC_BASE_URL && process.env.RENDER_EXTERNAL_URL)
+  process.env.PUBLIC_BASE_URL = process.env.RENDER_EXTERNAL_URL;
 
 const smartpay = require("./smartpay");
 const apple = require("./apple");
+const db = require("./db");
+const auth = require("./auth");
 
 const PORT = process.env.PORT || 8787;
 const APP_RETURN = process.env.APP_RETURN_URL || "http://localhost:8742/index.html";
 
-/* ---- subscription store (swap for a real DB) ---- */
-const STORE = path.join(__dirname, ".subscriptions.json");
-const readStore  = () => { try { return JSON.parse(fs.readFileSync(STORE, "utf8")); } catch { return {}; } };
-const writeStore = (o) => fs.writeFileSync(STORE, JSON.stringify(o, null, 2));
-function grantPremium(userId, plan, meta = {}) {
-  const s = readStore();
-  s[userId || "anon"] = { plan: "premium", tier: plan, since: Date.now(), ...meta };
-  writeStore(s);
+/* ---- subscriptions & orders (persisted) ---- */
+async function grantPremium(userId, plan, meta = {}) {
+  await db.set("sub:" + (userId || "anon"),
+    { plan: "premium", tier: plan, since: Date.now(), ...meta });
 }
-const ORDERS = new Map(); // orderId -> {userId, planId}
+async function getSubscription(userId) {
+  return (await db.get("sub:" + userId)) || { plan: "free" };
+}
 
 /* ---- helpers ---- */
 const json = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "GET,POST,OPTIONS" }); res.end(JSON.stringify(obj)); };
+  "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS" }); res.end(JSON.stringify(obj)); };
 function body(req) {
   return new Promise(resolve => { let b = ""; req.on("data", c => b += c); req.on("end", () => resolve(b)); });
 }
@@ -57,22 +61,54 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
 
   try {
-    /* provider availability — the app calls this to pick a checkout method */
+    /* ---------- health & provider status ---------- */
     if (p === "/api/payments/status" && req.method === "GET")
       return json(res, 200, {
         smartpay: smartpay.isConfigured(),
         apple: !!process.env.APPLE_SHARED_SECRET,
+        db: db.usePg ? "postgres" : "file",
         plans: smartpay.PLANS,
       });
 
-    /* Credential self-test page — open in YOUR browser to fire one initiation
-       request at the configured gateway and see the hosted page (or the exact
-       gateway error). Keeps the live-fire action in the merchant's hands.
-       Usage: GET /api/payments/smartpay/testpage?plan=monthly */
+    /* ---------- accounts ---------- */
+    if (p === "/api/auth/register" && req.method === "POST") {
+      const b = parseBody(await body(req), req.headers["content-type"]);
+      const r = await auth.register(b);
+      return json(res, r.error ? 400 : 200, r);
+    }
+    if (p === "/api/auth/login" && req.method === "POST") {
+      const b = parseBody(await body(req), req.headers["content-type"]);
+      const r = await auth.login(b);
+      return json(res, r.error ? 401 : 200, r);
+    }
+    if (p === "/api/me" && req.method === "GET") {
+      const user = await auth.fromRequest(req);
+      if (!user) return json(res, 401, { error: "not_signed_in" });
+      return json(res, 200, { user, subscription: await getSubscription(user.email) });
+    }
+
+    /* ---------- catalog (vendors, categories, tips, ads) ----------
+       Public read; admin-only write. The admin app publishes whole
+       collections — matching how the client edits them in memory. */
+    if (p === "/api/catalog" && req.method === "GET") {
+      const out = {};
+      for (const { key, value } of await db.list("catalog:")) out[key.slice(8)] = value;
+      return json(res, 200, out); // {} until an admin publishes
+    }
+    if (p === "/api/admin/catalog" && req.method === "PUT") {
+      const user = await auth.fromRequest(req);
+      if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
+      const b = parseBody(await body(req), req.headers["content-type"]);
+      const allowed = ["categories", "vendors", "tips", "ads", "version"];
+      for (const k of allowed) if (b[k] !== undefined) await db.set("catalog:" + k, b[k]);
+      return json(res, 200, { ok: true, published: allowed.filter(k => b[k] !== undefined) });
+    }
+
+    /* ---------- SmartPay credential self-test page ---------- */
     if (p === "/api/payments/smartpay/testpage" && req.method === "GET") {
       const planId = url.searchParams.get("plan") || "monthly";
       const orderId = "ZF-TEST-" + Date.now();
-      ORDERS.set(orderId, { userId: "credential-test", planId });
+      await db.set("order:" + orderId, { userId: "credential-test", planId, status: "created", createdAt: Date.now() });
       const s = smartpay.createSession({ planId, orderId,
         customer: { name: "Credential Test", email: "", userId: "credential-test" } });
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
@@ -90,47 +126,51 @@ unless you intend to pay. An abandoned initiation costs nothing.</p>
 </form></body>`);
     }
 
-    /* SmartPay: create a payment session → client auto-submits the redirect form */
+    /* ---------- SmartPay checkout ---------- */
     if (p === "/api/payments/smartpay/session" && req.method === "POST") {
       const b = parseBody(await body(req), req.headers["content-type"]);
+      const user = await auth.fromRequest(req);          // prefer the signed-in account
+      const userId = user ? user.email : (b.userId || "anon");
       const orderId = "ZF-" + Date.now() + "-" + crypto.randomBytes(2).toString("hex");
-      ORDERS.set(orderId, { userId: b.userId, planId: b.planId });
+      await db.set("order:" + orderId, { userId, planId: b.planId, status: "created", createdAt: Date.now() });
       const session = smartpay.createSession({ planId: b.planId, orderId,
-        customer: { name: b.name, email: b.email, userId: b.userId } });
-      return json(res, 200, session); // {action, fields:{access_code, encRequest}, orderId}
+        customer: { name: user ? user.name : b.name, email: userId, userId } });
+      return json(res, 200, session);
     }
-
-    /* SmartPay: encrypted response posted back here (redirect_url & cancel_url) */
     if (p === "/api/payments/smartpay/callback" && req.method === "POST") {
       const b = parseBody(await body(req), req.headers["content-type"]);
       const r = smartpay.handleCallback(b);
+      const order = r.orderId ? await db.get("order:" + r.orderId) : null;
       if (r.ok) {
-        const o = ORDERS.get(r.orderId) || {};
-        grantPremium(r.userId || o.userId, r.planId || o.planId,
+        const userId = r.userId || order?.userId;
+        await grantPremium(userId, r.planId || order?.planId,
           { via: "smartpay", trackingId: r.trackingId, bankRef: r.bankRef });
       }
-      // bounce the browser back into the app with a status the SPA can read
+      if (order) await db.set("order:" + r.orderId,
+        { ...order, status: r.ok ? "paid" : "failed", trackingId: r.trackingId, bankRef: r.bankRef, raw: r.raw });
       const q = new URLSearchParams({ status: r.ok ? "success" : "failed",
-        plan: r.planId || "", ref: r.trackingId || "" });
+        plan: r.planId || order?.planId || "", ref: r.trackingId || "" });
       res.writeHead(302, { Location: `${APP_RETURN}#/premium/return?${q}` });
       return res.end();
     }
 
-    /* Apple IAP: verify a StoreKit purchase, then grant entitlement */
+    /* ---------- Apple IAP verification ---------- */
     if (p === "/api/payments/apple/verify" && req.method === "POST") {
       const b = parseBody(await body(req), req.headers["content-type"]);
+      const user = await auth.fromRequest(req);
+      const userId = user ? user.email : b.userId;
       const r = b.jws ? apple.verifyTransactionJWS(b.jws)
               : b.receipt ? await apple.verifyReceipt(b.receipt)
               : { ok: false, reason: "no_proof" };
-      if (r.ok) grantPremium(b.userId, r.plan, { via: "apple",
+      if (r.ok) await grantPremium(userId, r.plan, { via: "apple",
         productId: r.productId, expiresAt: r.expiresAt, originalTransactionId: r.originalTransactionId });
       return json(res, r.ok ? 200 : 400, r);
     }
 
-    /* entitlement check — app asks "is this user premium?" */
+    /* ---------- entitlement check ---------- */
     if (p.startsWith("/api/subscription/") && req.method === "GET") {
       const userId = decodeURIComponent(p.split("/").pop());
-      return json(res, 200, readStore()[userId] || { plan: "free" });
+      return json(res, 200, await getSubscription(userId));
     }
 
     json(res, 404, { error: "not_found" });
@@ -139,8 +179,15 @@ unless you intend to pay. An abandoned initiation costs nothing.</p>
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`Zaffa payments backend on http://localhost:${PORT}`);
-  console.log("  SmartPay configured:", smartpay.isConfigured());
-  console.log("  Apple configured:   ", !!process.env.APPLE_SHARED_SECRET);
-});
+(async () => {
+  await db.init();
+  await auth.init();
+  await auth.seedAdmin();
+  server.listen(PORT, () => {
+    console.log(`Zaffa backend on http://localhost:${PORT}`);
+    console.log("  storage:            ", db.usePg ? "PostgreSQL" : "local JSON file");
+    console.log("  SmartPay configured:", smartpay.isConfigured());
+    console.log("  Apple configured:   ", !!process.env.APPLE_SHARED_SECRET);
+    console.log("  Admin seeded:       ", !!(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD));
+  });
+})();
