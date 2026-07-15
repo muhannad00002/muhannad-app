@@ -10,10 +10,9 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const smartpay = require("./smartpay");
-const apple = require("./apple");
 
-// tiny .env loader (no dependency)
+// tiny .env loader (no dependency) — must run BEFORE requiring the provider
+// modules, which snapshot their configuration from process.env at load time.
 (function loadEnv() {
   const p = path.join(__dirname, ".env");
   if (!fs.existsSync(p)) return;
@@ -22,6 +21,9 @@ const apple = require("./apple");
     if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
   });
 })();
+
+const smartpay = require("./smartpay");
+const apple = require("./apple");
 
 const PORT = process.env.PORT || 8787;
 const APP_RETURN = process.env.APP_RETURN_URL || "http://localhost:8742/index.html";

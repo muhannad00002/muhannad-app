@@ -36,7 +36,8 @@ function encrypt(plain, workingKey = CFG.workingKey) {
   const c   = crypto.createCipheriv("aes-256-gcm", key, iv, { authTagLength: 16 });
   const ct  = Buffer.concat([c.update(plain, "utf8"), c.final()]);
   const tag = c.getAuthTag();
-  return (iv.toString("hex") + Buffer.concat([ct, tag]).toString("hex")).toUpperCase();
+  // official kit emits lowercase hex: hex(nonce) + hex(cipher + tag)
+  return iv.toString("hex") + Buffer.concat([ct, tag]).toString("hex");
 }
 function decrypt(encHex, workingKey = CFG.workingKey) {
   const key = Buffer.from(workingKey, "utf8");
@@ -81,16 +82,18 @@ function createSession({ planId, orderId, customer = {} }) {
   const req = {
     merchant_id:  CFG.merchantId,
     order_id:     orderId,
-    amount:       plan.amount,
     currency:     CFG.currency,
+    amount:       plan.amount,
     redirect_url: `${CFG.publicBase}/api/payments/smartpay/callback`,
     cancel_url:   `${CFG.publicBase}/api/payments/smartpay/callback`,
+    language:     "EN",
     billing_name:  customer.name  || "",
     billing_email: customer.email || "",
     merchant_param1: planId,
     merchant_param2: customer.userId || "",
   };
-  const encRequest = encrypt(toRequestString(req));
+  // kit builds the string with a trailing '&'
+  const encRequest = encrypt(toRequestString(req) + "&");
   return {
     action: CFG.txnUrl,
     fields: { access_code: CFG.accessCode, encRequest },

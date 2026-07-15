@@ -40,10 +40,26 @@ integration). Implemented in `server/smartpay.js` and verified by `server/test.j
 | `APP_RETURN_URL` | where to bounce the browser back into the app |
 
 **Crypto** (per appendix 11.1): AES-256/GCM/NoPadding, random 16-byte IV,
-16-byte tag, `encRequest = HEX(IV) + HEX(CIPHER+TAG)`. Working key bytes are the
-AES key. Decryption reads the first 32 hex chars as the IV. `server/smartpay.js`
-matches this exactly (`node server/test.js` proves the round-trip and rejects
-tampered ciphertext).
+16-byte tag, `encRequest = HEX(IV) + HEX(CIPHER+TAG)` (lowercase hex). The
+working key's UTF-8 bytes are the AES key. Decryption reads the first 32 hex
+chars as the IV. `server/smartpay.js` matches this exactly — verified two ways:
+`node server/test.js` (round-trip + tamper rejection) and a cross-language
+interop check against the bank's own kit code (Node-encrypted ciphertext
+decrypts with the kit's Python `ccavutil.py`, and vice versa).
+
+**Endpoints** (from the official integration kits):
+
+| Environment | Transaction URL |
+|-------------|-----------------|
+| UAT (test)  | `https://spayuattrns.bmtest.om/transaction.do?command=initiateTransaction` |
+| Production  | `https://mti.bankmuscat.com:6443/transaction.do?command=initiateTransaction` |
+
+> A request that reaches the gateway but fails with **Error 10002 — Merchant
+> Authentication failed** means the `access_code` / working key pair is not
+> valid **on that environment** (e.g. production credentials posted to the UAT
+> host, an inactive merchant, or a mismatched key). Parameter errors (21001+)
+> only appear after authentication succeeds, so 10002 is always a
+> credential/environment issue, not a request-format issue.
 
 **Flow**
 
