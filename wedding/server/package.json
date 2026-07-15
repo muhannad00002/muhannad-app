@@ -1,0 +1,12 @@
+{
+  "name": "zaffa-payments-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bank Muscat SmartPay + Apple IAP verification backend for the Zaffa wedding app.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js"
+  },
+  "engines": { "node": ">=16" }
+}
