@@ -20,8 +20,77 @@ function defaultState(){
     notifs:[],
     dismissedTips:false,
     seenSuggest:[],               // suggestion task ids already surfaced
+    subscription:{plan:"free",tier:null,since:null}, // free | premium
+    viewedCats:[],                // distinct category ids opened on free tier
+    bookings:{},                  // taskId -> {vendorId,date,time,note}
+    assistant:{msgs:[],used:0},   // chat history + free-message counter
     _catSeed:null,_vendorSeed:null,
   };
+}
+
+/* ---- Freemium model ---- */
+const FREE_CATEGORY_VIEWS = 3;   // distinct categories a free user may open
+const FREE_AI_MESSAGES    = 3;   // assistant messages before paywall
+function isPremium(){ return S.subscription && S.subscription.plan==="premium"; }
+function categoryViewable(id){
+  if(isPremium())return true;
+  if(S.viewedCats.includes(id))return true;         // already opened → stays open
+  return S.viewedCats.length < FREE_CATEGORY_VIEWS; // still have free slots
+}
+function recordCategoryView(id){
+  if(isPremium())return;
+  if(!S.viewedCats.includes(id)){ S.viewedCats.push(id); save(); }
+}
+function freeCatsLeft(){ return Math.max(0, FREE_CATEGORY_VIEWS - S.viewedCats.length); }
+function goPremium(tier){
+  S.subscription={plan:"premium",tier:tier||"monthly",since:Date.now()};
+  save();
+}
+function cancelPremium(){ S.subscription={plan:"free",tier:null,since:null}; save(); }
+
+/* ---- Bookings / appointments ---- */
+function saveBooking(taskId,vendorId,date,time,note){
+  S.bookings[taskId]={vendorId,date,time:time||"",note:note||""}; save();
+}
+function upcomingBookings(){
+  return Object.entries(S.bookings).map(([taskId,b])=>({taskId,...b,vendor:vendorById(b.vendorId),task:templateById(taskId)}))
+    .filter(b=>b.vendor&&b.date)
+    .sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+}
+
+/* ---- Calendar export (offline, no backend) ---- */
+function fmtICSDate(date,time){
+  // date "YYYY-MM-DD", time "HH:MM" (optional) → local floating time
+  const d=date.replace(/-/g,"");
+  const t=(time||"10:00").replace(":","")+"00";
+  return d+"T"+t;
+}
+function addHour(time){
+  const [hh,mm]=(time||"10:00").split(":").map(Number);
+  const h=(hh+1)%24; return String(h).padStart(2,"0")+":"+String(mm||0).padStart(2,"0");
+}
+function buildICS({title,date,time,desc,location}){
+  const dt=fmtICSDate(date,time), dtEnd=fmtICSDate(date,addHour(time));
+  const stamp=new Date().toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
+  const esc=s=>String(s||"").replace(/([,;\\])/g,"\\$1").replace(/\n/g,"\\n");
+  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Zaffa//Wedding Planner//EN","CALSCALE:GREGORIAN","BEGIN:VEVENT",
+    "UID:"+stamp+"-"+Math.random().toString(36).slice(2)+"@zaffa","DTSTAMP:"+stamp,
+    "DTSTART:"+dt,"DTEND:"+dtEnd,"SUMMARY:"+esc(title),"DESCRIPTION:"+esc(desc),
+    "LOCATION:"+esc(location),"BEGIN:VALARM","TRIGGER:-P1D","ACTION:DISPLAY","DESCRIPTION:"+esc(title),"END:VALARM",
+    "END:VEVENT","END:VCALENDAR"].join("\r\n");
+}
+function downloadICS(opts){
+  const blob=new Blob([buildICS(opts)],{type:"text/calendar"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download=(opts.title||"appointment").replace(/[^\w]+/g,"-").toLowerCase()+".ics";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function gcalUrl({title,date,time,desc,location}){
+  const dt=fmtICSDate(date,time), dtEnd=fmtICSDate(date,addHour(time));
+  const q=new URLSearchParams({action:"TEMPLATE",text:title||"",dates:dt+"/"+dtEnd,details:desc||"",location:location||""});
+  return "https://calendar.google.com/calendar/render?"+q.toString();
 }
 
 function load(){

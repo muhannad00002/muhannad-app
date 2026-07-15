@@ -64,6 +64,19 @@ function openFilterSheet(f,onChange){
 route("/category/:id",(q,p)=>{
   const cat=catById(p.id);
   if(!cat)return appFrame([topbar("Not found",{back:true}),h("div.empty",[h("div.em","🔍"),h("h3","Category not found")])],{tabs:brideTabs("/categories")});
+  // freemium gate: first 3 distinct categories free
+  if(!categoryViewable(p.id)){
+    setTimeout(()=>openPaywall("category"),80);
+    return appFrame([topbar(cat.name,{back:true}),
+      h("div.empty",{style:{paddingTop:"56px"}},[
+        h("div.em",{style:{fontSize:"52px"}},"🔒"),
+        h("h3","Premium category"),
+        h("p.muted",{style:{maxWidth:"280px",margin:"0 auto 20px"}},`You've viewed your ${FREE_CATEGORY_VIEWS} free categories. Go Premium to browse ${cat.name} and every other category — from under $2 a month.`),
+        h("button.btn.btn-pri.btn-lg",{onclick:()=>openPaywall("category")},["Unlock all categories ",icon("fwd",16)]),
+        h("button.btn.btn-quiet",{style:{marginTop:"10px"},onclick:()=>back()},"Go back"),
+      ])],{tabs:brideTabs("/categories")});
+  }
+  recordCategoryView(p.id);
   const f=makeFilters();
   const kids=[topbar(cat.name,{back:true,right:h("button.icon-btn",{onclick:()=>go("/search?cat="+cat.id)},icon("search",21))})];
   const header=h("div.row.gap12",{style:{padding:"2px 3px 14px"}},[
@@ -184,16 +197,15 @@ route("/vendor/:id",(q,p)=>{
 
   // sticky select bar
   if(linkedTask){
+    const booking=S.bookings[linkedTask.id];
     const selBtn=h("button.btn.btn-block "+(isSelected?"btn-sec":"btn-pri btn-lg"),{onclick:()=>{
       if(S.selectedVendor[linkedTask.id]===v.id){
-        delete S.selectedVendor[linkedTask.id]; setTask(linkedTask.id,"prog"); save();
-        toast("Selection removed");
+        delete S.selectedVendor[linkedTask.id]; delete S.bookings[linkedTask.id]; setTask(linkedTask.id,"prog"); save();
+        toast("Selection removed"); go("/vendor/"+v.id);
       }else{
-        selectVendorForTask(v.id,linkedTask.id); confetti();
-        toast(`${linkedTask.title.replace(/^(Book|Buy|Order|Choose|Arrange|Send|Set up|Reserve|Select|Consider|Prepare|Confirm|Draft|Print|Add|Plan) /,"")} — done ✓`,"💗");
+        openBookingSheet(v,linkedTask.id,()=>go("/vendor/"+v.id));
       }
-      go("/vendor/"+v.id); // re-render
-    }},isSelected?[icon("check",18),"Selected — tap to undo"]:["Select this vendor",h("span",{style:{opacity:.85}}," · completes “"+shortTask(linkedTask.title)+"”")]);
+    }},isSelected?[icon("check",18),booking&&booking.date?("Booked "+new Date(booking.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"})+" — tap to undo"):"Selected — tap to undo"]:[icon("cal",18),"Select & pick a date"]);
     const bar=h("div",{style:{position:"fixed",bottom:"0",left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"460px",zIndex:"48",
       padding:"12px 20px calc(14px + env(safe-area-inset-bottom))",background:"color-mix(in srgb,var(--surface) 90%,transparent)",
       backdropFilter:"blur(14px)",borderTop:"1px solid var(--line)"}},selBtn);
@@ -316,6 +328,21 @@ route("/profile",()=>{
   kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"11px",marginTop:"16px"}},[
     kpi(pct+"%","Complete"),kpi(c.done,"Tasks done"),kpi(S.favorites.length,"Saved"),
   ]));
+  // subscription card
+  if(isPremium()){
+    kids.push(h("div.card.pad",{style:{marginTop:"16px",background:"linear-gradient(135deg,var(--gold-soft),var(--rose-soft))",border:"0",display:"flex",gap:"12px",alignItems:"center"}},[
+      h("span",{style:{fontSize:"26px"}},"💗"),
+      h("div.grow",[h("b","Zaffa Premium"),h("div.tiny.faint",(S.subscription.tier==="annual"?"Annual":"Monthly")+" plan · all features unlocked")]),
+      h("button.chip",{onclick:()=>confirmSheet("Cancel Premium?","You'll return to the free plan (3 categories & limited assistant).","Cancel plan",()=>{cancelPremium();toast("Back on free plan");go("/profile");},true)},"Manage"),
+    ]));
+  }else{
+    kids.push(h("button.card.pad",{style:{marginTop:"16px",width:"100%",textAlign:"left",cursor:"pointer",
+      background:"linear-gradient(135deg,var(--rose),var(--rose-deep))",border:"0",color:"#fff",display:"flex",gap:"12px",alignItems:"center"},onclick:()=>openPaywall("default")},[
+      h("span",{style:{fontSize:"26px"}},"✨"),
+      h("div.grow",[h("b",{style:{color:"#fff"}},"Go Premium"),h("div.tiny",{style:{color:"rgba(255,255,255,.85)"}},"Unlimited categories & AI assistant · under $3/mo")]),
+      icon("fwd",18),
+    ]));
+  }
   // budget
   kids.push(h("div.card.pad",{style:{marginTop:"16px"}},[
     h("div.between",[h("div.row.gap8",[icon("wallet",20,"faint"),h("b","Budget")]),
@@ -324,10 +351,12 @@ route("/profile",()=>{
   ]));
   // menu
   const menu=[
+    ["spark","AI assistant (Aya)",()=>go("/assistant"),isPremium()?"":FREE_AI_MESSAGES-S.assistant.used+" free"],
+    ["cal","My appointments",()=>go("/appointments"),upcomingBookings().length?upcomingBookings().length+"":""],
     ["heart","Saved vendors",()=>go("/favorites"),S.favorites.length+""],
     ["list","My checklist",()=>go("/checklist"),c.done+"/"+c.total],
     ["bell","Notifications",()=>go("/notifications"),unreadNotifs()?unreadNotifs()+" new":""],
-    ["cal","Wedding details",()=>go("/profile/edit"),""],
+    ["user","Wedding details",()=>go("/profile/edit"),""],
   ];
   kids.push(h("div.card",{style:{marginTop:"16px",overflow:"hidden"}},menu.map(([ic,label,fn,meta])=>
     h("button.lrow",{style:{width:"100%",padding:"15px 16px",cursor:"pointer"},onclick:fn},[

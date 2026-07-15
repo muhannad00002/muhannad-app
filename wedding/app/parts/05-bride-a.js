@@ -101,8 +101,11 @@ route("/home",()=>{
       h("div.small.muted",greet),
       h("h1",{style:{fontSize:"27px",marginTop:"2px"}},[S.bride.name+" ",h("span",{style:{fontSize:"20px"}},"🌸")]),
     ]),
-    h("button.icon-btn",{onclick:()=>go("/notifications"),"aria-label":"Notifications",style:{position:"relative"}},
-      [icon("bell",21), unreadNotifs()?h("span.badge-dot"):null]),
+    h("div.row.gap8",[
+      h("button.icon-btn",{onclick:()=>go("/assistant"),"aria-label":"AI assistant",style:{color:"var(--rose-deep)",background:"var(--rose-soft)",border:"0"}},icon("spark",21)),
+      h("button.icon-btn",{onclick:()=>go("/notifications"),"aria-label":"Notifications",style:{position:"relative"}},
+        [icon("bell",21), unreadNotifs()?h("span.badge-dot"):null]),
+    ]),
   ]));
 
   // countdown hero
@@ -142,6 +145,33 @@ route("/home",()=>{
     ]),
   ]);
   kids.push(planCard);
+
+  // Upcoming appointments (from booked vendors)
+  const ups=upcomingBookings().slice(0,2);
+  if(ups.length){
+    kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Upcoming"),h("span.link",{onclick:()=>go("/appointments")},"All")]));
+    kids.push(h("div.col.gap8",ups.map(b=>{
+      const dt=new Date(b.date+"T"+(b.time||"11:00")+":00");
+      return h("div.check",{style:{cursor:"pointer"},onclick:()=>go("/appointments")},[
+        h("div",{style:{width:"42px",textAlign:"center",flex:"none"}},[
+          h("div",{style:{fontFamily:"var(--font-d)",fontSize:"20px",fontWeight:"600",color:"var(--rose-deep)",lineHeight:"1"}},dt.getDate()),
+          h("div.tiny.faint",{style:{textTransform:"uppercase"}},dt.toLocaleDateString("en",{month:"short"}))]),
+        h("div.grow",{style:{borderLeft:"1px solid var(--line)",paddingLeft:"12px"}},[
+          h("div",{style:{fontWeight:"600"}},b.vendor.name),
+          h("div.tiny.faint",[b.task?shortTask(b.task.title):"Appointment",b.time?(" · "+b.time):""])]),
+        icon("cal",18,"faint"),
+      ]);
+    })));
+  }
+
+  // Ask Aya banner
+  kids.push(h("div.card.pad",{style:{marginTop:ups.length?"16px":"26px",display:"flex",gap:"14px",alignItems:"center",cursor:"pointer",
+    background:"linear-gradient(135deg,var(--rose-soft),var(--gold-soft))",border:"0"},onclick:()=>go("/assistant")},[
+    h("span.avatar",{style:{width:"48px",height:"48px",fontSize:"20px",background:"linear-gradient(135deg,var(--rose),var(--gold))",flex:"none"}},"A"),
+    h("div.grow",[h("b",{style:{fontSize:"16px"}},"Ask Aya, your AI assistant"),
+      h("div.small.muted","Advice on vendors, budget & what to do next")]),
+    icon("fwd",18,"faint"),
+  ]));
 
   // Today's suggested tasks
   if(suggest.length){
@@ -196,7 +226,9 @@ route("/home",()=>{
   kids.push(h("div",{style:{textAlign:"center",padding:"30px 0 6px"}},
     h("span.faint.tiny","Made with 💗 for your big day")));
 
-  return appFrame(h("div.stagger",kids),{tabs:brideTabs("/home")});
+  const app=appFrame(h("div.stagger",kids),{tabs:brideTabs("/home")});
+  app.appendChild(assistantFab());
+  return app;
 
   function countChip(n,l){return h("div",{style:{flex:"1",background:"rgba(255,255,255,.16)",borderRadius:"var(--r-m)",padding:"9px 4px",textAlign:"center"}},
     [h("div",{style:{fontFamily:"var(--font-d)",fontSize:"22px",fontWeight:"600",color:"#fff"}},n),
@@ -204,9 +236,11 @@ route("/home",()=>{
 });
 
 function catTile(cat){
-  return h("button.cat",{onclick:()=>go("/category/"+cat.id)},[
-    h("span.em",cat.icon),h("span.nm",cat.name),
-  ]);
+  const locked=!categoryViewable(cat.id);
+  const em=h("span.em",cat.icon);
+  if(locked)em.appendChild(h("span",{style:{position:"absolute",top:"-2px",right:"-2px",fontSize:"13px",background:"var(--gold)",color:"#fff",width:"20px",height:"20px",borderRadius:"50%",display:"grid",placeItems:"center"}},"🔒"));
+  em.style.position="relative";
+  return h("button.cat",{onclick:()=>go("/category/"+cat.id)},[em,h("span.nm",cat.name)]);
 }
 
 /* ---------- CATEGORIES (all) ---------- */
@@ -215,14 +249,26 @@ route("/categories",()=>{
   const search=h("input.field",{placeholder:"Search vendors, categories, cities…",style:{marginBottom:"18px"},
     onfocus:()=>go("/search")});
   kids.push(h("div",{style:{padding:"0 0 4px"}},search));
+  // freemium banner
+  if(!isPremium()){
+    const left=freeCatsLeft();
+    kids.push(h("div.card.pad-s",{style:{marginBottom:"14px",display:"flex",gap:"10px",alignItems:"center",cursor:"pointer",
+      background:left>0?"var(--rose-tint)":"var(--gold-soft)",border:"0"},onclick:()=>openPaywall(left>0?"default":"category")},[
+      h("span",{style:{fontSize:"20px"}},left>0?"🌸":"🔒"),
+      h("div.grow",[h("b.small",left>0?`${left} free categor${left>1?"ies":"y"} left`:"Free categories used"),
+        h("div.tiny.faint",left>0?"Go Premium to browse them all":"Unlock all categories with Premium")]),
+      h("span.tag.tag-gold","Premium"),
+    ]));
+  }
   kids.push(h("div.eyebrow",{style:{margin:"4px 3px 12px"}},CATEGORIES.length+" categories"));
   const grid=h("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"12px"}});
   CATEGORIES.forEach(cat=>{
     const n=vendorsInCat(cat.id).length;
+    const locked=!categoryViewable(cat.id);
+    const em=h("span.em",{style:{width:"56px",height:"56px",fontSize:"27px",position:"relative"}},cat.icon);
+    if(locked)em.appendChild(h("span",{style:{position:"absolute",top:"-3px",right:"-3px",fontSize:"12px",background:"var(--gold)",color:"#fff",width:"21px",height:"21px",borderRadius:"50%",display:"grid",placeItems:"center"}},"🔒"));
     grid.appendChild(h("button.cat",{onclick:()=>go("/category/"+cat.id),style:{padding:"18px 8px",gap:"9px"}},[
-      h("span.em",{style:{width:"56px",height:"56px",fontSize:"27px"}},cat.icon),
-      h("span.nm",cat.name),
-      h("span.tiny.faint",n+(n===1?" vendor":" vendors")),
+      em, h("span.nm",cat.name), h("span.tiny.faint",n+(n===1?" vendor":" vendors")),
     ]));
   });
   kids.push(grid);

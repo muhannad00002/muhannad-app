@@ -24,8 +24,25 @@ in one elegant place — no more hunting through Instagram.
   / offers and sort; every vendor has a rich detail page with gallery,
   packages, reviews, working hours, and WhatsApp / call / Instagram / map
   actions.
-- **Select vendor** — completes the matching checklist item automatically.
+- **Select vendor → pick a date → save to calendar** — selecting a vendor opens
+  an appointment picker (date & time). Confirming books the vendor, completes
+  the matching checklist item, and offers **Add to Google Calendar** or a
+  downloadable **.ics** file (Apple / Outlook) with a day-before reminder. All
+  appointments are collected in an **Appointments** screen and surfaced on Home.
+- **Aya — AI assistant** — a chat where the bride can ask for advice: next
+  steps, budget breakdowns, top-rated vendor recommendations for any service,
+  timeline pacing and planning tips, all grounded in her own plan data. Runs
+  fully offline as a context-aware advisor (and is structured so it can be
+  wired to the Claude API for open-ended conversation).
 - **Favourites, global search, notifications, profile & budget.**
+
+**Monetization (freemium)**
+- Income comes from an in-app **monthly subscription, kept under US$3/month**
+  (Monthly $2.99, Annual $24 ≈ $2.00/month).
+- Free tier: browse **3 vendor categories** and send **3 assistant messages**;
+  beyond that an elegant paywall invites the bride to **Zaffa Premium**, which
+  unlocks unlimited categories, unlimited AI chat, calendar sync and smart
+  reminders. (Payment is simulated in the demo — subscribing unlocks instantly.)
 
 **Admin dashboard**
 - Analytics overview, full **vendor CRUD** (add / edit / delete / approve /
@@ -71,5 +88,6 @@ node wedding/app/build.js
 | `04-core.js`   | State store, persistence, router, derived data, app shell |
 | `05-bride-a.js`| Onboarding, home, explore, smart checklist |
 | `06-bride-b.js`| Vendor lists, vendor detail, search, favourites, notifications, profile |
-| `07-admin.js`  | Admin dashboard & all management screens |
-| `08-boot.js`   | Boot & initial render |
+| `07-assistant.js`| Aya AI assistant, premium paywall, appointment booking & calendar export |
+| `08-admin.js`  | Admin dashboard & all management screens |
+| `09-boot.js`   | Boot & initial render |
