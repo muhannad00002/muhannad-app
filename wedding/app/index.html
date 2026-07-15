@@ -2393,7 +2393,7 @@ route("/appointments",()=>{
    Configure once, here. Leaving `backendBase` empty keeps the app in demo mode
    so the standalone HTML and hosted preview still work end-to-end. */
 const PAY_CONFIG = {
-  backendBase: "",                        // e.g. "https://zaffa-backend.onrender.com"  (blank = demo)
+  backendBase: "https://zaffa-backend.onrender.com",  // production backend (blank = demo mode)
   appleProducts: { monthly: "com.zaffa.premium.monthly", annual: "com.zaffa.premium.annual" },
   prices: { monthly: "$2.99", annual: "$24" },
 };
