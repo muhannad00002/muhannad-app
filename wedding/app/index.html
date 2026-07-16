@@ -1886,13 +1886,13 @@ route("/profile",()=>{
     if(S.account){
       kids.push(h("div.card.pad",{style:{marginTop:"16px",display:"flex",gap:"12px",alignItems:"center"}},[
         h("span.icon-btn",{style:{width:"40px",height:"40px",background:"var(--good-soft)",color:"var(--good)",border:"0",flex:"none"}},icon("check",19)),
-        h("div.grow",{style:{minWidth:0}},[h("b","Signed in"),h("div.tiny.faint",{style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},S.account.email)]),
+        h("div.grow",{style:{minWidth:0}},[h("b","Signed in"),h("div.tiny.faint",{style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},S.account.phone||S.account.email||"")]),
         h("button.chip",{onclick:()=>confirmSheet("Sign out?","Your plan stays saved to your account in the cloud.","Sign out",()=>{S.account=null;save();toast("Signed out");go("/profile");})},"Sign out"),
       ]));
     }else{
       kids.push(h("button.card.pad",{style:{marginTop:"16px",width:"100%",textAlign:"left",cursor:"pointer",display:"flex",gap:"12px",alignItems:"center"},onclick:()=>openAccountSheet()},[
         h("span.icon-btn",{style:{width:"40px",height:"40px",background:"var(--rose-soft)",color:"var(--rose-deep)",border:"0",flex:"none"}},icon("user",19)),
-        h("div.grow",[h("b","Create account / Sign in"),h("div.tiny.faint","Keep your plan & Premium on any device")]),
+        h("div.grow",[h("b","Sign in with WhatsApp"),h("div.tiny.faint","One code, no passwords — your plan on any device")]),
         icon("fwd",18,"faint"),
       ]));
     }
@@ -2435,39 +2435,100 @@ async function publishCatalog(){
   await api("/api/admin/catalog",{method:"PUT",body:{categories:CATEGORIES,vendors:VENDORS,tips:TIPS,ads:ADS,version:Date.now()}});
 }
 
-/* ---- account sheet (register / sign in) ---- */
+/* ---- account sheet: WhatsApp OTP sign-up / sign-in ----
+   Step 1: phone → we send a 6-digit code to WhatsApp.
+   Step 2: code (+ name, age, city for first-time users) → signed in. */
 function openAccountSheet(onDone){
-  let mode="login"; const d={name:"",email:"",password:""};
+  let step="phone", existing=false, devCode="", timer=null;
+  const d={phone:"",code:"",name:S.bride.name||"",age:"",city:CITIES[0]};
   let ref;
-  ref=sheet({title:"Your account",body:(close)=>{
+  ref=sheet({title:"Your account",onClose:()=>timer&&clearInterval(timer),body:(close)=>{
     const wrap=h("div.col.gap12",{style:{marginTop:"4px"}});
     function draw(){
-      clear(wrap);
-      const seg=h("div.seg");
-      [["login","Sign in"],["register","Create account"]].forEach(([k,l])=>
-        seg.appendChild(h("button"+(mode===k?".on":""),{onclick:()=>{mode=k;draw();}},l)));
-      wrap.appendChild(seg);
-      if(mode==="register")wrap.appendChild(h("div",[h("label.lbl","Your name"),
-        h("input.field",{value:d.name,placeholder:"e.g. Sarah",oninput:e=>d.name=e.target.value})]));
-      wrap.appendChild(h("div",[h("label.lbl","Email"),
-        h("input.field",{type:"email",value:d.email,placeholder:"you@example.com",oninput:e=>d.email=e.target.value})]));
-      wrap.appendChild(h("div",[h("label.lbl","Password"),
-        h("input.field",{type:"password",value:d.password,placeholder:mode==="register"?"At least 6 characters":"Your password",oninput:e=>d.password=e.target.value})]));
-      const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
-        btn.disabled=true;btn.textContent="One moment…";
-        try{
-          const r=await api(mode==="register"?"/api/auth/register":"/api/auth/login",{method:"POST",body:d});
-          S.account={email:r.user.email,name:r.user.name,role:r.user.role,token:r.token};
-          if(r.user.name&&mode==="register"&&!S.bride.name)S.bride.name=r.user.name;
-          save(); ref.close(); toast(mode==="register"?"Welcome to Zaffa 💗":"Signed in ✓");
-          cloudInit(); onDone&&onDone(); render();
-        }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent=mode==="register"?"Create account":"Sign in";}
-      }},mode==="register"?"Create account":"Sign in");
-      wrap.appendChild(btn);
-      wrap.appendChild(h("p.center.tiny.faint","Your plan and Premium follow your account on any device."));
+      clear(wrap); if(timer){clearInterval(timer);timer=null;}
+      if(step==="phone"){
+        wrap.appendChild(h("div.row.gap12",{style:{alignItems:"center",padding:"2px 2px 6px"}},[
+          h("span",{style:{fontSize:"30px"}},"💬"),
+          h("p.small.muted","Sign in with WhatsApp — we'll send a 6-digit code to your number."),
+        ]));
+        const phoneI=h("input.field",{type:"tel",value:d.phone,placeholder:"9X XXX XXX",style:{fontSize:"17px"},
+          oninput:e=>d.phone=e.target.value});
+        wrap.appendChild(h("div",[h("label.lbl","WhatsApp number"),
+          h("div.row.gap8",[h("span.chip",{style:{flex:"none",fontSize:"14px",padding:"12px 14px"}},"🇴🇲 +968"),h("div.grow",phoneI)])]));
+        const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
+          btn.disabled=true;btn.textContent="Sending code…";
+          try{
+            const r=await api("/api/auth/otp/start",{method:"POST",body:{phone:d.phone}});
+            existing=!!r.existing; devCode=r.devCode||""; d.phone=r.phone||d.phone;
+            step="verify"; draw();
+          }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Send code on WhatsApp";}
+        }},"Send code on WhatsApp");
+        wrap.appendChild(btn);
+        setTimeout(()=>phoneI.focus(),200);
+      }else{
+        wrap.appendChild(h("p.small.muted",{style:{padding:"0 2px"}},
+          ["We sent a code to your WhatsApp ",h("b",d.phone),". ",existing?"Welcome back!":"Fill in your details to finish signing up."]));
+        if(!existing){
+          wrap.appendChild(h("div",[h("label.lbl","Your name"),
+            h("input.field",{value:d.name,placeholder:"e.g. Sarah",oninput:e=>d.name=e.target.value})]));
+          const citySel=h("select.field",CITIES.map(c=>h("option",{value:c,selected:c===d.city},c)));
+          citySel.onchange=e=>d.city=e.target.value;
+          wrap.appendChild(h("div.row.gap8",[
+            h("div",{style:{width:"110px"}},[h("label.lbl","Age"),
+              h("input.field",{type:"number",min:18,max:100,value:d.age,placeholder:"e.g. 26",oninput:e=>d.age=e.target.value})]),
+            h("div.grow",[h("label.lbl","City"),citySel]),
+          ]));
+        }
+        const codeI=h("input.field",{type:"tel",maxLength:6,inputmode:"numeric",value:d.code,placeholder:"6-digit code",
+          style:{fontSize:"22px",textAlign:"center",letterSpacing:".35em"},oninput:e=>d.code=e.target.value});
+        wrap.appendChild(h("div",[h("label.lbl","Verification code"),codeI]));
+        if(devCode)wrap.appendChild(h("p.center.tiny.faint","Test mode — your code is "+devCode));
+        const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
+          btn.disabled=true;btn.textContent="Verifying…";
+          try{
+            const r=await api("/api/auth/otp/verify",{method:"POST",
+              body:{phone:d.phone,code:d.code,name:d.name,age:d.age,city:d.city}});
+            S.account={id:r.user.id,phone:r.user.phone,email:r.user.email,name:r.user.name,role:r.user.role,token:r.token};
+            if(r.user.name&&!existing)S.bride.name=r.user.name;
+            save(); ref.close(); toast(existing?"Welcome back 💗":"Welcome to Zaffa 💗");
+            cloudInit(); onDone&&onDone(); render();
+          }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Verify & continue";}
+        }},"Verify & continue");
+        wrap.appendChild(btn);
+        // resend with 60s countdown
+        let left=60;
+        const resend=h("button.btn.btn-quiet.btn-block",{disabled:true},"Resend code (60s)");
+        timer=setInterval(()=>{left--;
+          if(left<=0){clearInterval(timer);timer=null;resend.disabled=false;resend.textContent="Resend code";}
+          else resend.textContent="Resend code ("+left+"s)";},1000);
+        resend.onclick=async()=>{try{const r=await api("/api/auth/otp/start",{method:"POST",body:{phone:d.phone}});
+          devCode=r.devCode||"";toast("New code sent","💬");draw();}catch(e){toast(e.message,"⚠️");}};
+        wrap.appendChild(resend);
+        wrap.appendChild(h("button.btn.btn-quiet.btn-block",{onclick:()=>{step="phone";draw();}},"Change number"));
+        setTimeout(()=>codeI.focus(),200);
+      }
     }
     draw(); return wrap;
   }});
+  return ref;
+}
+
+/* ---- admin sign-in (email + password; accounts are seeded, not self-serve) ---- */
+function openAdminSignInSheet(onDone){
+  const d={email:"",password:""};
+  let ref;
+  ref=sheet({title:"Admin sign in",body:(close)=>h("div.col.gap12",{style:{marginTop:"4px"}},[
+    h("div",[h("label.lbl","Email"),h("input.field",{type:"email",placeholder:"admin@…",oninput:e=>d.email=e.target.value})]),
+    h("div",[h("label.lbl","Password"),h("input.field",{type:"password",oninput:e=>d.password=e.target.value})]),
+    (()=>{const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
+      btn.disabled=true;btn.textContent="Signing in…";
+      try{
+        const r=await api("/api/auth/login",{method:"POST",body:d});
+        S.account={id:r.user.id||r.user.email,email:r.user.email,name:r.user.name,role:r.user.role,token:r.token};
+        save(); ref.close(); toast("Signed in ✓"); onDone&&onDone(); render();
+      }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Sign in";}
+    }},"Sign in");return btn;})(),
+  ])});
   return ref;
 }
 
@@ -2547,7 +2608,7 @@ async function checkoutSmartPay(planId){
 }
 
 function currentUserId(){
-  if(S.account&&S.account.email)return S.account.email;
+  if(S.account&&(S.account.id||S.account.phone||S.account.email))return S.account.id||S.account.phone||S.account.email;
   return (S.bride && S.bride.name ? S.bride.name : "anon")+"|"+(S.bride.date||"");
 }
 
@@ -2855,7 +2916,7 @@ route("/admin/more",()=>{
         catch(e){toast(e.message,"⚠️");}
       }]);
     }else{
-      items.push(["user","Admin sign in","Required to publish changes to the cloud",()=>openAccountSheet()]);
+      items.push(["user","Admin sign in","Required to publish changes to the cloud",()=>openAdminSignInSheet()]);
     }
   }
   items.push(

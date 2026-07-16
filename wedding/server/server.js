@@ -66,6 +66,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, {
         smartpay: smartpay.isConfigured(),
         apple: !!process.env.APPLE_SHARED_SECRET,
+        whatsapp: require("./whatsapp").isConfigured() || process.env.OTP_DEBUG === "true",
         db: db.usePg ? "postgres" : "file",
         plans: smartpay.PLANS,
       });
@@ -80,6 +81,17 @@ const server = http.createServer(async (req, res) => {
       const b = parseBody(await body(req), req.headers["content-type"]);
       const r = await auth.login(b);
       return json(res, r.error ? 401 : 200, r);
+    }
+    /* WhatsApp OTP: request a code, then verify it (registers on first verify) */
+    if (p === "/api/auth/otp/start" && req.method === "POST") {
+      const b = parseBody(await body(req), req.headers["content-type"]);
+      const r = await auth.startOtp(b);
+      return json(res, r.error ? 400 : 200, r);
+    }
+    if (p === "/api/auth/otp/verify" && req.method === "POST") {
+      const b = parseBody(await body(req), req.headers["content-type"]);
+      const r = await auth.verifyOtp(b);
+      return json(res, r.error ? 400 : 200, r);
     }
     if (p === "/api/me" && req.method === "GET") {
       const user = await auth.fromRequest(req);

@@ -281,7 +281,7 @@ route("/admin/more",()=>{
         catch(e){toast(e.message,"⚠️");}
       }]);
     }else{
-      items.push(["user","Admin sign in","Required to publish changes to the cloud",()=>openAccountSheet()]);
+      items.push(["user","Admin sign in","Required to publish changes to the cloud",()=>openAdminSignInSheet()]);
     }
   }
   items.push(
