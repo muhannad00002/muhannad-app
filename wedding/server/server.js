@@ -61,6 +61,22 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") return json(res, 204, {});
 
   try {
+    /* ---------- friendly root page (humans land here) ---------- */
+    if ((p === "/" || p === "/health") && req.method === "GET") {
+      if (p === "/health") return json(res, 200, { ok: true });
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      return res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zaffa backend</title>
+<body style="font-family:-apple-system,sans-serif;background:#FBF6F2;color:#33262A;display:grid;place-items:center;min-height:100vh;margin:0">
+<div style="text-align:center;padding:40px;max-width:420px">
+  <div style="font-size:52px">💍</div>
+  <h1 style="font-family:Georgia,serif;margin:10px 0 6px">Zaffa backend</h1>
+  <p style="color:#7A6A6E">The server is running. This address hosts the API for the
+  <a href="${APP_RETURN}" style="color:#B76E79">Zaffa app</a> — there's nothing to browse here.</p>
+  <p style="font-size:13px;color:#A9989C">Status: <a href="/api/payments/status" style="color:#B76E79">/api/payments/status</a></p>
+</div></body>`);
+    }
+
     /* ---------- health & provider status ---------- */
     if (p === "/api/payments/status" && req.method === "GET")
       return json(res, 200, {
