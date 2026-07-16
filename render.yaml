@@ -35,6 +35,15 @@ services:
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+      # WhatsApp OTP sign-in (Meta WhatsApp Business Cloud API):
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_ID
+        sync: false
+      - key: WHATSAPP_TEMPLATE
+        value: otp_code
+      - key: WHATSAPP_LANG
+        value: en
       # Apple IAP (add later when App Store Connect is ready):
       - key: APPLE_SHARED_SECRET
         sync: false

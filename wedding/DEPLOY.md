@@ -52,10 +52,34 @@ console run `localStorage.setItem("zaffa.backend","https://YOUR-URL.onrender.com
 
 ## How production data works after this
 
-**Customer registration** — brides tap *Profile → Create account / Sign in*
-(email + password). Accounts are stored in PostgreSQL (passwords as salted
-scrypt hashes, never plain text). A bride's Premium subscription is tied to
-her account, so it works on any device she signs into.
+**Customer registration** — brides tap *Profile → Sign in with WhatsApp*,
+enter their **name, age, city and phone number**, and confirm a 6-digit code
+sent to their WhatsApp. No passwords. Accounts are stored in PostgreSQL and a
+bride's Premium subscription is tied to her account, so it works on any
+device she signs into. (Codes are stored only as hashes, expire in 5 minutes,
+and are rate-limited: 60s between sends, 5 sends/hour, 5 attempts/code.)
+
+**Turning WhatsApp sending on** — the OTP is delivered through Meta's free
+WhatsApp Business Cloud API. One-time setup (~20 minutes):
+1. Go to https://developers.facebook.com → create an app → add the
+   **WhatsApp** product. Meta gives you a business phone number (or connect
+   your own).
+2. In *WhatsApp → API Setup*, copy the **Phone number ID** and create a
+   **permanent access token** (System User token with `whatsapp_business_messaging`).
+3. In *Message Templates*, create an **Authentication** template named
+   `otp_code` (language: English) with the copy-code button — Meta approves
+   these within minutes.
+4. Paste into Render → zaffa-backend → Environment:
+   `WHATSAPP_TOKEN` and `WHATSAPP_PHONE_ID` (template name `otp_code` is
+   already configured). Save — Render restarts the service and sign-ups go live.
+
+Until those two values are set, the app shows "WhatsApp sign-in isn't
+available yet" on sign-up attempts. For local testing without Meta, set
+`OTP_DEBUG=true` in `wedding/server/.env` — the code is returned to the app
+and shown on screen instead of being sent.
+
+**Admin sign-in** stays email + password (the `ADMIN_EMAIL` / `ADMIN_PASSWORD`
+you set on Render) — admin accounts are seeded, never self-registered.
 
 **Vendors & categories** — the admin manages everything inside the app's
 admin dashboard exactly as before, then taps
