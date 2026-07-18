@@ -6,6 +6,7 @@ services:
     name: zaffa-backend
     runtime: node
     plan: free
+    autoDeploy: true
     rootDir: wedding/server
     buildCommand: npm install
     startCommand: node server.js
