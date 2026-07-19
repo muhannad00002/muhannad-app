@@ -62,7 +62,15 @@ async function fromRequest(req) {
   return user ? publicUser(user) : null;
 }
 const publicUser = (u) => ({ id: u.id || u.email || u.phone, email: u.email, phone: u.phone,
-  name: u.name, age: u.age, city: u.city, role: u.role, createdAt: u.createdAt });
+  name: u.name, age: u.age, governorate: u.governorate || u.city, city: u.city,
+  role: u.role, createdAt: u.createdAt });
+
+/* The 11 governorates of Oman */
+const OMAN_GOVERNORATES = [
+  "Muscat", "Dhofar", "Musandam", "Al Buraimi", "Ad Dakhiliyah",
+  "Al Batinah North", "Al Batinah South", "Al Sharqiyah North",
+  "Al Sharqiyah South", "Ad Dhahirah", "Al Wusta",
+];
 
 /* ================= WhatsApp OTP flow =================
    Codes are 6 digits, stored only as HMAC hashes, valid 5 minutes.
@@ -110,7 +118,7 @@ async function startOtp({ phone }) {
   return out;
 }
 
-async function verifyOtp({ phone, code, name, age, city }) {
+async function verifyOtp({ phone, code, name, age, city, governorate }) {
   const p = normPhone(phone);
   if (!p) return { error: "Please enter a valid phone number." };
   const rec = await db.get("otp:" + p);
@@ -128,11 +136,11 @@ async function verifyOtp({ phone, code, name, age, city }) {
     // doesn't burn the OTP — the bride can fix it and resubmit the same code
     const n = String(name || "").trim();
     const a = parseInt(age, 10);
-    const c = String(city || "").trim();
+    const g = String(governorate || city || "").trim();
     if (!n) return { error: "Please enter your name." };
     if (!(a >= 18 && a <= 100)) return { error: "Please enter your age (18 or over)." };
-    if (!c) return { error: "Please choose your city." };
-    user = { id: p, phone: p, name: n, age: a, city: c, role: "bride", createdAt: Date.now() };
+    if (!OMAN_GOVERNORATES.includes(g)) return { error: "Please choose your governorate." };
+    user = { id: p, phone: p, name: n, age: a, governorate: g, city: g, role: "bride", createdAt: Date.now() };
     await db.set("user:" + p, user);
   }
   // consume the code (single use) but keep the send history so rate limits survive
@@ -151,4 +159,4 @@ async function seedAdmin() {
 }
 
 module.exports = { init, register, login, fromRequest, seedAdmin, normEmail,
-  startOtp, verifyOtp, normPhone };
+  startOtp, verifyOtp, normPhone, OMAN_GOVERNORATES };

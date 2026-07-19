@@ -4,6 +4,13 @@
 
 const CITIES = ["Muscat","Salalah","Sohar","Nizwa","Sur","Barka"];
 
+/* The 11 governorates of Oman — used for customer sign-up */
+const GOVERNORATES = [
+  "Muscat","Dhofar","Musandam","Al Buraimi","Ad Dakhiliyah",
+  "Al Batinah North","Al Batinah South","Al Sharqiyah North",
+  "Al Sharqiyah South","Ad Dhahirah","Al Wusta",
+];
+
 /* ---- Categories (expandable; admin can add more) ---- */
 const SEED_CATEGORIES = [
   ["dresses","Wedding Dresses","👰",1],

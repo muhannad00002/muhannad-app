@@ -55,7 +55,7 @@ async function publishCatalog(){
    Step 2: code (+ name, age, city for first-time users) → signed in. */
 function openAccountSheet(onDone){
   let step="phone", existing=false, devCode="", timer=null;
-  const d={phone:"",code:"",name:S.bride.name||"",age:"",city:CITIES[0]};
+  const d={phone:"",code:"",name:S.bride.name||"",age:"",governorate:GOVERNORATES[0]};
   let ref;
   ref=sheet({title:"Your account",onClose:()=>timer&&clearInterval(timer),body:(close)=>{
     const wrap=h("div.col.gap12",{style:{marginTop:"4px"}});
@@ -86,12 +86,12 @@ function openAccountSheet(onDone){
         if(!existing){
           wrap.appendChild(h("div",[h("label.lbl","Your name"),
             h("input.field",{value:d.name,placeholder:"e.g. Sarah",oninput:e=>d.name=e.target.value})]));
-          const citySel=h("select.field",CITIES.map(c=>h("option",{value:c,selected:c===d.city},c)));
-          citySel.onchange=e=>d.city=e.target.value;
+          const govSel=h("select.field",GOVERNORATES.map(c=>h("option",{value:c,selected:c===d.governorate},c)));
+          govSel.onchange=e=>d.governorate=e.target.value;
           wrap.appendChild(h("div.row.gap8",[
             h("div",{style:{width:"110px"}},[h("label.lbl","Age"),
               h("input.field",{type:"number",min:18,max:100,value:d.age,placeholder:"e.g. 26",oninput:e=>d.age=e.target.value})]),
-            h("div.grow",[h("label.lbl","City"),citySel]),
+            h("div.grow",[h("label.lbl","Governorate"),govSel]),
           ]));
         }
         const codeI=h("input.field",{type:"tel",maxLength:6,inputmode:"numeric",value:d.code,placeholder:"6-digit code",
@@ -102,8 +102,8 @@ function openAccountSheet(onDone){
           btn.disabled=true;btn.textContent="Verifying…";
           try{
             const r=await api("/api/auth/otp/verify",{method:"POST",
-              body:{phone:d.phone,code:d.code,name:d.name,age:d.age,city:d.city}});
-            S.account={id:r.user.id,phone:r.user.phone,email:r.user.email,name:r.user.name,role:r.user.role,token:r.token};
+              body:{phone:d.phone,code:d.code,name:d.name,age:d.age,governorate:d.governorate}});
+            S.account={id:r.user.id,phone:r.user.phone,email:r.user.email,name:r.user.name,governorate:r.user.governorate,age:r.user.age,role:r.user.role,token:r.token};
             if(r.user.name&&!existing)S.bride.name=r.user.name;
             save(); ref.close(); toast(existing?"Welcome back 💗":"Welcome to Zaffa 💗");
             cloudInit(); onDone&&onDone(); render();
