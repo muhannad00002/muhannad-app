@@ -12,7 +12,7 @@ function defaultState(){
   return {
     onboarded:false,
     role:"bride",                 // bride | admin
-    theme:"auto",
+    theme:"light",                // day by default; user can switch in Profile
     bride:{name:"Sarah", date:null, budget:6000, currency:"OMR"},
     checklist:{},                 // taskId -> "todo"|"prog"|"done"
     selectedVendor:{},            // taskId -> vendorId (when a vendor completes a task)
@@ -240,10 +240,18 @@ function render(){
   if(!fn)fn=routes["/home"];
   clear(root);
   applyTheme();
-  const view=fn({...query},params);
+  // Admin area is access-controlled: every /admin* route requires a signed-in
+  // admin account. Otherwise show the admin sign-in gate.
+  let view;
+  if(path.indexOf("/admin")===0 && !(S.account && S.account.role==="admin") && typeof adminGateView==="function"){
+    view=adminGateView();
+  }else{
+    view=fn({...query},params);
+  }
   root.appendChild(view);
   window.scrollTo(0,0);
 }
+function isAdmin(){ return !!(S.account && S.account.role==="admin"); }
 window.addEventListener("hashchange",render);
 
 /* ================= SHELL PIECES ================= */

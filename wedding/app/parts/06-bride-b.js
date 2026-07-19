@@ -380,17 +380,12 @@ route("/profile",()=>{
       h("span.grow",{style:{fontWeight:"600",textAlign:"left"}},label),
       meta?h("span.small.faint",meta):null, icon("fwd",18,"faint"),
     ]))));
-  // theme + admin
+  // appearance (admin dashboard is a separate, access-controlled page — not linked here)
   kids.push(h("div.card",{style:{marginTop:"16px",overflow:"hidden"}},[
     h("div.lrow",{style:{padding:"14px 16px"}},[
       h("span.icon-btn",{style:{width:"38px",height:"38px",background:"var(--gold-soft)",color:"var(--gold)",border:"0"}},icon("sun",19)),
       h("span.grow",{style:{fontWeight:"600"}},"Appearance"),
       themeSeg(),
-    ]),
-    h("button.lrow",{style:{width:"100%",padding:"15px 16px",cursor:"pointer"},onclick:()=>{S.role="admin";save();go("/admin");}},[
-      h("span.icon-btn",{style:{width:"38px",height:"38px",background:"var(--surface3)",color:"var(--ink2)",border:"0"}},icon("settings",19)),
-      h("span.grow",{style:{fontWeight:"600",textAlign:"left"}},"Admin dashboard"),
-      icon("fwd",18,"faint"),
     ]),
   ]));
   kids.push(h("button.btn.btn-sec.btn-block",{style:{marginTop:"16px",color:"var(--crit)"},onclick:()=>{

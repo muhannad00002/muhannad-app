@@ -1,5 +1,44 @@
 /* ============ ZAFFA — ADMIN DASHBOARD ============ */
 
+/* Admin sign-in gate — shown for any /admin* route until an admin account is
+   authenticated against the backend. This keeps the admin panel a separate,
+   access-controlled area with no entry point from the customer app. */
+function adminGateView(){
+  const d={email:"",password:""};
+  const app=h("div.app");
+  const s=h("div.screen.no-tab",{style:{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",
+    background:"linear-gradient(160deg,var(--gold-soft),var(--ground) 55%,var(--rose-tint))"}});
+  const emailI=h("input.field",{type:"email",placeholder:"admin@…",value:d.email,oninput:e=>d.email=e.target.value});
+  const passI=h("input.field",{type:"password",placeholder:"Password",oninput:e=>d.password=e.target.value,
+    onkeydown:e=>{if(e.key==="Enter")submit();}});
+  const btn=h("button.btn.btn-pri.btn-lg.btn-block",{style:{marginTop:"4px"},onclick:()=>submit()},"Sign in");
+  async function submit(){
+    if(!(typeof apiBase==="function" && apiBase())){toast("Backend not configured","⚠️");return;}
+    btn.disabled=true;btn.textContent="Signing in…";
+    try{
+      const r=await api("/api/auth/login",{method:"POST",body:d});
+      if(r.user.role!=="admin"){throw new Error("This account is not an administrator.");}
+      S.account={id:r.user.id||r.user.email,email:r.user.email,name:r.user.name,role:r.user.role,token:r.token};
+      S.role="admin"; save(); toast("Welcome back ✨"); go("/admin"); render();
+    }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Sign in";}
+  }
+  s.appendChild(h("div.stagger",{style:{textAlign:"center",maxWidth:"360px",margin:"0 auto",width:"100%"}},[
+    h("div",{style:{fontSize:"46px",marginBottom:"6px"}},"🔐"),
+    h("div.eyebrow",{style:{color:"var(--gold)",marginBottom:"8px"}},"Zaffa Admin"),
+    h("h1",{style:{fontSize:"34px",marginBottom:"6px"}},"Control Center"),
+    h("p.muted",{style:{marginBottom:"22px"}},"Sign in with your administrator account."),
+    h("div.card.pad-l.col.gap12",{style:{textAlign:"left"}},[
+      h("div",[h("label.lbl","Email"),emailI]),
+      h("div",[h("label.lbl","Password"),passI]),
+      btn,
+    ]),
+    h("button.btn.btn-quiet",{style:{margin:"14px auto 0",display:"flex"},onclick:()=>go("/home")},"← Back to app"),
+  ]));
+  app.appendChild(s);
+  setTimeout(()=>emailI.focus(),200);
+  return app;
+}
+
 function adminTop(title,right){
   return h("div.topbar",[
     h("div.grow",[h("div.eyebrow",{style:{color:"var(--gold)"}},"Admin"),h("h2",{style:{fontSize:"22px"}},title)]),
@@ -15,7 +54,7 @@ route("/admin",()=>{
   const brides=USERS.filter(u=>u.role==="bride").length;
   const avgRating=(VENDORS.reduce((s,v)=>s+v.rating,0)/VENDORS.length).toFixed(2);
 
-  const kids=[adminTop("Overview",h("button.icon-btn",{onclick:()=>{S.role="bride";save();go("/home");}},icon("logout",20)))];
+  const kids=[adminTop("Overview",h("button.icon-btn",{onclick:()=>adminSignOut()},icon("logout",20)))];
 
   // greeting
   kids.push(h("div.hero",{style:{background:"linear-gradient(140deg,#C6A469,#B76E79 60%,#9E5763)"}},[
@@ -270,7 +309,7 @@ route("/admin/users",()=>{
 
 /* ---------- MORE (notifications · ads · tips · featured · templates) ---------- */
 route("/admin/more",()=>{
-  const kids=[adminTop("Manage",h("button.icon-btn",{onclick:()=>{S.role="bride";save();go("/home");}},icon("logout",20)))];
+  const kids=[adminTop("Manage",h("button.icon-btn",{onclick:()=>adminSignOut()},icon("logout",20)))];
   const items=[];
   // cloud publishing (when a backend is configured)
   if(typeof apiBase==="function" && apiBase()){
@@ -285,6 +324,7 @@ route("/admin/more",()=>{
     }
   }
   items.push(
+    ["wallet","Bank Muscat payments","Merchant ID, access code & working key",()=>go("/admin/payments")],
     ["megaphone","Send notification","Broadcast to brides",()=>openBroadcastForm()],
     ["tag","Advertisements",ADS.filter(a=>a.active).length+" active",()=>go("/admin/ads")],
     ["spark","Wedding tips",TIPS.length+" tips",()=>go("/admin/tips")],
@@ -298,7 +338,71 @@ route("/admin/more",()=>{
       h("div.grow",{style:{textAlign:"left"}},[h("b",label),h("div.tiny.faint",meta)]),
       icon("fwd",18,"faint"),
     ]))));
-  kids.push(h("button.btn.btn-sec.btn-block",{style:{marginTop:"16px"},onclick:()=>go("/home")},"Switch to bride app"));
+  if(S.account)kids.push(h("div.card.pad-s.row.gap12",{style:{marginTop:"16px"}},[
+    h("span.icon-btn",{style:{width:"36px",height:"36px",background:"var(--good-soft)",color:"var(--good)",border:"0"}},icon("check",18)),
+    h("div.grow",[h("b.small","Signed in as admin"),h("div.tiny.faint",S.account.email||"")])]));
+  kids.push(h("button.btn.btn-sec.btn-block",{style:{marginTop:"12px",color:"var(--crit)"},onclick:()=>adminSignOut()},[icon("logout",18),"Sign out"]));
+  return appFrame(kids,{tabs:adminTabs("/admin/more")});
+});
+
+/* Sign out of the admin account → the /admin gate re-appears */
+function adminSignOut(){
+  S.account=null; S.role="bride"; save();
+  toast("Signed out"); render();
+}
+
+/* ---------- BANK MUSCAT / SMARTPAY SETTINGS ---------- */
+route("/admin/payments",()=>{
+  const kids=[adminTop("Bank Muscat")];
+  const status=h("div.card.pad-s",{style:{marginBottom:"14px"}},h("div.small.muted","Loading current settings…"));
+  kids.push(status);
+  const form=h("div.card.pad.col.gap12");
+  const d={merchantId:"",accessCode:"",workingKey:"",txnUrl:"",currency:"OMR"};
+  const midI=h("input.field",{placeholder:"e.g. 249",oninput:e=>d.merchantId=e.target.value});
+  const acI=h("input.field",{placeholder:"Access code",oninput:e=>d.accessCode=e.target.value});
+  const wkI=h("input.field",{type:"password",placeholder:"Leave blank to keep current",oninput:e=>d.workingKey=e.target.value});
+  const urlI=h("input.field",{placeholder:"Transaction URL",oninput:e=>d.txnUrl=e.target.value});
+  const curI=h("input.field",{value:"OMR",oninput:e=>d.currency=e.target.value});
+  form.append(
+    h("div",[h("label.lbl","Merchant ID (MID)"),midI]),
+    h("div",[h("label.lbl","Access code"),acI]),
+    h("div",[h("label.lbl","Working key"),wkI]),
+    h("div",[h("label.lbl","Transaction URL"),urlI]),
+    h("div",[h("label.lbl","Currency"),curI]),
+  );
+  const saveBtn=h("button.btn.btn-pri.btn-lg.btn-block",{style:{marginTop:"14px"},onclick:async()=>{
+    if(!d.merchantId.trim()||!d.accessCode.trim()){toast("Enter MID and access code","⚠️");return;}
+    saveBtn.disabled=true;saveBtn.textContent="Saving…";
+    try{
+      const r=await api("/api/admin/config/smartpay",{method:"PUT",body:d});
+      toast("Bank Muscat settings saved ✓","🏦"); paint(r);
+      d.workingKey=""; wkI.value="";
+    }catch(e){toast(e.message,"⚠️");}
+    saveBtn.disabled=false;saveBtn.textContent="Save settings";
+  }},"Save settings");
+  kids.push(form);
+  kids.push(saveBtn);
+  kids.push(h("p.tiny.faint",{style:{margin:"14px 3px"}},
+    "The working key is stored securely on the server and never shown in full. After saving, use the test link below to confirm the credentials with Bank Muscat."));
+  const testBtn=h("button.btn.btn-sec.btn-block",{onclick:()=>openLink(apiBase()+"/api/payments/smartpay/testpage")},
+    [icon("fwd",16),"Open credential test page"]);
+  kids.push(testBtn);
+
+  function paint(cfg){
+    clear(status);
+    const ok=cfg.configured;
+    status.appendChild(h("div.row.gap10",{style:{alignItems:"center"}},[
+      h("span.icon-btn",{style:{width:"38px",height:"38px",background:ok?"var(--good-soft)":"var(--warn-soft)",color:ok?"var(--good)":"var(--warn)",border:"0"}},icon(ok?"check":"info",18)),
+      h("div.grow",[h("b.small",ok?"Connected to Bank Muscat":"Not fully configured"),
+        h("div.tiny.faint",cfg.merchantId?("MID "+cfg.merchantId+(cfg.workingKeySet?" · key "+cfg.workingKeyMasked:"")):"No credentials yet")]),
+    ]));
+    midI.value=cfg.merchantId||""; d.merchantId=cfg.merchantId||"";
+    acI.value=cfg.accessCode||""; d.accessCode=cfg.accessCode||"";
+    urlI.value=cfg.txnUrl||""; d.txnUrl=cfg.txnUrl||"";
+    curI.value=cfg.currency||"OMR"; d.currency=cfg.currency||"OMR";
+    wkI.placeholder=cfg.workingKeySet?"•••• set — blank keeps it":"Enter working key";
+  }
+  api("/api/admin/config/smartpay").then(paint).catch(e=>{clear(status);status.appendChild(h("div.small.muted","Couldn't load settings: "+e.message));});
   return appFrame(kids,{tabs:adminTabs("/admin/more")});
 });
 

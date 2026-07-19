@@ -23,11 +23,36 @@ const CFG = {
   merchantId: process.env.SMARTPAY_MERCHANT_ID || "",
   accessCode: process.env.SMARTPAY_ACCESS_CODE || "",
   workingKey: process.env.SMARTPAY_WORKING_KEY || "",
-  txnUrl:     process.env.SMARTPAY_TXN_URL     || "",
+  txnUrl:     process.env.SMARTPAY_TXN_URL     || "https://smartpaytrns.bankmuscat.com/transaction.do?command=initiateTransaction",
   publicBase: process.env.PUBLIC_BASE_URL      || "http://localhost:8787",
   appReturn:  process.env.APP_RETURN_URL       || "http://localhost:8742/index.html",
   currency:   process.env.SMARTPAY_CURRENCY    || "OMR",
 };
+
+/* Apply admin-managed config (from the DB) over the env defaults. Only
+   non-empty fields override, so clearing a box in the admin panel won't wipe
+   a value that's set via environment. */
+function setConfig(o = {}) {
+  ["merchantId", "accessCode", "workingKey", "txnUrl", "currency"].forEach(k => {
+    if (o[k] !== undefined && o[k] !== null && String(o[k]).trim() !== "") CFG[k] = String(o[k]).trim();
+  });
+}
+/* Safe view for the admin UI — never returns the full working key. */
+function publicConfig() {
+  const mask = (s) => (s ? "•".repeat(Math.max(0, s.length - 4)) + s.slice(-4) : "");
+  return {
+    merchantId: CFG.merchantId,
+    accessCode: CFG.accessCode,
+    workingKeyMasked: mask(CFG.workingKey),
+    workingKeySet: !!CFG.workingKey,
+    txnUrl: CFG.txnUrl,
+    currency: CFG.currency,
+    configured: isConfiguredNow(),
+  };
+}
+function isConfiguredNow() {
+  return !!(CFG.merchantId && CFG.workingKey && CFG.accessCode && CFG.txnUrl);
+}
 
 /* ---- AES-256-GCM per SmartPay appendix 11.1 ---- */
 function encrypt(plain, workingKey = CFG.workingKey) {
@@ -127,6 +152,6 @@ function handleCallback(body) {
 
 module.exports = {
   CFG, PLANS, encrypt, decrypt, toRequestString, parseResponseString,
-  createSession, handleCallback,
-  isConfigured: () => !!(CFG.merchantId && CFG.workingKey && CFG.accessCode && CFG.txnUrl),
+  createSession, handleCallback, setConfig, publicConfig,
+  isConfigured: isConfiguredNow,
 };

@@ -115,6 +115,34 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { user, subscription: await getSubscription(user.email) });
     }
 
+    /* ---------- Bank Muscat / SmartPay config (admin-managed) ---------- */
+    if (p === "/api/admin/config/smartpay" && req.method === "GET") {
+      const user = await auth.fromRequest(req);
+      if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
+      return json(res, 200, smartpay.publicConfig());
+    }
+    if (p === "/api/admin/config/smartpay" && req.method === "PUT") {
+      const user = await auth.fromRequest(req);
+      if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
+      const b = parseBody(await body(req), req.headers["content-type"]);
+      // merge over what's stored, so a blank working key keeps the existing one
+      const stored = (await db.get("config:smartpay")) || {};
+      const next = {
+        merchantId: (b.merchantId ?? stored.merchantId ?? "").toString().trim(),
+        accessCode: (b.accessCode ?? stored.accessCode ?? "").toString().trim(),
+        workingKey: (b.workingKey && b.workingKey.trim()) ? b.workingKey.trim() : (stored.workingKey || ""),
+        txnUrl: (b.txnUrl ?? stored.txnUrl ?? "").toString().trim(),
+        currency: (b.currency ?? stored.currency ?? "OMR").toString().trim(),
+      };
+      await db.set("config:smartpay", next);
+      smartpay.setConfig(next);
+      return json(res, 200, smartpay.publicConfig());
+    }
+
+    /* public list of Oman governorates for the sign-up form */
+    if (p === "/api/governorates" && req.method === "GET")
+      return json(res, 200, { governorates: auth.OMAN_GOVERNORATES });
+
     /* ---------- catalog (vendors, categories, tips, ads) ----------
        Public read; admin-only write. The admin app publishes whole
        collections — matching how the client edits them in memory. */
@@ -211,6 +239,9 @@ unless you intend to pay. An abandoned initiation costs nothing.</p>
   await db.init();
   await auth.init();
   await auth.seedAdmin();
+  // apply admin-saved Bank Muscat config over the env defaults
+  const spCfg = await db.get("config:smartpay");
+  if (spCfg) smartpay.setConfig(spCfg);
   server.listen(PORT, () => {
     console.log(`Zaffa backend on http://localhost:${PORT}`);
     console.log("  storage:            ", db.usePg ? "PostgreSQL" : "local JSON file");
