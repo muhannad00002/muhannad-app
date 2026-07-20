@@ -4,12 +4,18 @@
 
 const CITIES = ["Muscat","Salalah","Sohar","Nizwa","Sur","Barka"];
 
-/* The 11 governorates of Oman — used for customer sign-up */
+/* The 11 governorates of Oman — used for customer sign-up & vendor location */
 const GOVERNORATES = [
   "Muscat","Dhofar","Musandam","Al Buraimi","Ad Dakhiliyah",
   "Al Batinah North","Al Batinah South","Al Sharqiyah North",
   "Al Sharqiyah South","Ad Dhahirah","Al Wusta",
 ];
+/* Map the demo cities to their governorate so existing vendors get a location */
+const CITY_GOVERNORATE = {
+  "Muscat":"Muscat", "Salalah":"Dhofar", "Sohar":"Al Batinah North",
+  "Nizwa":"Ad Dakhiliyah", "Sur":"Al Sharqiyah South", "Barka":"Al Batinah South",
+};
+const govOfCity = (city) => CITY_GOVERNORATE[city] || city || "";
 
 /* ---- Categories (expandable; admin can add more) ---- */
 const SEED_CATEGORIES = [
@@ -69,6 +75,7 @@ function V(catId,name,city,rating,reviews,priceLevel,short,opts={}){
   return {
     id:"v"+String(_vid).padStart(3,"0"),
     catId,name,city,
+    governorate:opts.gov||govOfCity(city),
     rating,reviews,
     priceLevel,                       // 1..4
     priceRange:opts.price||priceRanges[priceLevel],

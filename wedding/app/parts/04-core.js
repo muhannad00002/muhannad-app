@@ -100,6 +100,8 @@ function load(){
   // hydrate mutable collections (admin changes persist)
   CATEGORIES = raw?._categories || SEED_CATEGORIES.map(c=>({...c}));
   VENDORS    = raw?._vendors    || SEED_VENDORS.map(v=>({...v}));
+  // ensure every vendor has a governorate (derive from city for older records)
+  VENDORS.forEach(v=>{ if(!v.governorate) v.governorate = govOfCity(v.city); });
   TIPS       = raw?._tips       || SEED_TIPS.map(t=>({...t}));
   ADS        = raw?._ads        || SEED_ADS.map(a=>({...a}));
   USERS      = raw?._users      || SEED_USERS.map(u=>({...u}));

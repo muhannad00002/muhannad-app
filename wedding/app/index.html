@@ -341,12 +341,18 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 
 const CITIES = ["Muscat","Salalah","Sohar","Nizwa","Sur","Barka"];
 
-/* The 11 governorates of Oman — used for customer sign-up */
+/* The 11 governorates of Oman — used for customer sign-up & vendor location */
 const GOVERNORATES = [
   "Muscat","Dhofar","Musandam","Al Buraimi","Ad Dakhiliyah",
   "Al Batinah North","Al Batinah South","Al Sharqiyah North",
   "Al Sharqiyah South","Ad Dhahirah","Al Wusta",
 ];
+/* Map the demo cities to their governorate so existing vendors get a location */
+const CITY_GOVERNORATE = {
+  "Muscat":"Muscat", "Salalah":"Dhofar", "Sohar":"Al Batinah North",
+  "Nizwa":"Ad Dakhiliyah", "Sur":"Al Sharqiyah South", "Barka":"Al Batinah South",
+};
+const govOfCity = (city) => CITY_GOVERNORATE[city] || city || "";
 
 /* ---- Categories (expandable; admin can add more) ---- */
 const SEED_CATEGORIES = [
@@ -406,6 +412,7 @@ function V(catId,name,city,rating,reviews,priceLevel,short,opts={}){
   return {
     id:"v"+String(_vid).padStart(3,"0"),
     catId,name,city,
+    governorate:opts.gov||govOfCity(city),
     rating,reviews,
     priceLevel,                       // 1..4
     priceRange:opts.price||priceRanges[priceLevel],
@@ -929,6 +936,8 @@ function load(){
   // hydrate mutable collections (admin changes persist)
   CATEGORIES = raw?._categories || SEED_CATEGORIES.map(c=>({...c}));
   VENDORS    = raw?._vendors    || SEED_VENDORS.map(v=>({...v}));
+  // ensure every vendor has a governorate (derive from city for older records)
+  VENDORS.forEach(v=>{ if(!v.governorate) v.governorate = govOfCity(v.city); });
   TIPS       = raw?._tips       || SEED_TIPS.map(t=>({...t}));
   ADS        = raw?._ads        || SEED_ADS.map(a=>({...a}));
   USERS      = raw?._users      || SEED_USERS.map(u=>({...u}));
@@ -1568,13 +1577,16 @@ function openTaskSheet(taskId,rerender){
 <script>
 /* ============ ZAFFA — BRIDE SCREENS · B (vendors · detail · search · saved · profile) ============ */
 
+/* the customer's home governorate (from their account), if signed in */
+function myGovernorate(){ return (S.account && S.account.governorate) || ""; }
+
 /* shared filter state for a category / search view */
-function makeFilters(){return {city:"",price:0,rating:0,sort:"popular",offers:false};}
+function makeFilters(){return {gov:"",price:0,rating:0,sort:"popular",offers:false};}
 
 function applyFilters(list,f,q){
   let r=list.slice();
-  if(q){const s=q.toLowerCase();r=r.filter(v=>v.name.toLowerCase().includes(s)||v.city.toLowerCase().includes(s)||(catById(v.catId)?.name.toLowerCase().includes(s))||v.short.toLowerCase().includes(s));}
-  if(f.city)r=r.filter(v=>v.city===f.city);
+  if(q){const s=q.toLowerCase();r=r.filter(v=>v.name.toLowerCase().includes(s)||(v.city||"").toLowerCase().includes(s)||(v.governorate||"").toLowerCase().includes(s)||(catById(v.catId)?.name.toLowerCase().includes(s))||v.short.toLowerCase().includes(s));}
+  if(f.gov)r=r.filter(v=>(v.governorate||govOfCity(v.city))===f.gov);
   if(f.price)r=r.filter(v=>v.priceLevel===f.price);
   if(f.rating)r=r.filter(v=>v.rating>=f.rating);
   if(f.offers)r=r.filter(v=>v.offer);
@@ -1586,14 +1598,23 @@ function applyFilters(list,f,q){
     newest:(a,b)=>(b.isNew-a.isNew)||(b.id>a.id?1:-1),
   };
   r.sort(sorters[f.sort]||sorters.popular);
+  // when not filtering by a governorate, surface vendors in the customer's
+  // own governorate first (local-first), without hiding the rest
+  const mine=myGovernorate();
+  if(mine && !f.gov){
+    r.sort((a,b)=>((b.governorate===mine)-(a.governorate===mine)));
+  }
   return r;
 }
 
 function filterBar(f,onChange){
-  const activeCount=[f.city,f.price,f.rating,f.offers].filter(Boolean).length;
+  const activeCount=[f.gov,f.price,f.rating,f.offers].filter(Boolean).length;
   const bar=h("div.scroll-x",{style:{display:"flex",gap:"8px",padding:"2px 20px 12px",margin:"0 -20px"}});
   bar.appendChild(h("button.chip"+(activeCount?".on":""),{onclick:()=>openFilterSheet(f,onChange)},
     [icon("sliders",15),"Filters",activeCount?h("span",{style:{background:"rgba(255,255,255,.3)",borderRadius:"9px",padding:"0 6px",fontSize:"11px"}},activeCount):null]));
+  // one-tap "near me" using the customer's governorate
+  const mine=myGovernorate();
+  if(mine)bar.appendChild(h("button.chip"+(f.gov===mine?".on":""),{onclick:()=>{f.gov=f.gov===mine?"":mine;onChange();}},["📍 ",mine]));
   const sortLabels={popular:"Popular",rating:"Top rated",priceLow:"Price ↑",priceHigh:"Price ↓",newest:"Newest"};
   bar.appendChild(h("button.chip",{onclick:()=>{
     let ref; ref=sheet({title:"Sort by",body:(close)=>h("div.col.gap8",Object.entries(sortLabels).map(([k,l])=>
@@ -1602,16 +1623,20 @@ function filterBar(f,onChange){
         f.sort===k?icon("check",18,"faint"):null])))});
   }},[icon("filter",15),sortLabels[f.sort]]));
   bar.appendChild(h("button.chip"+(f.offers?".on":""),{onclick:()=>{f.offers=!f.offers;onChange();}},"🎁 Offers"));
-  CITIES.forEach(city=>bar.appendChild(h("button.chip"+(f.city===city?".on":""),{onclick:()=>{f.city=f.city===city?"":city;onChange();}},city)));
+  // governorate chips (customer's first)
+  const govs=mine?[mine,...GOVERNORATES.filter(g=>g!==mine)]:GOVERNORATES;
+  govs.forEach(g=>bar.appendChild(h("button.chip"+(f.gov===g?".on":""),{onclick:()=>{f.gov=f.gov===g?"":g;onChange();}},g)));
   return bar;
 }
 
 function openFilterSheet(f,onChange){
   let ref;
+  const mine=myGovernorate();
+  const govs=mine?[mine,...GOVERNORATES.filter(g=>g!==mine)]:GOVERNORATES;
   ref=sheet({title:"Filters",body:(close)=>{
     const b=h("div.col.gap16",{style:{marginTop:"6px"}});
-    // city
-    b.appendChild(fGroup("City",["",...CITIES].map(c=>chip(c||"All cities",f.city===c,()=>{f.city=c;refreshMarks();}))));
+    // governorate
+    b.appendChild(fGroup("Governorate",["",...govs].map(c=>chip(c||"All Oman",f.gov===c,()=>{f.gov=c;refreshMarks();}))));
     // price
     b.appendChild(fGroup("Price",[0,1,2,3,4].map(p=>chip(p?priceLabel(p):"Any",f.price===p,()=>{f.price=p;refreshMarks();}))));
     // rating
@@ -1700,7 +1725,8 @@ route("/vendor/:id",(q,p)=>{
   kids.push(h("div",{style:{padding:"16px 2px 4px"}},[
     h("div.between",[
       h("div",[h("h1",{style:{fontSize:"27px"}},v.name),
-        h("div.row.gap6",{style:{marginTop:"5px",color:"var(--ink2)"}},[icon("pin",14),h("span.small",v.city),
+        h("div.row.gap6",{style:{marginTop:"5px",color:"var(--ink2)"}},[icon("pin",14),
+          h("span.small",v.city+((v.governorate&&v.governorate!==v.city)?(" · "+v.governorate):"")),
           h("span.faint","·"),h("span.small",cat?cat.name:"")])]),
     ]),
     h("div.row.gap12",{style:{marginTop:"12px",flexWrap:"wrap"}},[
@@ -2430,13 +2456,19 @@ async function cloudInit(){
     const cat=await api("/api/catalog");
     let changed=false;
     if(Array.isArray(cat.categories)&&cat.categories.length){CATEGORIES.length=0;CATEGORIES.push(...cat.categories);changed=true;}
-    if(Array.isArray(cat.vendors)&&cat.vendors.length){VENDORS.length=0;VENDORS.push(...cat.vendors);changed=true;}
+    if(Array.isArray(cat.vendors)&&cat.vendors.length){VENDORS.length=0;VENDORS.push(...cat.vendors);VENDORS.forEach(v=>{if(!v.governorate)v.governorate=govOfCity(v.city);});changed=true;}
     if(Array.isArray(cat.tips)&&cat.tips.length){TIPS.length=0;TIPS.push(...cat.tips);changed=true;}
     if(Array.isArray(cat.ads)){ADS.length=0;ADS.push(...cat.ads);changed=true;}
     if(S.account&&S.account.token){
-      const me=await api("/api/me").catch(()=>null);
-      if(me&&me.subscription){S.subscription={plan:me.subscription.plan,tier:me.subscription.tier||null,since:me.subscription.since||null};changed=true;}
-      else if(me===null){S.account=null;} // token expired
+      // refresh profile + entitlement; only sign out on an explicit auth
+      // failure (401), never on a transient network/backend error
+      try{
+        const me=await api("/api/me");
+        if(me&&me.user){S.account={...S.account,...me.user,token:S.account.token};changed=true;}
+        if(me&&me.subscription){S.subscription={plan:me.subscription.plan,tier:me.subscription.tier||null,since:me.subscription.since||null};changed=true;}
+      }catch(e){
+        if(/\(401\)|not_signed_in|unauthor/i.test(e.message||"")){S.account=null;changed=true;}
+      }
     }
     if(changed){save();render();}
   }catch(e){/* offline or backend down — local data keeps working */}
@@ -2806,9 +2838,10 @@ function openVendorActions(v,rerender){
 
 function openVendorForm(v,rerender){
   const isNew=!v;
-  const d=v?{...v}:{name:"",catId:CATEGORIES[0].id,city:CITIES[0],rating:4.7,reviews:0,priceLevel:2,short:"",desc:"",
+  const d=v?{...v}:{name:"",catId:CATEGORIES[0].id,city:CITIES[0],governorate:GOVERNORATES[0],rating:4.7,reviews:0,priceLevel:2,short:"",desc:"",
     services:["Consultation","Bespoke packages"],hours:"Sat–Thu · 10:00 AM – 9:00 PM",instagram:"",whatsapp:"+968 ",phone:"+968 ",
     maps:"",featured:false,approved:true,isNew:true,offer:null,packages:[],reviewsList:[],popularity:94};
+  if(!d.governorate)d.governorate=govOfCity(d.city);
   let ref;
   ref=sheet({title:isNew?"Add vendor":"Edit vendor",body:(close)=>{
     const b=h("div.col.gap12",{style:{marginTop:"4px"}});
@@ -2816,8 +2849,9 @@ function openVendorForm(v,rerender){
     const name=h("input.field",{value:d.name,placeholder:"Vendor name",oninput:e=>d.name=e.target.value});
     const catSel=h("select.field",CATEGORIES.map(c=>h("option",{value:c.id,selected:c.id===d.catId},c.icon+" "+c.name)));
     catSel.onchange=e=>d.catId=e.target.value;
-    const citySel=h("select.field",CITIES.map(c=>h("option",{value:c,selected:c===d.city},c)));
-    citySel.onchange=e=>d.city=e.target.value;
+    const govSel=h("select.field",GOVERNORATES.map(g=>h("option",{value:g,selected:g===d.governorate},g)));
+    govSel.onchange=e=>d.governorate=e.target.value;
+    const cityI=h("input.field",{value:d.city,placeholder:"City / area (e.g. Muscat)",oninput:e=>d.city=e.target.value});
     const priceSel=h("select.field",[1,2,3,4].map(p=>h("option",{value:p,selected:p===d.priceLevel},priceLabel(p))));
     priceSel.onchange=e=>d.priceLevel=+e.target.value;
     const rating=h("input.field",{type:"number",min:1,max:5,step:.1,value:d.rating,oninput:e=>d.rating=Math.min(5,Math.max(1,+e.target.value||0))});
@@ -2831,7 +2865,8 @@ function openVendorForm(v,rerender){
     const appr=toggle("Approved & visible",d.approved,x=>d.approved=x);
     b.append(
       F("Name",name),
-      h("div.row.gap8",[h("div.grow",F("Category",catSel)),h("div.grow",F("City",citySel))]),
+      F("Category",catSel),
+      h("div.row.gap8",[h("div.grow",F("Governorate",govSel)),h("div.grow",F("City / area",cityI))]),
       h("div.row.gap8",[h("div.grow",F("Price tier",priceSel)),h("div.grow",F("Rating",rating)),h("div.grow",F("Reviews",reviews))]),
       F("Short description",short),F("Full description",desc),
       h("div.row.gap8",[h("div.grow",F("Instagram",ig)),h("div.grow",F("WhatsApp",wa))]),

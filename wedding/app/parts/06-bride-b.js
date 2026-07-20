@@ -1,12 +1,15 @@
 /* ============ ZAFFA — BRIDE SCREENS · B (vendors · detail · search · saved · profile) ============ */
 
+/* the customer's home governorate (from their account), if signed in */
+function myGovernorate(){ return (S.account && S.account.governorate) || ""; }
+
 /* shared filter state for a category / search view */
-function makeFilters(){return {city:"",price:0,rating:0,sort:"popular",offers:false};}
+function makeFilters(){return {gov:"",price:0,rating:0,sort:"popular",offers:false};}
 
 function applyFilters(list,f,q){
   let r=list.slice();
-  if(q){const s=q.toLowerCase();r=r.filter(v=>v.name.toLowerCase().includes(s)||v.city.toLowerCase().includes(s)||(catById(v.catId)?.name.toLowerCase().includes(s))||v.short.toLowerCase().includes(s));}
-  if(f.city)r=r.filter(v=>v.city===f.city);
+  if(q){const s=q.toLowerCase();r=r.filter(v=>v.name.toLowerCase().includes(s)||(v.city||"").toLowerCase().includes(s)||(v.governorate||"").toLowerCase().includes(s)||(catById(v.catId)?.name.toLowerCase().includes(s))||v.short.toLowerCase().includes(s));}
+  if(f.gov)r=r.filter(v=>(v.governorate||govOfCity(v.city))===f.gov);
   if(f.price)r=r.filter(v=>v.priceLevel===f.price);
   if(f.rating)r=r.filter(v=>v.rating>=f.rating);
   if(f.offers)r=r.filter(v=>v.offer);
@@ -18,14 +21,23 @@ function applyFilters(list,f,q){
     newest:(a,b)=>(b.isNew-a.isNew)||(b.id>a.id?1:-1),
   };
   r.sort(sorters[f.sort]||sorters.popular);
+  // when not filtering by a governorate, surface vendors in the customer's
+  // own governorate first (local-first), without hiding the rest
+  const mine=myGovernorate();
+  if(mine && !f.gov){
+    r.sort((a,b)=>((b.governorate===mine)-(a.governorate===mine)));
+  }
   return r;
 }
 
 function filterBar(f,onChange){
-  const activeCount=[f.city,f.price,f.rating,f.offers].filter(Boolean).length;
+  const activeCount=[f.gov,f.price,f.rating,f.offers].filter(Boolean).length;
   const bar=h("div.scroll-x",{style:{display:"flex",gap:"8px",padding:"2px 20px 12px",margin:"0 -20px"}});
   bar.appendChild(h("button.chip"+(activeCount?".on":""),{onclick:()=>openFilterSheet(f,onChange)},
     [icon("sliders",15),"Filters",activeCount?h("span",{style:{background:"rgba(255,255,255,.3)",borderRadius:"9px",padding:"0 6px",fontSize:"11px"}},activeCount):null]));
+  // one-tap "near me" using the customer's governorate
+  const mine=myGovernorate();
+  if(mine)bar.appendChild(h("button.chip"+(f.gov===mine?".on":""),{onclick:()=>{f.gov=f.gov===mine?"":mine;onChange();}},["📍 ",mine]));
   const sortLabels={popular:"Popular",rating:"Top rated",priceLow:"Price ↑",priceHigh:"Price ↓",newest:"Newest"};
   bar.appendChild(h("button.chip",{onclick:()=>{
     let ref; ref=sheet({title:"Sort by",body:(close)=>h("div.col.gap8",Object.entries(sortLabels).map(([k,l])=>
@@ -34,16 +46,20 @@ function filterBar(f,onChange){
         f.sort===k?icon("check",18,"faint"):null])))});
   }},[icon("filter",15),sortLabels[f.sort]]));
   bar.appendChild(h("button.chip"+(f.offers?".on":""),{onclick:()=>{f.offers=!f.offers;onChange();}},"🎁 Offers"));
-  CITIES.forEach(city=>bar.appendChild(h("button.chip"+(f.city===city?".on":""),{onclick:()=>{f.city=f.city===city?"":city;onChange();}},city)));
+  // governorate chips (customer's first)
+  const govs=mine?[mine,...GOVERNORATES.filter(g=>g!==mine)]:GOVERNORATES;
+  govs.forEach(g=>bar.appendChild(h("button.chip"+(f.gov===g?".on":""),{onclick:()=>{f.gov=f.gov===g?"":g;onChange();}},g)));
   return bar;
 }
 
 function openFilterSheet(f,onChange){
   let ref;
+  const mine=myGovernorate();
+  const govs=mine?[mine,...GOVERNORATES.filter(g=>g!==mine)]:GOVERNORATES;
   ref=sheet({title:"Filters",body:(close)=>{
     const b=h("div.col.gap16",{style:{marginTop:"6px"}});
-    // city
-    b.appendChild(fGroup("City",["",...CITIES].map(c=>chip(c||"All cities",f.city===c,()=>{f.city=c;refreshMarks();}))));
+    // governorate
+    b.appendChild(fGroup("Governorate",["",...govs].map(c=>chip(c||"All Oman",f.gov===c,()=>{f.gov=c;refreshMarks();}))));
     // price
     b.appendChild(fGroup("Price",[0,1,2,3,4].map(p=>chip(p?priceLabel(p):"Any",f.price===p,()=>{f.price=p;refreshMarks();}))));
     // rating
@@ -132,7 +148,8 @@ route("/vendor/:id",(q,p)=>{
   kids.push(h("div",{style:{padding:"16px 2px 4px"}},[
     h("div.between",[
       h("div",[h("h1",{style:{fontSize:"27px"}},v.name),
-        h("div.row.gap6",{style:{marginTop:"5px",color:"var(--ink2)"}},[icon("pin",14),h("span.small",v.city),
+        h("div.row.gap6",{style:{marginTop:"5px",color:"var(--ink2)"}},[icon("pin",14),
+          h("span.small",v.city+((v.governorate&&v.governorate!==v.city)?(" · "+v.governorate):"")),
           h("span.faint","·"),h("span.small",cat?cat.name:"")])]),
     ]),
     h("div.row.gap12",{style:{marginTop:"12px",flexWrap:"wrap"}},[

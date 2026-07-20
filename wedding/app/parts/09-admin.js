@@ -161,9 +161,10 @@ function openVendorActions(v,rerender){
 
 function openVendorForm(v,rerender){
   const isNew=!v;
-  const d=v?{...v}:{name:"",catId:CATEGORIES[0].id,city:CITIES[0],rating:4.7,reviews:0,priceLevel:2,short:"",desc:"",
+  const d=v?{...v}:{name:"",catId:CATEGORIES[0].id,city:CITIES[0],governorate:GOVERNORATES[0],rating:4.7,reviews:0,priceLevel:2,short:"",desc:"",
     services:["Consultation","Bespoke packages"],hours:"Sat–Thu · 10:00 AM – 9:00 PM",instagram:"",whatsapp:"+968 ",phone:"+968 ",
     maps:"",featured:false,approved:true,isNew:true,offer:null,packages:[],reviewsList:[],popularity:94};
+  if(!d.governorate)d.governorate=govOfCity(d.city);
   let ref;
   ref=sheet({title:isNew?"Add vendor":"Edit vendor",body:(close)=>{
     const b=h("div.col.gap12",{style:{marginTop:"4px"}});
@@ -171,8 +172,9 @@ function openVendorForm(v,rerender){
     const name=h("input.field",{value:d.name,placeholder:"Vendor name",oninput:e=>d.name=e.target.value});
     const catSel=h("select.field",CATEGORIES.map(c=>h("option",{value:c.id,selected:c.id===d.catId},c.icon+" "+c.name)));
     catSel.onchange=e=>d.catId=e.target.value;
-    const citySel=h("select.field",CITIES.map(c=>h("option",{value:c,selected:c===d.city},c)));
-    citySel.onchange=e=>d.city=e.target.value;
+    const govSel=h("select.field",GOVERNORATES.map(g=>h("option",{value:g,selected:g===d.governorate},g)));
+    govSel.onchange=e=>d.governorate=e.target.value;
+    const cityI=h("input.field",{value:d.city,placeholder:"City / area (e.g. Muscat)",oninput:e=>d.city=e.target.value});
     const priceSel=h("select.field",[1,2,3,4].map(p=>h("option",{value:p,selected:p===d.priceLevel},priceLabel(p))));
     priceSel.onchange=e=>d.priceLevel=+e.target.value;
     const rating=h("input.field",{type:"number",min:1,max:5,step:.1,value:d.rating,oninput:e=>d.rating=Math.min(5,Math.max(1,+e.target.value||0))});
@@ -186,7 +188,8 @@ function openVendorForm(v,rerender){
     const appr=toggle("Approved & visible",d.approved,x=>d.approved=x);
     b.append(
       F("Name",name),
-      h("div.row.gap8",[h("div.grow",F("Category",catSel)),h("div.grow",F("City",citySel))]),
+      F("Category",catSel),
+      h("div.row.gap8",[h("div.grow",F("Governorate",govSel)),h("div.grow",F("City / area",cityI))]),
       h("div.row.gap8",[h("div.grow",F("Price tier",priceSel)),h("div.grow",F("Rating",rating)),h("div.grow",F("Reviews",reviews))]),
       F("Short description",short),F("Full description",desc),
       h("div.row.gap8",[h("div.grow",F("Instagram",ig)),h("div.grow",F("WhatsApp",wa))]),

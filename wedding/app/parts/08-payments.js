@@ -35,13 +35,19 @@ async function cloudInit(){
     const cat=await api("/api/catalog");
     let changed=false;
     if(Array.isArray(cat.categories)&&cat.categories.length){CATEGORIES.length=0;CATEGORIES.push(...cat.categories);changed=true;}
-    if(Array.isArray(cat.vendors)&&cat.vendors.length){VENDORS.length=0;VENDORS.push(...cat.vendors);changed=true;}
+    if(Array.isArray(cat.vendors)&&cat.vendors.length){VENDORS.length=0;VENDORS.push(...cat.vendors);VENDORS.forEach(v=>{if(!v.governorate)v.governorate=govOfCity(v.city);});changed=true;}
     if(Array.isArray(cat.tips)&&cat.tips.length){TIPS.length=0;TIPS.push(...cat.tips);changed=true;}
     if(Array.isArray(cat.ads)){ADS.length=0;ADS.push(...cat.ads);changed=true;}
     if(S.account&&S.account.token){
-      const me=await api("/api/me").catch(()=>null);
-      if(me&&me.subscription){S.subscription={plan:me.subscription.plan,tier:me.subscription.tier||null,since:me.subscription.since||null};changed=true;}
-      else if(me===null){S.account=null;} // token expired
+      // refresh profile + entitlement; only sign out on an explicit auth
+      // failure (401), never on a transient network/backend error
+      try{
+        const me=await api("/api/me");
+        if(me&&me.user){S.account={...S.account,...me.user,token:S.account.token};changed=true;}
+        if(me&&me.subscription){S.subscription={plan:me.subscription.plan,tier:me.subscription.tier||null,since:me.subscription.since||null};changed=true;}
+      }catch(e){
+        if(/\(401\)|not_signed_in|unauthor/i.test(e.message||"")){S.account=null;changed=true;}
+      }
     }
     if(changed){save();render();}
   }catch(e){/* offline or backend down — local data keeps working */}
