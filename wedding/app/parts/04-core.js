@@ -26,6 +26,7 @@ function defaultState(){
     bookings:{},                  // taskId -> {vendorId,date,time,note}
     assistant:{msgs:[],used:0},   // chat history + free-message counter
     _catSeed:null,_vendorSeed:null,
+    _catalogVersion:0,            // last catalog version pulled from the backend
   };
 }
 
@@ -116,6 +117,8 @@ function save(){
   try{localStorage.setItem(LS_KEY,JSON.stringify({
     state:S,_categories:CATEGORIES,_vendors:VENDORS,_tips:TIPS,_ads:ADS,_users:USERS,
   }));}catch(e){}
+  // an admin's edits auto-publish to the backend so they go live for customers
+  if(typeof autoPublish==="function") autoPublish();
 }
 
 /* ---- derived data ---- */

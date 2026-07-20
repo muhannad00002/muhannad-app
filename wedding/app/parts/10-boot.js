@@ -7,7 +7,8 @@ if(window.ZAFFA_ADMIN){
   location.hash = S.onboarded ? (S.role==="admin"?"#/admin":"#/home") : "#/welcome";
 }
 render();
-cloudInit();   // pulls the live catalog + account entitlement when a backend is configured
+cloudInit();              // pulls the live catalog + account entitlement when a backend is configured
+startCatalogPolling();    // keeps open apps in sync with admin changes in near real-time
 
 // keep theme in sync with system when in auto mode
 if(window.matchMedia){

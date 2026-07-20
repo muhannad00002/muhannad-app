@@ -149,15 +149,21 @@ const server = http.createServer(async (req, res) => {
     if (p === "/api/catalog" && req.method === "GET") {
       const out = {};
       for (const { key, value } of await db.list("catalog:")) out[key.slice(8)] = value;
-      return json(res, 200, out); // {} until an admin publishes
+      return json(res, 200, out); // {} until an admin publishes; includes `version`
+    }
+    /* tiny endpoint clients poll for near-real-time updates */
+    if (p === "/api/catalog/meta" && req.method === "GET") {
+      return json(res, 200, { version: (await db.get("catalog:version")) || 0 });
     }
     if (p === "/api/admin/catalog" && req.method === "PUT") {
       const user = await auth.fromRequest(req);
       if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
       const b = parseBody(await body(req), req.headers["content-type"]);
-      const allowed = ["categories", "vendors", "tips", "ads", "version"];
+      const allowed = ["categories", "vendors", "tips", "ads"];
       for (const k of allowed) if (b[k] !== undefined) await db.set("catalog:" + k, b[k]);
-      return json(res, 200, { ok: true, published: allowed.filter(k => b[k] !== undefined) });
+      const version = Date.now();                 // server-authoritative version
+      await db.set("catalog:version", version);
+      return json(res, 200, { ok: true, version, published: allowed.filter(k => b[k] !== undefined) });
     }
 
     /* ---------- SmartPay credential self-test page ---------- */
