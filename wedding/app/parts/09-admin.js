@@ -317,9 +317,9 @@ route("/admin/more",()=>{
   // cloud publishing (when a backend is configured)
   if(typeof apiBase==="function" && apiBase()){
     if(S.account&&S.account.role==="admin"){
-      items.push(["share","Publish catalog to cloud","Push vendors, categories, tips & ads live",async()=>{
-        toast("Publishing…","☁️");
-        try{await publishCatalog();toast("Catalog published — live for all users ✓","🎉");}
+      items.push(["share","Sync status: auto","Changes publish automatically · tap to force-sync now",async()=>{
+        toast("Syncing…","☁️");
+        try{await publishCatalog();toast("Everything is live for customers ✓","🎉");}
         catch(e){toast(e.message,"⚠️");}
       }]);
     }else{

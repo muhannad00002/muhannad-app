@@ -29,8 +29,11 @@ async function api(path,{method="GET",body:payload}={}){
 }
 
 /* ---- cloud sync: catalog down, entitlement down, admin catalog up ---- */
-async function cloudInit(){
+let _applyingRemote=false;
+async function cloudInit(opts){
   if(!apiBase())return;
+  opts=opts||{};
+  _applyingRemote=true;               // suppress auto-publish while applying server data
   try{
     const cat=await api("/api/catalog");
     let changed=false;
@@ -38,7 +41,8 @@ async function cloudInit(){
     if(Array.isArray(cat.vendors)&&cat.vendors.length){VENDORS.length=0;VENDORS.push(...cat.vendors);VENDORS.forEach(v=>{if(!v.governorate)v.governorate=govOfCity(v.city);});changed=true;}
     if(Array.isArray(cat.tips)&&cat.tips.length){TIPS.length=0;TIPS.push(...cat.tips);changed=true;}
     if(Array.isArray(cat.ads)){ADS.length=0;ADS.push(...cat.ads);changed=true;}
-    if(S.account&&S.account.token){
+    if(cat.version){S._catalogVersion=cat.version;}
+    if(S.account&&S.account.token && !opts.catalogOnly){
       // refresh profile + entitlement; only sign out on an explicit auth
       // failure (401), never on a transient network/backend error
       try{
@@ -49,11 +53,60 @@ async function cloudInit(){
         if(/\(401\)|not_signed_in|unauthor/i.test(e.message||"")){S.account=null;changed=true;}
       }
     }
-    if(changed){save();render();}
+    if(changed){save(); if(!opts.silent) render();}
   }catch(e){/* offline or backend down — local data keeps working */}
+  finally{ _applyingRemote=false; }
 }
+
+/* Publish the current catalog to the backend. Called automatically (debounced)
+   whenever an admin makes a change, so edits go live for customers with no
+   manual "publish" step. */
 async function publishCatalog(){
-  await api("/api/admin/catalog",{method:"PUT",body:{categories:CATEGORIES,vendors:VENDORS,tips:TIPS,ads:ADS,version:Date.now()}});
+  const r=await api("/api/admin/catalog",{method:"PUT",body:{categories:CATEGORIES,vendors:VENDORS,tips:TIPS,ads:ADS}});
+  if(r&&r.version){S._catalogVersion=r.version; save();}
+  return r;
+}
+let _pubTimer=null, _pubPending=false;
+function autoPublish(){
+  if(_applyingRemote || !(isAdmin() && apiBase()))return;
+  _pubPending=true;
+  clearTimeout(_pubTimer);
+  _pubTimer=setTimeout(async()=>{
+    _pubPending=false;
+    try{ await publishCatalog(); syncDot("ok"); }
+    catch(e){ syncDot("err"); }
+  },900); // debounce rapid edits into one publish
+  syncDot("pending");
+}
+/* tiny live "saving…/saved" indicator for the admin */
+function syncDot(state){
+  let el=document.getElementById("sync-dot");
+  if(!el){el=h("div#sync-dot",{style:{position:"fixed",top:"10px",left:"50%",transform:"translateX(-50%)",zIndex:"120",
+    padding:"5px 12px",borderRadius:"999px",fontSize:"12px",fontWeight:"600",boxShadow:"var(--shadow-2)",transition:"opacity .3s",pointerEvents:"none"}});
+    document.body.appendChild(el);}
+  const map={pending:["Saving…","var(--surface)","var(--ink2)"],ok:["✓ Saved & live","var(--good-soft)","var(--good)"],err:["⚠ Offline — will retry","var(--warn-soft)","var(--warn)"]};
+  const [txt,bg,col]=map[state]||map.ok;
+  el.textContent=txt; el.style.background=bg; el.style.color=col; el.style.opacity="1";
+  if(state!=="pending"){clearTimeout(el._t); el._t=setTimeout(()=>{el.style.opacity="0";},1800);}
+}
+
+/* ---- Real-time polling: pull admin changes into open customer apps ---- */
+let _pollTimer=null;
+function startCatalogPolling(){
+  if(!apiBase()||_pollTimer)return;
+  const tick=async()=>{
+    // don't disturb an admin mid-edit or anyone with a sheet/modal open
+    if(_pubPending || document.querySelector(".scrim")) return;
+    try{
+      const meta=await api("/api/catalog/meta");
+      if(meta && meta.version && meta.version!==S._catalogVersion){
+        await cloudInit({catalogOnly:true}); // pull latest, re-render
+      }
+    }catch(e){/* backend asleep/offline — try again next tick */}
+  };
+  _pollTimer=setInterval(tick,15000);              // every 15s
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden) tick(); });
+  window.addEventListener("focus",tick);
 }
 
 /* ---- account sheet: WhatsApp OTP sign-up / sign-in ----
