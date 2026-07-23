@@ -148,14 +148,20 @@ async function verifyOtp({ phone, code, name, age, city, governorate }) {
   return { user: publicUser(user), token: sign(p) };
 }
 
-/* seed the admin account from env on boot */
+/* Seed/refresh the admin account from env on boot. The env vars are the
+   source of truth: if ADMIN_PASSWORD changes, the stored account is updated to
+   match (so a changed password always takes effect after a redeploy). */
 async function seedAdmin() {
   const email = normEmail(process.env.ADMIN_EMAIL);
   const pass = process.env.ADMIN_PASSWORD;
   if (!email || !pass) return;
+  const existing = await db.get("user:" + email);
+  // only rewrite when the password doesn't already match (keeps createdAt)
+  if (existing && existing.role === "admin" &&
+      existing.hash === hashPassword(pass, existing.salt)) return;
   const salt = crypto.randomBytes(16).toString("hex");
-  await db.insertIfAbsent("user:" + email, { email, name: "Admin", role: "admin",
-    salt, hash: hashPassword(pass, salt), createdAt: Date.now() });
+  await db.set("user:" + email, { email, name: "Admin", role: "admin",
+    salt, hash: hashPassword(pass, salt), createdAt: existing?.createdAt || Date.now() });
 }
 
 module.exports = { init, register, login, fromRequest, seedAdmin, normEmail,

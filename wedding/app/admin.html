@@ -2825,6 +2825,9 @@ function adminGateView(){
     if(!(typeof apiBase==="function" && apiBase())){toast("Backend not configured","⚠️");return;}
     btn.disabled=true;btn.textContent="Signing in…";
     try{
+      // fail fast with a clear message if the API can't be reached at all
+      const health=await fetch(apiBase()+"/api/payments/status").then(r=>r.ok).catch(()=>false);
+      if(!health)throw new Error("Can't reach the server. Is the backend deployed at "+apiBase()+"?");
       const r=await api("/api/auth/login",{method:"POST",body:d});
       if(r.user.role!=="admin"){throw new Error("This account is not an administrator.");}
       S.account={id:r.user.id||r.user.email,email:r.user.email,name:r.user.name,role:r.user.role,token:r.token};
