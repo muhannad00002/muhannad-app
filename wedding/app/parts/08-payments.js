@@ -8,16 +8,23 @@
    Configure once, here. Leaving `backendBase` empty keeps the app in demo mode
    so the standalone HTML and hosted preview still work end-to-end. */
 const PAY_CONFIG = {
-  backendBase: "https://zaffa-backend.onrender.com",  // production backend (blank = demo mode)
+  // Blank = call the API on the SAME origin (Vercel hosts app + /api together).
+  // Set an absolute URL only if the API lives on a different domain.
+  backendBase: "",
   appleProducts: { monthly: "com.zaffa.premium.monthly", annual: "com.zaffa.premium.annual" },
   prices: { monthly: "$2.99", annual: "$24" },
 };
 
-/* Backend base: build-time constant, overridable at runtime via localStorage
-   (lets us point an installed app at a new backend without rebuilding). */
+/* Backend base:
+   1) a runtime override in localStorage("zaffa.backend"), else
+   2) PAY_CONFIG.backendBase (absolute URL for a separate API domain), else
+   3) same-origin when the app is actually served over http(s) — the Vercel
+      case where /api lives on this domain. file:// (offline demo) → no backend. */
 function apiBase(){
-  try{ const o=localStorage.getItem("zaffa.backend"); if(o) return o.replace(/\/$/,""); }catch{}
-  return PAY_CONFIG.backendBase.replace(/\/$/,"");
+  try{ const o=localStorage.getItem("zaffa.backend"); if(o!==null && o!=="") return o.replace(/\/$/,""); }catch{}
+  if(PAY_CONFIG.backendBase) return PAY_CONFIG.backendBase.replace(/\/$/,"");
+  if(location.protocol==="http:"||location.protocol==="https:") return location.origin;
+  return "";
 }
 async function api(path,{method="GET",body:payload}={}){
   const headers={"Content-Type":"application/json"};
@@ -164,7 +171,7 @@ function openAccountSheet(onDone){
               body:{phone:d.phone,code:d.code,name:d.name,age:d.age,governorate:d.governorate}});
             S.account={id:r.user.id,phone:r.user.phone,email:r.user.email,name:r.user.name,governorate:r.user.governorate,age:r.user.age,role:r.user.role,token:r.token};
             if(r.user.name&&!existing)S.bride.name=r.user.name;
-            save(); ref.close(); toast(existing?"Welcome back 💗":"Welcome to Zaffa 💗");
+            save(); ref.close(); toast(existing?"Welcome back 💗":"Welcome to Wedding & Co 💗");
             cloudInit(); onDone&&onDone(); render();
           }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Verify & continue";}
         }},"Verify & continue");
@@ -183,6 +190,34 @@ function openAccountSheet(onDone){
       }
     }
     draw(); return wrap;
+  }});
+  return ref;
+}
+
+/* ---- Redeem a voucher code for full access ---- */
+function openRedeemSheet(onDone){
+  const d={code:""};
+  let ref;
+  ref=sheet({title:"Redeem a code",body:(close)=>{
+    const b=h("div.col.gap12",{style:{marginTop:"4px"}});
+    b.appendChild(h("div.row.gap12",{style:{alignItems:"center"}},[h("span",{style:{fontSize:"30px"}},"🎟️"),
+      h("p.small.muted","Enter the code from your planner to unlock full access — no payment needed.")]));
+    const codeI=h("input.field",{value:d.code,placeholder:"WED-XXXX-XXXX",style:{fontSize:"18px",textAlign:"center",letterSpacing:".08em",textTransform:"uppercase",fontFamily:"var(--font-m)"},oninput:e=>d.code=e.target.value});
+    b.appendChild(h("div",[h("label.lbl","Voucher code"),codeI]));
+    const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
+      if(!d.code.trim()){toast("Enter a code","⚠️");return;}
+      if(!S.account){ ref.close(); await new Promise(res=>openAccountSheet(res)); if(!S.account){return;} ref=openRedeemSheet(onDone); return; }
+      btn.disabled=true;btn.textContent="Checking…";
+      try{
+        const r=await api("/api/redeem",{method:"POST",body:{code:d.code}});
+        goPremium(r.plan==="annual"?"annual":"voucher"); save();
+        ref.close(); confetti(); toast("Unlocked — enjoy full access 💛","🎉");
+        cloudInit(); onDone&&onDone(); setTimeout(render,120);
+      }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Redeem";}
+    }},"Redeem");
+    b.appendChild(btn);
+    setTimeout(()=>codeI.focus(),200);
+    return b;
   }});
   return ref;
 }

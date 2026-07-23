@@ -78,6 +78,18 @@ const ICONS={
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   send:'<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/>',
 };
+/* Wedding & Co brand mark — gold ring + cyan diamond (echoes the logo) */
+function logoMark(size=64){
+  const s=size;
+  return h("span",{style:{display:"inline-block",lineHeight:0},html:`<svg width="${s}" height="${s}" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Wedding & Co">
+    <circle cx="32" cy="40" r="15" stroke="var(--rose)" stroke-width="4.5"/>
+    <path d="M32 8 L40 18 L32 24 L24 18 Z" fill="var(--cyan)"/>
+    <path d="M32 8 L40 18 L32 24 Z" fill="var(--cyan-deep)" opacity=".55"/>
+    <path d="M24 18 L40 18" stroke="var(--surface)" stroke-width="1.4" opacity=".5"/>
+    <path d="M26 12 L23 6 M32 11 L32 4 M38 12 L41 6" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+  </svg>`});
+}
+
 function icon(name,size=22,extra=""){
   return h("span",{class:"ic "+extra,html:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||""}</svg>`});
 }
@@ -103,8 +115,22 @@ function coverFor(vendorOrSeed, idx=0){
            `linear-gradient(140deg, hsl(${hue} 45% ${l1-4}%), hsl(${hue2} 42% ${l2-6}%))`;
   return {bg,emoji,hue};
 }
-/* returns a thumb element with generated art + optional emoji watermark */
+/* real images if the admin added any, else deterministic generated art */
+function vendorImages(v){
+  if(typeof v!=="object"||!v)return [];
+  const imgs=[];
+  if(v.cover)imgs.push(v.cover);
+  if(Array.isArray(v.gallery))v.gallery.forEach(u=>{if(u)imgs.push(u);});
+  return imgs;
+}
+/* returns a thumb element with a real photo (when present) or generated art */
 function coverEl(vendor, cls="", idx=0, showEmoji=true){
+  const imgs=vendorImages(vendor);
+  if(imgs.length){
+    const url=imgs[idx % imgs.length];
+    const el=h("div.thumb "+cls,{style:{backgroundImage:`url("${String(url).replace(/"/g,'%22')}")`}});
+    return el;
+  }
   const c=coverFor(vendor,idx);
   const el=h("div.thumb "+cls,{style:{background:c.bg}});
   if(showEmoji)el.appendChild(h("span",{style:{position:"absolute",right:"10px",bottom:"8px",fontSize:"22px",opacity:".55",filter:"saturate(1.2)"}},c.emoji));

@@ -22,9 +22,15 @@ const crypto = require("crypto");
     if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
   });
 })();
-// Render provides RENDER_EXTERNAL_URL automatically — use it as the public base.
+// Derive the public base from the host platform when not set explicitly.
 if (!process.env.PUBLIC_BASE_URL && process.env.RENDER_EXTERNAL_URL)
   process.env.PUBLIC_BASE_URL = process.env.RENDER_EXTERNAL_URL;
+if (!process.env.PUBLIC_BASE_URL && process.env.VERCEL_URL)
+  process.env.PUBLIC_BASE_URL = "https://" + process.env.VERCEL_URL;
+// On Vercel the app and API share one origin, so the SmartPay redirect can
+// return the browser straight back to the app on the same domain.
+if (!process.env.APP_RETURN_URL && process.env.VERCEL_URL)
+  process.env.APP_RETURN_URL = "https://" + process.env.VERCEL_URL + "/index.html";
 
 const smartpay = require("./smartpay");
 const apple = require("./apple");
@@ -33,6 +39,13 @@ const auth = require("./auth");
 
 const PORT = process.env.PORT || 8787;
 const APP_RETURN = process.env.APP_RETURN_URL || "http://localhost:8742/index.html";
+
+/* voucher codes: WED-XXXX-XXXX using unambiguous characters */
+function genVoucherCode() {
+  const alpha = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I,O,0,1
+  const pick = (n) => Array.from({ length: n }, () => alpha[crypto.randomInt(alpha.length)]).join("");
+  return "WED-" + pick(4) + "-" + pick(4);
+}
 
 /* ---- subscriptions & orders (persisted) ---- */
 async function grantPremium(userId, plan, meta = {}) {
@@ -55,7 +68,21 @@ function parseBody(raw, ctype = "") {
   return Object.fromEntries(new URLSearchParams(raw)); // form-urlencoded (SmartPay callback)
 }
 
-const server = http.createServer(async (req, res) => {
+// one-time init (shared by the local server and the Vercel serverless handler)
+let _ready;
+function ready() {
+  if (!_ready) _ready = (async () => {
+    await db.init();
+    await auth.init();
+    await auth.seedAdmin();
+    const spCfg = await db.get("config:smartpay");
+    if (spCfg) smartpay.setConfig(spCfg);
+  })();
+  return _ready;
+}
+
+async function handle(req, res) {
+  await ready();                     // idempotent; makes the handler serverless-safe
   const url = new URL(req.url, "http://x");
   const p = url.pathname;
   if (req.method === "OPTIONS") return json(res, 204, {});
@@ -66,14 +93,14 @@ const server = http.createServer(async (req, res) => {
       if (p === "/health") return json(res, 200, { ok: true });
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       return res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Zaffa backend</title>
-<body style="font-family:-apple-system,sans-serif;background:#FBF6F2;color:#33262A;display:grid;place-items:center;min-height:100vh;margin:0">
+<title>Wedding &amp; Co backend</title>
+<body style="font-family:-apple-system,sans-serif;background:#F4F3F1;color:#2B2B2D;display:grid;place-items:center;min-height:100vh;margin:0">
 <div style="text-align:center;padding:40px;max-width:420px">
   <div style="font-size:52px">💍</div>
-  <h1 style="font-family:Georgia,serif;margin:10px 0 6px">Zaffa backend</h1>
+  <h1 style="font-family:Georgia,serif;margin:10px 0 6px">Wedding &amp; Co backend</h1>
   <p style="color:#7A6A6E">The server is running. This address hosts the API for the
-  <a href="${APP_RETURN}" style="color:#B76E79">Zaffa app</a> — there's nothing to browse here.</p>
-  <p style="font-size:13px;color:#A9989C">Status: <a href="/api/payments/status" style="color:#B76E79">/api/payments/status</a></p>
+  <a href="${APP_RETURN}" style="color:#B9932F">Wedding &amp; Co app</a> — there's nothing to browse here.</p>
+  <p style="font-size:13px;color:#A9989C">Status: <a href="/api/payments/status" style="color:#B9932F">/api/payments/status</a></p>
 </div></body>`);
     }
 
@@ -112,7 +139,7 @@ const server = http.createServer(async (req, res) => {
     if (p === "/api/me" && req.method === "GET") {
       const user = await auth.fromRequest(req);
       if (!user) return json(res, 401, { error: "not_signed_in" });
-      return json(res, 200, { user, subscription: await getSubscription(user.email) });
+      return json(res, 200, { user, subscription: await getSubscription(user.id) });
     }
 
     /* ---------- Bank Muscat / SmartPay config (admin-managed) ---------- */
@@ -142,6 +169,46 @@ const server = http.createServer(async (req, res) => {
     /* public list of Oman governorates for the sign-up form */
     if (p === "/api/governorates" && req.method === "GET")
       return json(res, 200, { governorates: auth.OMAN_GOVERNORATES });
+
+    /* ---------- Vouchers (admin creates, customer redeems, single-use) ---------- */
+    if (p === "/api/admin/vouchers" && req.method === "POST") {
+      const user = await auth.fromRequest(req);
+      if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
+      const b = parseBody(await body(req), req.headers["content-type"]);
+      const count = Math.min(2000, Math.max(1, parseInt(b.count, 10) || 1));
+      const plan = b.plan === "annual" ? "annual" : "premium";
+      const made = [];
+      for (let i = 0; i < count; i++) {
+        const code = genVoucherCode();
+        await db.set("voucher:" + code, { code, plan, createdAt: Date.now(), createdBy: user.email, redeemedBy: null, redeemedAt: null });
+        made.push(code);
+      }
+      return json(res, 200, { created: made.length, codes: made });
+    }
+    if (p === "/api/admin/vouchers" && req.method === "GET") {
+      const user = await auth.fromRequest(req);
+      if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
+      const rows = (await db.list("voucher:")).map(x => x.value)
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      return json(res, 200, {
+        total: rows.length,
+        redeemed: rows.filter(v => v.redeemedBy).length,
+        vouchers: rows,
+      });
+    }
+    if (p === "/api/redeem" && req.method === "POST") {
+      const user = await auth.fromRequest(req);
+      if (!user) return json(res, 401, { error: "Please sign in first." });
+      const b = parseBody(await body(req), req.headers["content-type"]);
+      const code = String(b.code || "").trim().toUpperCase().replace(/\s+/g, "");
+      const v = await db.get("voucher:" + code);
+      if (!v) return json(res, 400, { error: "This code is not valid." });
+      if (v.redeemedBy) return json(res, 400, { error: "This code has already been used." });
+      v.redeemedBy = user.id; v.redeemedAt = Date.now();
+      await db.set("voucher:" + code, v);
+      await grantPremium(user.id, v.plan === "annual" ? "annual" : "voucher", { via: "voucher", code });
+      return json(res, 200, { ok: true, plan: v.plan });
+    }
 
     /* ---------- catalog (vendors, categories, tips, ads) ----------
        Public read; admin-only write. The admin app publishes whole
@@ -192,7 +259,7 @@ unless you intend to pay. An abandoned initiation costs nothing.</p>
     if (p === "/api/payments/smartpay/session" && req.method === "POST") {
       const b = parseBody(await body(req), req.headers["content-type"]);
       const user = await auth.fromRequest(req);          // prefer the signed-in account
-      const userId = user ? user.email : (b.userId || "anon");
+      const userId = user ? user.id : (b.userId || "anon");
       const orderId = "ZF-" + Date.now() + "-" + crypto.randomBytes(2).toString("hex");
       await db.set("order:" + orderId, { userId, planId: b.planId, status: "created", createdAt: Date.now() });
       const session = smartpay.createSession({ planId: b.planId, orderId,
@@ -220,7 +287,7 @@ unless you intend to pay. An abandoned initiation costs nothing.</p>
     if (p === "/api/payments/apple/verify" && req.method === "POST") {
       const b = parseBody(await body(req), req.headers["content-type"]);
       const user = await auth.fromRequest(req);
-      const userId = user ? user.email : b.userId;
+      const userId = user ? user.id : b.userId;
       const r = b.jws ? apple.verifyTransactionJWS(b.jws)
               : b.receipt ? await apple.verifyReceipt(b.receipt)
               : { ok: false, reason: "no_proof" };
@@ -239,20 +306,20 @@ unless you intend to pay. An abandoned initiation costs nothing.</p>
   } catch (e) {
     json(res, 500, { error: e.message });
   }
-});
+}
 
-(async () => {
-  await db.init();
-  await auth.init();
-  await auth.seedAdmin();
-  // apply admin-saved Bank Muscat config over the env defaults
-  const spCfg = await db.get("config:smartpay");
-  if (spCfg) smartpay.setConfig(spCfg);
-  server.listen(PORT, () => {
-    console.log(`Zaffa backend on http://localhost:${PORT}`);
+// Local / Render: run a standalone HTTP server. On Vercel this file is
+// required by api/[...path].js and only the exported handler is used.
+if (require.main === module) {
+  ready().then(() => http.createServer(handle).listen(PORT, () => {
+    console.log(`Wedding & Co backend on http://localhost:${PORT}`);
     console.log("  storage:            ", db.usePg ? "PostgreSQL" : "local JSON file");
     console.log("  SmartPay configured:", smartpay.isConfigured());
     console.log("  Apple configured:   ", !!process.env.APPLE_SHARED_SECRET);
     console.log("  Admin seeded:       ", !!(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD));
-  });
-})();
+  }));
+}
+
+module.exports = handle;         // Vercel serverless entry
+module.exports.handle = handle;
+module.exports.ready = ready;

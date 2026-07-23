@@ -8,13 +8,12 @@ route("/welcome",()=>{
   const s=h("div.screen.no-tab",{style:{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",
     background:"linear-gradient(160deg,var(--rose-tint),var(--ground) 55%,var(--gold-soft))"}});
   s.appendChild(h("div.stagger",{style:{textAlign:"center"}},[
-    h("div",{style:{fontSize:"58px",marginBottom:"6px"}},"💍"),
-    h("div.eyebrow",{style:{marginBottom:"10px"}},"Your personal wedding planner"),
-    h("h1",{style:{fontSize:"52px",lineHeight:"1",marginBottom:"14px"}},"Zaffa"),
+    h("div",{style:{marginBottom:"14px"}},logoMark(76)),
+    h("div.eyebrow",{style:{marginBottom:"10px"}},"Wedding Planner"),
+    h("h1",{style:{fontSize:"46px",lineHeight:"1.02",marginBottom:"14px",letterSpacing:".01em"}},"Wedding & Co"),
     h("p.muted",{style:{maxWidth:"320px",margin:"0 auto 30px",fontSize:"16px"}},
       "Every vendor, every task, every detail of your big day — beautifully in one place."),
     h("button.btn.btn-pri.btn-lg.btn-block",{style:{maxWidth:"300px",margin:"0 auto"},onclick:()=>go("/onboard")},["Start planning ",icon("fwd",18)]),
-    h("button.btn.btn-quiet",{style:{margin:"14px auto 0",display:"flex"},onclick:()=>{S.role="admin";S.onboarded=true;save();go("/admin");}},"I'm an administrator"),
   ]));
   app.appendChild(s);
   return app;
@@ -28,7 +27,7 @@ route("/onboard",()=>{
   app.appendChild(s);
 
   const steps=[
-    {em:"🌸",h:"What's your name?",sub:"So we can make Zaffa truly yours.",field:()=>{
+    {em:"🌸",h:"What's your name?",sub:"So we can make Wedding & Co truly yours.",field:()=>{
       const i=h("input.field",{placeholder:"e.g. Sarah",value:data.name,style:{fontSize:"18px",textAlign:"center"},
         oninput:e=>{data.name=e.target.value;next.disabled=!data.name.trim();}}); setTimeout(()=>i.focus(),200); return i;},
       valid:()=>data.name.trim()},
