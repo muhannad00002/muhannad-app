@@ -24,7 +24,7 @@ function adminGateView(){
   }
   s.appendChild(h("div.stagger",{style:{textAlign:"center",maxWidth:"360px",margin:"0 auto",width:"100%"}},[
     h("div",{style:{fontSize:"46px",marginBottom:"6px"}},"🔐"),
-    h("div.eyebrow",{style:{color:"var(--gold)",marginBottom:"8px"}},"Zaffa Admin"),
+    h("div.eyebrow",{style:{color:"var(--gold)",marginBottom:"8px"}},"Wedding & Co Admin"),
     h("h1",{style:{fontSize:"34px",marginBottom:"6px"}},"Control Center"),
     h("p.muted",{style:{marginBottom:"22px"}},"Sign in with your administrator account."),
     h("div.card.pad-l.col.gap12",{style:{textAlign:"left"}},[
@@ -57,9 +57,9 @@ route("/admin",()=>{
   const kids=[adminTop("Overview",h("button.icon-btn",{onclick:()=>adminSignOut()},icon("logout",20)))];
 
   // greeting
-  kids.push(h("div.hero",{style:{background:"linear-gradient(140deg,#C6A469,#B76E79 60%,#9E5763)"}},[
+  kids.push(h("div.hero",[
     h("div.lbl2","Welcome back"),
-    h("h2",{style:{fontSize:"26px",color:"#fff",margin:"4px 0 6px"}},"Zaffa Control Center"),
+    h("h2",{style:{fontSize:"26px",color:"#fff",margin:"4px 0 6px"}},"Wedding & Co Control Center"),
     h("p",{style:{color:"rgba(255,255,255,.9)",fontSize:"14px"}},`${activeVendors} vendors live · ${brides} brides planning`),
   ]));
 
@@ -104,7 +104,10 @@ route("/admin",()=>{
 /* ---------- VENDORS MANAGEMENT ---------- */
 route("/admin/vendors",()=>{
   let q="",tab="all";
-  const kids=[adminTop("Vendors",h("button.icon-btn",{onclick:()=>openVendorForm()},icon("plus",22)))];
+  const kids=[adminTop("Vendors",h("div.row.gap8",[
+    h("button.icon-btn",{onclick:()=>openBulkImport(()=>go("/admin/vendors")),"aria-label":"Bulk import"},icon("share",20)),
+    h("button.icon-btn",{onclick:()=>openVendorForm()},icon("plus",22)),
+  ]))];
   const search=h("input.field",{placeholder:"Search vendors…",style:{marginBottom:"12px"},oninput:e=>{q=e.target.value;draw();}});
   kids.push(search);
   const seg=h("div.seg",{style:{marginBottom:"14px"}});
@@ -126,6 +129,79 @@ route("/admin/vendors",()=>{
   draw();
   return appFrame(kids,{tabs:adminTabs("/admin/vendors")});
 });
+
+/* ---- Bulk vendor import (CSV) ---- */
+const CSV_COLUMNS=["name","category","governorate","city","priceLevel","rating","reviews","short","instagram","whatsapp","phone","cover","gallery"];
+function parseCSV(text){
+  const rows=[]; let i=0,field="",row=[],inQ=false;
+  const pushF=()=>{row.push(field);field="";};
+  const pushR=()=>{pushF();rows.push(row);row=[];};
+  while(i<text.length){
+    const c=text[i];
+    if(inQ){ if(c==='"'){ if(text[i+1]==='"'){field+='"';i++;} else inQ=false; } else field+=c; }
+    else{ if(c==='"')inQ=true; else if(c===',')pushF(); else if(c==='\n')pushR(); else if(c==='\r'){} else field+=c; }
+    i++;
+  }
+  if(field.length||row.length)pushR();
+  return rows.filter(r=>r.some(x=>x&&x.trim()));
+}
+function csvToVendors(text){
+  const rows=parseCSV(text); if(!rows.length)return {vendors:[],errors:["Empty file"]};
+  const header=rows[0].map(h=>h.trim().toLowerCase());
+  const idx=(name)=>header.indexOf(name);
+  const out=[],errors=[];
+  for(let r=1;r<rows.length;r++){
+    const row=rows[r]; const get=(n)=>{const j=idx(n);return j>=0?(row[j]||"").trim():"";};
+    const name=get("name"); if(!name)continue;
+    // resolve category by id or name
+    const catRaw=get("category").toLowerCase();
+    const cat=CATEGORIES.find(c=>c.id.toLowerCase()===catRaw||c.name.toLowerCase()===catRaw)||CATEGORIES[0];
+    const gov=GOVERNORATES.find(g=>g.toLowerCase()===get("governorate").toLowerCase())||GOVERNORATES[0];
+    const city=get("city")||gov;
+    const pl=Math.min(4,Math.max(1,parseInt(get("pricelevel"),10)||2));
+    const v={id:"v"+String(Date.now()).slice(-6)+r, catId:cat.id, name, governorate:gov, city,
+      priceLevel:pl, priceRange:({1:"OMR 40–120",2:"OMR 120–350",3:"OMR 350–900",4:"OMR 900+"})[pl],
+      rating:Math.min(5,Math.max(1,parseFloat(get("rating"))||4.7)), reviews:parseInt(get("reviews"),10)||0,
+      short:get("short")||name+" — wedding services.", desc:get("short")||"",
+      instagram:get("instagram"), whatsapp:get("whatsapp"), phone:get("phone"),
+      cover:get("cover"), gallery:get("gallery")?get("gallery").split("|").map(s=>s.trim()).filter(Boolean):[],
+      maps:city+", Oman", hours:"Sat–Thu · 10:00 AM – 9:00 PM", services:["Consultation","Bespoke packages"],
+      featured:false, approved:true, isNew:true, offer:null, popularity:90,
+      packages:[{name:"Signature",price:({1:"OMR 40–120",2:"OMR 120–350",3:"OMR 350–900",4:"OMR 900+"})[pl],items:["Full service"],popular:true}],
+      reviewsList:[{by:"Aisha K.",stars:5,text:"Wonderful!",when:"Recently"}]};
+    out.push(v);
+  }
+  return {vendors:out,errors};
+}
+function openBulkImport(onDone){
+  let text="", parsed=null;
+  let ref;
+  const template="name,category,governorate,city,priceLevel,rating,reviews,short,instagram,whatsapp,phone,cover,gallery\n"+
+    "Rose Atelier,dresses,Muscat,Muscat,3,4.8,120,Elegant couture gowns,@rose_atelier,+96890000000,+96824000000,https://example.com/cover.jpg,https://example.com/1.jpg|https://example.com/2.jpg";
+  ref=sheet({title:"Bulk import vendors",body:(close)=>{
+    const b=h("div.col.gap12",{style:{marginTop:"4px"}});
+    b.appendChild(h("p.small.muted","Upload or paste a CSV. Columns: "+CSV_COLUMNS.join(", ")+". Category can be an id or name; gallery is URLs separated by | (pipe)."));
+    b.appendChild(h("button.btn.btn-sec.btn-sm",{onclick:()=>{
+      const blob=new Blob([template],{type:"text/csv"});const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download="vendors-template.csv";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);
+    }},[icon("share",15),"Download CSV template"]));
+    const file=h("input",{type:"file",accept:".csv,text/csv",style:{display:"none"},onchange:e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{ta.value=rd.result;text=rd.result;recount();};rd.readAsText(f);}});
+    b.appendChild(h("button.btn.btn-sec.btn-block",{onclick:()=>file.click()},[icon("share",16),"Choose CSV file"]));
+    b.appendChild(file);
+    const ta=h("textarea.field",{placeholder:"…or paste CSV here",style:{minHeight:"120px",fontFamily:"var(--font-m)",fontSize:"12px"},oninput:e=>{text=e.target.value;recount();}});
+    b.appendChild(ta);
+    const count=h("p.small.muted");
+    b.appendChild(count);
+    function recount(){ parsed=text.trim()?csvToVendors(text):null; count.textContent=parsed?(parsed.vendors.length+" vendors ready to import"):""; }
+    return b;
+  },actions:[
+    h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
+    h("button.btn.btn-pri.grow",{onclick:()=>{
+      if(!parsed||!parsed.vendors.length){toast("Nothing to import","⚠️");return;}
+      VENDORS.unshift(...parsed.vendors); save(); ref.close();
+      toast(parsed.vendors.length+" vendors imported ✓","🎉"); onDone&&onDone();
+    }},"Import vendors"),
+  ]});
+}
 
 function adminVendorRow(v,rerender){
   const cat=catById(v.catId);
@@ -184,6 +260,19 @@ function openVendorForm(v,rerender){
     const ig=h("input.field",{value:d.instagram,placeholder:"@handle",oninput:e=>d.instagram=e.target.value});
     const wa=h("input.field",{value:d.whatsapp,placeholder:"+968 …",oninput:e=>d.whatsapp=e.target.value});
     const phone=h("input.field",{value:d.phone,placeholder:"+968 …",oninput:e=>d.phone=e.target.value});
+    const maps=h("input.field",{value:d.maps||"",placeholder:"Google Maps link or address",oninput:e=>d.maps=e.target.value});
+    // photos: cover + gallery URLs, with optional file upload for the cover
+    const cover=h("input.field",{value:d.cover||"",placeholder:"https://…/cover.jpg",oninput:e=>{d.cover=e.target.value;preview();}});
+    const gallery=h("textarea.field",{placeholder:"One image URL per line",oninput:e=>{d.gallery=e.target.value.split(/\n+/).map(s=>s.trim()).filter(Boolean);preview();}},(d.gallery||[]).join("\n"));
+    const prev=h("div.gal",{style:{marginTop:"8px"}});
+    function preview(){clear(prev);vendorImages(d).slice(0,6).forEach(u=>{const t=h("div.thumb",{style:{width:"64px",height:"64px",flex:"none",backgroundImage:`url("${String(u).replace(/"/g,'%22')}")`}});prev.appendChild(t);});}
+    const fileBtn=h("input",{type:"file",accept:"image/*",style:{display:"none"},onchange:e=>{
+      const f=e.target.files[0]; if(!f)return;
+      if(f.size>1200000){toast("Image too large — use a URL for big photos","⚠️");return;}
+      const rd=new FileReader(); rd.onload=()=>{d.cover=rd.result;cover.value="(uploaded image)";preview();}; rd.readAsDataURL(f);
+    }});
+    const uploadBtn=h("button.btn.btn-sec.btn-sm",{onclick:()=>fileBtn.click()},[icon("camera",15),"Upload cover"]);
+    preview();
     const feat=toggle("Featured vendor",d.featured,x=>d.featured=x);
     const appr=toggle("Approved & visible",d.approved,x=>d.approved=x);
     b.append(
@@ -192,8 +281,12 @@ function openVendorForm(v,rerender){
       h("div.row.gap8",[h("div.grow",F("Governorate",govSel)),h("div.grow",F("City / area",cityI))]),
       h("div.row.gap8",[h("div.grow",F("Price tier",priceSel)),h("div.grow",F("Rating",rating)),h("div.grow",F("Reviews",reviews))]),
       F("Short description",short),F("Full description",desc),
+      h("div",[h("div.between",{style:{marginBottom:"6px"}},[h("label.lbl",{style:{margin:0}},"Cover photo"),uploadBtn]),cover,fileBtn]),
+      F("Gallery photos",gallery),
+      prev,
       h("div.row.gap8",[h("div.grow",F("Instagram",ig)),h("div.grow",F("WhatsApp",wa))]),
-      F("Phone",phone),feat,appr,
+      h("div.row.gap8",[h("div.grow",F("Phone",phone)),h("div.grow",F("Location / map",maps))]),
+      feat,appr,
     );
     return b;
   },actions:[
@@ -327,6 +420,7 @@ route("/admin/more",()=>{
     }
   }
   items.push(
+    ["gift","Vouchers","Create redeem codes for free access",()=>go("/admin/vouchers")],
     ["wallet","Bank Muscat payments","Merchant ID, access code & working key",()=>go("/admin/payments")],
     ["megaphone","Send notification","Broadcast to brides",()=>openBroadcastForm()],
     ["tag","Advertisements",ADS.filter(a=>a.active).length+" active",()=>go("/admin/ads")],
@@ -353,6 +447,73 @@ function adminSignOut(){
   S.account=null; S.role="bride"; save();
   toast("Signed out"); render();
 }
+
+/* ---------- VOUCHERS ---------- */
+route("/admin/vouchers",()=>{
+  const kids=[adminTop("Vouchers")];
+  let count=10;
+  const created=h("div"); // holds the just-created batch
+  const stat=h("div.card.pad-s",{style:{marginBottom:"14px"}},h("div.small.muted","Loading…"));
+  kids.push(stat);
+  // create panel
+  kids.push(h("div.card.pad.col.gap12",[
+    h("div",[h("label.lbl","How many vouchers?"),
+      h("input.field",{type:"number",min:1,max:2000,value:count,oninput:e=>count=Math.min(2000,Math.max(1,+e.target.value||1))})]),
+    (()=>{const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
+      btn.disabled=true;btn.textContent="Creating…";
+      try{
+        const r=await api("/api/admin/vouchers",{method:"POST",body:{count}});
+        toast(r.created+" vouchers created ✓","🎉");
+        showBatch(r.codes); load();
+      }catch(e){toast(e.message,"⚠️");}
+      btn.disabled=false;btn.textContent="Create vouchers";
+    }},"Create vouchers");return btn;})(),
+    h("p.tiny.faint","Each code unlocks full access once. Give codes to customers who don't pay online."),
+  ]));
+  kids.push(created);
+  // list
+  kids.push(h("div.between",{style:{margin:"22px 3px 10px"}},[h("h3",{style:{fontSize:"18px"}},"All vouchers"),
+    h("button.chip",{onclick:()=>downloadAll()},[icon("share",14),"Download CSV"])]));
+  const list=h("div.col.gap8"); kids.push(list);
+  let all=[];
+  function showBatch(codes){
+    clear(created);
+    const csv="voucher\n"+codes.join("\n");
+    created.appendChild(h("div.card.pad",{style:{marginTop:"14px",background:"var(--good-soft)"}},[
+      h("div.between",[h("b",codes.length+" new codes"),
+        h("button.chip",{onclick:()=>dl(csv,"vouchers-new.csv")},[icon("share",14),"Download"])]),
+      h("div",{style:{marginTop:"10px",display:"flex",flexWrap:"wrap",gap:"6px",maxHeight:"160px",overflow:"auto"}},
+        codes.map(c=>h("span.chip",{style:{fontFamily:"var(--font-m)"}},c))),
+    ]));
+  }
+  function draw(){
+    clear(list);
+    if(!all.length){list.appendChild(h("div.empty",[h("div.em","🎟️"),h("h3","No vouchers yet"),h("p.muted","Create a batch above.")]));return;}
+    all.slice(0,200).forEach(v=>list.appendChild(h("div.card.pad-s.between",[
+      h("div.row.gap8",[h("b",{style:{fontFamily:"var(--font-m)"}},v.code),
+        v.redeemedBy?h("span.tag.tag-todo","Used"):h("span.tag.tag-done","Available")]),
+      v.redeemedBy?h("span.tiny.faint",v.redeemedBy):h("span.tiny.faint",new Date(v.createdAt).toLocaleDateString("en")),
+    ])));
+    if(all.length>200)list.appendChild(h("p.center.tiny.faint",{style:{marginTop:"8px"}},"Showing 200 of "+all.length+" — download CSV for the full list."));
+  }
+  function downloadAll(){
+    const csv="voucher,status,redeemed_by,created\n"+all.map(v=>[v.code,v.redeemedBy?"used":"available",v.redeemedBy||"",new Date(v.createdAt).toISOString()].join(",")).join("\n");
+    dl(csv,"vouchers-all.csv");
+  }
+  function dl(text,name){const blob=new Blob([text],{type:"text/csv"});const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+  async function load(){
+    try{const r=await api("/api/admin/vouchers");all=r.vouchers||[];
+      clear(stat);stat.appendChild(h("div.row.gap12",[
+        h("div.kpi.grow.center",[h("div.v",{style:{color:"var(--rose-deep)"}},r.total),h("div.k","Total")]),
+        h("div.kpi.grow.center",[h("div.v",{style:{color:"var(--good)"}},r.total-r.redeemed),h("div.k","Available")]),
+        h("div.kpi.grow.center",[h("div.v",{style:{color:"var(--ink2)"}},r.redeemed),h("div.k","Used")]),
+      ]));
+      draw();
+    }catch(e){clear(stat);stat.appendChild(h("div.small.muted","Couldn't load: "+e.message));}
+  }
+  load();
+  return appFrame(kids,{tabs:adminTabs("/admin/more")});
+});
 
 /* ---------- BANK MUSCAT / SMARTPAY SETTINGS ---------- */
 route("/admin/payments",()=>{

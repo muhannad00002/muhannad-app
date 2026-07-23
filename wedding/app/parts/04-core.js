@@ -75,7 +75,7 @@ function buildICS({title,date,time,desc,location}){
   const dt=fmtICSDate(date,time), dtEnd=fmtICSDate(date,addHour(time));
   const stamp=new Date().toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
   const esc=s=>String(s||"").replace(/([,;\\])/g,"\\$1").replace(/\n/g,"\\n");
-  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Zaffa//Wedding Planner//EN","CALSCALE:GREGORIAN","BEGIN:VEVENT",
+  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Wedding & Co//Wedding Planner//EN","CALSCALE:GREGORIAN","BEGIN:VEVENT",
     "UID:"+stamp+"-"+Math.random().toString(36).slice(2)+"@zaffa","DTSTAMP:"+stamp,
     "DTSTART:"+dt,"DTEND:"+dtEnd,"SUMMARY:"+esc(title),"DESCRIPTION:"+esc(desc),
     "LOCATION:"+esc(location),"BEGIN:VALARM","TRIGGER:-P1D","ACTION:DISPLAY","DESCRIPTION:"+esc(title),"END:VALARM",

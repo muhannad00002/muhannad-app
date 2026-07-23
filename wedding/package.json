@@ -1,0 +1,15 @@
+{
+  "name": "wedding-and-co",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Wedding & Co — wedding planner & marketplace (app + serverless API).",
+  "scripts": {
+    "build": "node app/build.js",
+    "start": "node server/server.js",
+    "test": "node server/test.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
+}

@@ -1,95 +1,96 @@
 <meta charset="utf-8">
-<title>Zaffa — Wedding Planner &amp; Marketplace</title>
+<title>Wedding &amp; Co — Wedding Planner &amp; Marketplace</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<meta name="description" content="Zaffa — your personal wedding planner. Plan the day, browse curated vendors, track every task in one elegant place.">
-<meta name="theme-color" content="#B76E79">
+<meta name="description" content="Wedding &amp; Co — your personal wedding planner. Plan the day, browse curated vendors, track every task in one elegant place.">
+<meta name="theme-color" content="#C6A449">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Zaffa">
+<meta name="apple-mobile-web-app-title" content="Wedding &amp; Co">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <style>
-/* ================= ZAFFA — DESIGN SYSTEM =================
-   Modern · elegant · feminine · minimal · premium.
-   Palette: cream, warm white, rose gold, champagne, light pink. */
+/* ================= WEDDING & CO — DESIGN SYSTEM =================
+   Elegant · minimal · premium. Drawn from the logo:
+   charcoal grey + white + gold ring + cyan diamond.
+   --rose* is the PRIMARY accent (gold), --cyan* the secondary (diamond). */
 :root{
   /* surfaces */
-  --ground:#FBF6F2;      /* warm cream page */
-  --ground2:#F6EDE6;     /* deeper cream */
+  --ground:#F4F3F1;      /* soft warm-grey white */
+  --ground2:#ECEAE6;
   --surface:#FFFFFF;     /* card */
-  --surface2:#FBF3EE;    /* subtle fill */
-  --surface3:#F4E7DE;    /* pressed / track */
-  /* ink */
-  --ink:#33262A;         /* near-black warm */
-  --ink2:#7A6A6E;        /* secondary */
-  --ink3:#A9989C;        /* tertiary */
-  --line:#EFE2DA;        /* hairline */
-  --line2:#E4D3C8;       /* stronger hairline */
-  /* brand — rose gold */
-  --rose:#B76E79;
-  --rose-deep:#9E5763;
-  --rose-soft:#F7E7E9;
-  --rose-tint:#FCEFF1;
-  --on-rose:#FFFFFF;
-  /* champagne / gold accents */
-  --gold:#C6A469;
-  --gold-soft:#F5ECDC;
-  --champagne:#E7D3BE;
-  --blush:#F7E3E6;
+  --surface2:#F7F5F2;    /* subtle fill */
+  --surface3:#EDEAE4;    /* pressed / track */
+  /* ink — charcoal (logo grey family) */
+  --ink:#2B2B2D;
+  --ink2:#67676B;
+  --ink3:#9B9B9F;
+  --line:#E9E6E1;
+  --line2:#DAD6CF;
+  /* PRIMARY — gold (the ring) */
+  --rose:#B9932F;        /* rich readable gold */
+  --rose-deep:#8C6E1F;   /* deep gold for text / links */
+  --rose-soft:#F6EFD9;   /* pale gold fill */
+  --rose-tint:#FBF7EA;
+  --on-rose:#2A2410;     /* dark text on gold */
+  /* SECONDARY — champagne gold + cyan diamond */
+  --gold:#C6A449; --gold-soft:#F3ECD8;
+  --cyan:#2AA3BC; --cyan-soft:#E1F2F5; --cyan-deep:#1E7E92;
+  --champagne:#E7D8BE;
+  --blush:#EFEAE2;
   /* semantic */
-  --good:#5C9E7E; --good-soft:#E6F1EB;
-  --warn:#C08A3E; --warn-soft:#F8EEDD;
-  --crit:#C56B6B; --crit-soft:#F9E6E6;
+  --good:#3E9E7E; --good-soft:#E4F1EB;
+  --warn:#BE8F2E; --warn-soft:#F7EEDA;
+  --crit:#C4574F; --crit-soft:#F8E7E5;
   /* status colours for chips */
-  --s-todo:#A9989C; --s-todo-soft:#F1EAEC;
-  --s-prog:#C6A469; --s-prog-soft:#F5ECDC;
-  --s-done:#5C9E7E; --s-done-soft:#E6F1EB;
-  /* shadows — soft, diffuse */
-  --shadow-1:0 1px 2px rgba(120,80,80,.05),0 2px 8px rgba(120,80,80,.05);
-  --shadow-2:0 6px 20px rgba(140,90,90,.09),0 2px 6px rgba(140,90,90,.05);
-  --shadow-3:0 18px 46px rgba(120,70,80,.16),0 6px 14px rgba(120,70,80,.07);
-  --shadow-rose:0 10px 28px rgba(183,110,121,.30);
+  --s-todo:#9B9B9F; --s-todo-soft:#EEECE8;
+  --s-prog:#C6A449; --s-prog-soft:#F3ECD8;
+  --s-done:#3E9E7E; --s-done-soft:#E4F1EB;
+  /* shadows — soft, neutral */
+  --shadow-1:0 1px 2px rgba(40,40,45,.05),0 2px 8px rgba(40,40,45,.05);
+  --shadow-2:0 6px 20px rgba(40,40,45,.09),0 2px 6px rgba(40,40,45,.05);
+  --shadow-3:0 18px 46px rgba(30,30,35,.16),0 6px 14px rgba(30,30,35,.07);
+  --shadow-rose:0 10px 26px rgba(185,147,47,.30);
   /* radii */
   --r-s:10px; --r-m:16px; --r-l:22px; --r-xl:28px; --r-full:999px;
-  /* type */
-  --font-d:"Cormorant Garamond","Hoefler Text",Didot,"Playfair Display",Georgia,serif;
+  /* type — Didone display (matches the wordmark) + clean sans */
+  --font-d:"Playfair Display","Didot","Bodoni MT","Hoefler Text",Georgia,"Times New Roman",serif;
   --font-b:"Avenir Next",-apple-system,ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
   --font-m:ui-monospace,"SF Mono",Menlo,monospace;
   --dur:.24s; --ease:cubic-bezier(.32,.72,.24,1);
   --tab-h:76px;
 }
 @media (prefers-color-scheme:dark){:root{
-  --ground:#1A1416; --ground2:#211A1C; --surface:#241C1F; --surface2:#2B2225; --surface3:#342A2D;
-  --ink:#F3E9EC; --ink2:#BCA9AF; --ink3:#8C7A80; --line:#342A2D; --line2:#42353A;
-  --rose:#D98C97; --rose-deep:#E7A2AC; --rose-soft:#3A2A2E; --rose-tint:#2E2225; --on-rose:#241417;
-  --gold:#D8BC85; --gold-soft:#352C1E; --champagne:#4A3C2C; --blush:#3A2A2E;
-  --good:#7BBE9C; --good-soft:#22332B; --warn:#D9AA5E; --warn-soft:#352A18; --crit:#E08B8B; --crit-soft:#3A2323;
-  --s-todo:#8C7A80; --s-todo-soft:#2E2528; --s-prog:#D8BC85; --s-prog-soft:#352C1E; --s-done:#7BBE9C; --s-done-soft:#22332B;
+  --ground:#2C2D2F; --ground2:#323335; --surface:#37383B; --surface2:#404145; --surface3:#4A4B50;
+  --ink:#F3F2EF; --ink2:#C4C3BF; --ink3:#908F92; --line:#45464A; --line2:#54555A;
+  --rose:#E0B451; --rose-deep:#ECC169; --rose-soft:#3E3620; --rose-tint:#362F1C; --on-rose:#2A2410;
+  --gold:#E3C069; --gold-soft:#3C331C; --cyan:#4FC3D9; --cyan-soft:#22383D; --cyan-deep:#8AD8E7; --champagne:#4A4234; --blush:#3A3B3E;
+  --good:#74BE9C; --good-soft:#22332B; --warn:#D9AA5E; --warn-soft:#352C18; --crit:#E0837C; --crit-soft:#3A2422;
+  --s-todo:#908F92; --s-todo-soft:#3A3B3F; --s-prog:#E3C069; --s-prog-soft:#3C331C; --s-done:#74BE9C; --s-done-soft:#22332B;
   --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 6px 20px rgba(0,0,0,.5); --shadow-3:0 18px 46px rgba(0,0,0,.6);
-  --shadow-rose:0 10px 28px rgba(0,0,0,.5);
+  --shadow-rose:0 10px 26px rgba(0,0,0,.5);
 }}
 :root[data-theme="light"]{
-  --ground:#FBF6F2; --ground2:#F6EDE6; --surface:#FFFFFF; --surface2:#FBF3EE; --surface3:#F4E7DE;
-  --ink:#33262A; --ink2:#7A6A6E; --ink3:#A9989C; --line:#EFE2DA; --line2:#E4D3C8;
-  --rose:#B76E79; --rose-deep:#9E5763; --rose-soft:#F7E7E9; --rose-tint:#FCEFF1; --on-rose:#FFFFFF;
-  --gold:#C6A469; --gold-soft:#F5ECDC; --champagne:#E7D3BE; --blush:#F7E3E6;
-  --good:#5C9E7E; --good-soft:#E6F1EB; --warn:#C08A3E; --warn-soft:#F8EEDD; --crit:#C56B6B; --crit-soft:#F9E6E6;
-  --s-todo:#A9989C; --s-todo-soft:#F1EAEC; --s-prog:#C6A469; --s-prog-soft:#F5ECDC; --s-done:#5C9E7E; --s-done-soft:#E6F1EB;
-  --shadow-1:0 1px 2px rgba(120,80,80,.05),0 2px 8px rgba(120,80,80,.05);
-  --shadow-2:0 6px 20px rgba(140,90,90,.09),0 2px 6px rgba(140,90,90,.05);
-  --shadow-3:0 18px 46px rgba(120,70,80,.16),0 6px 14px rgba(120,70,80,.07);
-  --shadow-rose:0 10px 28px rgba(183,110,121,.30); color-scheme:light;
+  --ground:#F4F3F1; --ground2:#ECEAE6; --surface:#FFFFFF; --surface2:#F7F5F2; --surface3:#EDEAE4;
+  --ink:#2B2B2D; --ink2:#67676B; --ink3:#9B9B9F; --line:#E9E6E1; --line2:#DAD6CF;
+  --rose:#B9932F; --rose-deep:#8C6E1F; --rose-soft:#F6EFD9; --rose-tint:#FBF7EA; --on-rose:#2A2410;
+  --gold:#C6A449; --gold-soft:#F3ECD8; --cyan:#2AA3BC; --cyan-soft:#E1F2F5; --cyan-deep:#1E7E92; --champagne:#E7D8BE; --blush:#EFEAE2;
+  --good:#3E9E7E; --good-soft:#E4F1EB; --warn:#BE8F2E; --warn-soft:#F7EEDA; --crit:#C4574F; --crit-soft:#F8E7E5;
+  --s-todo:#9B9B9F; --s-todo-soft:#EEECE8; --s-prog:#C6A449; --s-prog-soft:#F3ECD8; --s-done:#3E9E7E; --s-done-soft:#E4F1EB;
+  --shadow-1:0 1px 2px rgba(40,40,45,.05),0 2px 8px rgba(40,40,45,.05);
+  --shadow-2:0 6px 20px rgba(40,40,45,.09),0 2px 6px rgba(40,40,45,.05);
+  --shadow-3:0 18px 46px rgba(30,30,35,.16),0 6px 14px rgba(30,30,35,.07);
+  --shadow-rose:0 10px 26px rgba(185,147,47,.30); color-scheme:light;
 }
 :root[data-theme="dark"]{
-  --ground:#1A1416; --ground2:#211A1C; --surface:#241C1F; --surface2:#2B2225; --surface3:#342A2D;
-  --ink:#F3E9EC; --ink2:#BCA9AF; --ink3:#8C7A80; --line:#342A2D; --line2:#42353A;
-  --rose:#D98C97; --rose-deep:#E7A2AC; --rose-soft:#3A2A2E; --rose-tint:#2E2225; --on-rose:#241417;
-  --gold:#D8BC85; --gold-soft:#352C1E; --champagne:#4A3C2C; --blush:#3A2A2E;
-  --good:#7BBE9C; --good-soft:#22332B; --warn:#D9AA5E; --warn-soft:#352A18; --crit:#E08B8B; --crit-soft:#3A2323;
-  --s-todo:#8C7A80; --s-todo-soft:#2E2528; --s-prog:#D8BC85; --s-prog-soft:#352C1E; --s-done:#7BBE9C; --s-done-soft:#22332B;
+  --ground:#2C2D2F; --ground2:#323335; --surface:#37383B; --surface2:#404145; --surface3:#4A4B50;
+  --ink:#F3F2EF; --ink2:#C4C3BF; --ink3:#908F92; --line:#45464A; --line2:#54555A;
+  --rose:#E0B451; --rose-deep:#ECC169; --rose-soft:#3E3620; --rose-tint:#362F1C; --on-rose:#2A2410;
+  --gold:#E3C069; --gold-soft:#3C331C; --cyan:#4FC3D9; --cyan-soft:#22383D; --cyan-deep:#8AD8E7; --champagne:#4A4234; --blush:#3A3B3E;
+  --good:#74BE9C; --good-soft:#22332B; --warn:#D9AA5E; --warn-soft:#352C18; --crit:#E0837C; --crit-soft:#3A2422;
+  --s-todo:#908F92; --s-todo-soft:#3A3B3F; --s-prog:#E3C069; --s-prog-soft:#3C331C; --s-done:#74BE9C; --s-done-soft:#22332B;
   --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 6px 20px rgba(0,0,0,.5); --shadow-3:0 18px 46px rgba(0,0,0,.6);
-  --shadow-rose:0 10px 28px rgba(0,0,0,.5); color-scheme:dark;
+  --shadow-rose:0 10px 26px rgba(0,0,0,.5); color-scheme:dark;
 }
 
 *{box-sizing:border-box;margin:0}
@@ -297,10 +298,10 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 
 /* hero countdown gradient card */
 .hero{position:relative;overflow:hidden;border-radius:var(--r-xl);color:#fff;padding:24px 22px;
-  background:linear-gradient(140deg,#C98A94 0%,#B76E79 45%,#9E5763 100%);box-shadow:var(--shadow-2)}
+  background:linear-gradient(140deg,#4C4D51 0%,#3A3B3E 48%,#2C2D2F 100%);box-shadow:var(--shadow-2)}
 .hero::after{content:"";position:absolute;inset:0;background:
-   radial-gradient(120px 120px at 85% 15%,rgba(255,255,255,.28),transparent 60%),
-   radial-gradient(160px 160px at 10% 95%,rgba(198,164,105,.35),transparent 60%);pointer-events:none}
+   radial-gradient(150px 150px at 86% 12%,rgba(226,180,81,.42),transparent 62%),
+   radial-gradient(160px 160px at 8% 96%,rgba(42,163,188,.30),transparent 62%);pointer-events:none}
 .hero .lbl2{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;opacity:.9}
 
 /* category grid tile */
