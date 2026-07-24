@@ -291,6 +291,9 @@ route("/checklist",()=>{
     ]),
   ]));
 
+  // expense tracker — total spent across booked vendors vs budget
+  kids.push(expenseCard());
+
   // filter segmented
   let filter="all";
   const seg=h("div.seg",{style:{margin:"16px 0 4px"}});
@@ -322,6 +325,43 @@ route("/checklist",()=>{
   drawList();
   return appFrame(kids,{tabs:brideTabs("/checklist")});
 });
+
+/* expense tracker card for the plan screen */
+function expenseCard(){
+  const spent=totalSpent();
+  const budget=+S.bride.budget||0;
+  const over=budget&&spent>budget;
+  const pct=budget?Math.min(100,Math.round(spent/budget*100)):0;
+  // booked line items that carry a price
+  const items=Object.entries(S.bookings)
+    .map(([taskId,b])=>({taskId,b,vendor:vendorById(b&&b.vendorId),task:templateById(taskId)}))
+    .filter(x=>x.vendor&&x.b&&x.b.price)
+    .sort((a,b)=>(+b.b.price)-(+a.b.price));
+  const card=h("div.card.pad",{style:{marginTop:"14px"}});
+  card.append(
+    h("div.between",{style:{alignItems:"flex-end"}},[
+      h("div",[h("div.eyebrow","Expenses"),
+        h("div",{style:{fontFamily:"var(--font-d)",fontSize:"24px",color:over?"var(--crit)":"var(--rose-deep)",marginTop:"2px"}},money(spent))]),
+      h("div",{style:{textAlign:"right"}},[h("div.tiny.faint","of budget"),h("b.small",money(budget))]),
+    ]),
+    h("div.bar",{style:{marginTop:"10px"}},h("i",{style:{width:pct+"%",background:over?"var(--crit)":undefined}})),
+  );
+  if(budget)card.append(h("div.tiny.faint",{style:{marginTop:"6px"}},
+    over?("You're "+money(spent-budget)+" over budget"):(money(budget-spent)+" left to spend")));
+  if(items.length){
+    const list=h("div.col.gap8",{style:{marginTop:"12px"}});
+    items.forEach(({taskId,b,vendor,task})=>list.appendChild(
+      h("button.lrow",{style:{cursor:"pointer",width:"100%",textAlign:"left"},onclick:()=>openTaskSheet(taskId)},[
+        h("div.grow",{style:{minWidth:0}},[h("b.small",vendor.name),
+          h("div.tiny.faint",[task?shortTask(task.title):"Booked",b.date?(" · "+new Date(b.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"})):""])]),
+        h("b.small",{style:{flex:"none",color:"var(--rose-deep)"}},money(+b.price)),
+      ])));
+    card.append(list);
+  }else{
+    card.append(h("p.tiny.faint",{style:{margin:"10px 2px 0"}},"Book a vendor and add the agreed price to start tracking your spending here."));
+  }
+  return card;
+}
 
 function checkRow(t,rerender){
   const st=S.checklist[t.id]||"todo";

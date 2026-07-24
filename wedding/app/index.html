@@ -713,6 +713,7 @@ const ICONS={
   sliders:'<path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h8M16 18h4"/><circle cx="15" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="14" cy="18" r="2"/>',
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   send:'<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/>',
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
 };
 /* Wedding & Co brand mark — gold ring + cyan diamond (echoes the logo) */
 function logoMark(size=64){
@@ -925,8 +926,12 @@ function goPremium(tier){
 function cancelPremium(){ S.subscription={plan:"free",tier:null,since:null}; save(); }
 
 /* ---- Bookings / appointments ---- */
-function saveBooking(taskId,vendorId,date,time,note){
-  S.bookings[taskId]={vendorId,date,time:time||"",note:note||""}; save();
+function saveBooking(taskId,vendorId,date,time,note,price){
+  S.bookings[taskId]={vendorId,date,time:time||"",note:note||"",price:price!=null?+price:null}; save();
+}
+/* total the bride has committed across all booked vendors */
+function totalSpent(){
+  return Object.values(S.bookings).reduce((s,b)=>s+(b&&b.price?+b.price:0),0);
 }
 function upcomingBookings(){
   return Object.entries(S.bookings).map(([taskId,b])=>({taskId,...b,vendor:vendorById(b.vendorId),task:templateById(taskId)}))
@@ -1204,12 +1209,12 @@ function vendorCard(v,{horizontal}={}){
     cover,
     h("div.pad-s",[
       h("div.between",[h("h4",{style:{fontSize:"17px"}},v.name),
-        h("span.row.gap6",{style:{flex:"none"}},[h("span",{style:{color:"var(--gold)",fontSize:"13px"}},"★"),h("b.small",v.rating.toFixed(1))])]),
-      h("div.row.gap6",{style:{marginTop:"3px",color:"var(--ink2)"}},[icon("pin",13),h("span.small",v.city),h("span.faint",{style:{margin:"0 2px"}},"·"),h("span.small",cat?cat.name:"")]),
-      h("p.small.muted",{style:{margin:"7px 0 0",display:"-webkit-box",WebkitLineClamp:"2",WebkitBoxOrient:"vertical",overflow:"hidden"}},v.short),
+        v.priceLevel?h("span.tag "+(v.priceLevel>=3?"tag-gold":"tag-rose"),{style:{flex:"none"}},priceLabel(v.priceLevel)):null]),
+      h("div.row.gap6",{style:{marginTop:"3px",color:"var(--ink2)"}},[icon("pin",13),h("span.small",v.governorate||v.city),h("span.faint",{style:{margin:"0 2px"}},"·"),h("span.small",cat?cat.name:"")]),
+      v.short?h("p.small.muted",{style:{margin:"7px 0 0",display:"-webkit-box",WebkitLineClamp:"2",WebkitBoxOrient:"vertical",overflow:"hidden"}},v.short):null,
       h("div.between",{style:{marginTop:"10px"}},[
-        h("b.small",{style:{color:"var(--rose-deep)"}},v.priceRange),
-        h("span.tiny.faint",v.reviews+" reviews"),
+        h("span.tiny.faint.row.gap6",[icon("eye",13),(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en")+" views"]),
+        v.featured?h("span.tiny",{style:{color:"var(--gold)",fontWeight:"700"}},"★ Featured"):null,
       ]),
     ]),
   ]);
@@ -1511,6 +1516,9 @@ route("/checklist",()=>{
     ]),
   ]));
 
+  // expense tracker — total spent across booked vendors vs budget
+  kids.push(expenseCard());
+
   // filter segmented
   let filter="all";
   const seg=h("div.seg",{style:{margin:"16px 0 4px"}});
@@ -1542,6 +1550,43 @@ route("/checklist",()=>{
   drawList();
   return appFrame(kids,{tabs:brideTabs("/checklist")});
 });
+
+/* expense tracker card for the plan screen */
+function expenseCard(){
+  const spent=totalSpent();
+  const budget=+S.bride.budget||0;
+  const over=budget&&spent>budget;
+  const pct=budget?Math.min(100,Math.round(spent/budget*100)):0;
+  // booked line items that carry a price
+  const items=Object.entries(S.bookings)
+    .map(([taskId,b])=>({taskId,b,vendor:vendorById(b&&b.vendorId),task:templateById(taskId)}))
+    .filter(x=>x.vendor&&x.b&&x.b.price)
+    .sort((a,b)=>(+b.b.price)-(+a.b.price));
+  const card=h("div.card.pad",{style:{marginTop:"14px"}});
+  card.append(
+    h("div.between",{style:{alignItems:"flex-end"}},[
+      h("div",[h("div.eyebrow","Expenses"),
+        h("div",{style:{fontFamily:"var(--font-d)",fontSize:"24px",color:over?"var(--crit)":"var(--rose-deep)",marginTop:"2px"}},money(spent))]),
+      h("div",{style:{textAlign:"right"}},[h("div.tiny.faint","of budget"),h("b.small",money(budget))]),
+    ]),
+    h("div.bar",{style:{marginTop:"10px"}},h("i",{style:{width:pct+"%",background:over?"var(--crit)":undefined}})),
+  );
+  if(budget)card.append(h("div.tiny.faint",{style:{marginTop:"6px"}},
+    over?("You're "+money(spent-budget)+" over budget"):(money(budget-spent)+" left to spend")));
+  if(items.length){
+    const list=h("div.col.gap8",{style:{marginTop:"12px"}});
+    items.forEach(({taskId,b,vendor,task})=>list.appendChild(
+      h("button.lrow",{style:{cursor:"pointer",width:"100%",textAlign:"left"},onclick:()=>openTaskSheet(taskId)},[
+        h("div.grow",{style:{minWidth:0}},[h("b.small",vendor.name),
+          h("div.tiny.faint",[task?shortTask(task.title):"Booked",b.date?(" · "+new Date(b.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"})):""])]),
+        h("b.small",{style:{flex:"none",color:"var(--rose-deep)"}},money(+b.price)),
+      ])));
+    card.append(list);
+  }else{
+    card.append(h("p.tiny.faint",{style:{margin:"10px 2px 0"}},"Book a vendor and add the agreed price to start tracking your spending here."));
+  }
+  return card;
+}
 
 function checkRow(t,rerender){
   const st=S.checklist[t.id]||"todo";
@@ -1621,18 +1666,17 @@ function openTaskSheet(taskId,rerender){
 function myGovernorate(){ return (S.account && S.account.governorate) || ""; }
 
 /* shared filter state for a category / search view */
-function makeFilters(){return {gov:"",price:0,rating:0,sort:"popular",offers:false};}
+function makeFilters(){return {gov:"",price:0,sort:"popular",offers:false};}
+function vViews(v){ return typeof viewCount==="function"?viewCount(v):(v.popularity||0); }
 
 function applyFilters(list,f,q){
   let r=list.slice();
   if(q){const s=q.toLowerCase();r=r.filter(v=>v.name.toLowerCase().includes(s)||(v.city||"").toLowerCase().includes(s)||(v.governorate||"").toLowerCase().includes(s)||(catById(v.catId)?.name.toLowerCase().includes(s))||v.short.toLowerCase().includes(s));}
   if(f.gov)r=r.filter(v=>(v.governorate||govOfCity(v.city))===f.gov);
   if(f.price)r=r.filter(v=>v.priceLevel===f.price);
-  if(f.rating)r=r.filter(v=>v.rating>=f.rating);
   if(f.offers)r=r.filter(v=>v.offer);
   const sorters={
-    popular:(a,b)=>b.popularity-a.popularity,
-    rating:(a,b)=>b.rating-a.rating,
+    popular:(a,b)=>vViews(b)-vViews(a),
     priceLow:(a,b)=>a.priceLevel-b.priceLevel,
     priceHigh:(a,b)=>b.priceLevel-a.priceLevel,
     newest:(a,b)=>(b.isNew-a.isNew)||(b.id>a.id?1:-1),
@@ -1648,14 +1692,14 @@ function applyFilters(list,f,q){
 }
 
 function filterBar(f,onChange){
-  const activeCount=[f.gov,f.price,f.rating,f.offers].filter(Boolean).length;
+  const activeCount=[f.gov,f.price,f.offers].filter(Boolean).length;
   const bar=h("div.scroll-x",{style:{display:"flex",gap:"8px",padding:"2px 20px 12px",margin:"0 -20px"}});
   bar.appendChild(h("button.chip"+(activeCount?".on":""),{onclick:()=>openFilterSheet(f,onChange)},
     [icon("sliders",15),"Filters",activeCount?h("span",{style:{background:"rgba(255,255,255,.3)",borderRadius:"9px",padding:"0 6px",fontSize:"11px"}},activeCount):null]));
   // one-tap "near me" using the customer's governorate
   const mine=myGovernorate();
   if(mine)bar.appendChild(h("button.chip"+(f.gov===mine?".on":""),{onclick:()=>{f.gov=f.gov===mine?"":mine;onChange();}},["📍 ",mine]));
-  const sortLabels={popular:"Popular",rating:"Top rated",priceLow:"Price ↑",priceHigh:"Price ↓",newest:"Newest"};
+  const sortLabels={popular:"Most viewed",priceLow:"Price ↑",priceHigh:"Price ↓",newest:"Newest"};
   bar.appendChild(h("button.chip",{onclick:()=>{
     let ref; ref=sheet({title:"Sort by",body:(close)=>h("div.col.gap8",Object.entries(sortLabels).map(([k,l])=>
       h("button.lrow",{style:{cursor:"pointer",width:"100%"},onclick:()=>{f.sort=k;close();onChange();}},[
@@ -1679,8 +1723,6 @@ function openFilterSheet(f,onChange){
     b.appendChild(fGroup("Governorate",["",...govs].map(c=>chip(c||"All Oman",f.gov===c,()=>{f.gov=c;refreshMarks();}))));
     // price
     b.appendChild(fGroup("Price",[0,1,2,3,4].map(p=>chip(p?priceLabel(p):"Any",f.price===p,()=>{f.price=p;refreshMarks();}))));
-    // rating
-    b.appendChild(fGroup("Minimum rating",[0,4,4.5,4.8].map(rt=>chip(rt?("★ "+rt+"+"):"Any",f.rating===rt,()=>{f.rating=rt;refreshMarks();}))));
     // offers
     b.appendChild(fGroup("Only show",[chip("🎁 Special offers",f.offers,()=>{f.offers=!f.offers;refreshMarks();})]));
     function refreshMarks(){ref.close();setTimeout(()=>openFilterSheet(f,onChange),10);} // simple re-render
@@ -1770,12 +1812,13 @@ route("/vendor/:id",(q,p)=>{
           h("span.faint","·"),h("span.small",cat?cat.name:"")])]),
     ]),
     h("div.row.gap12",{style:{marginTop:"12px",flexWrap:"wrap"}},[
-      h("span.row.gap6",[starsEl(v.rating),h("b.small",v.rating.toFixed(1)),h("span.small.faint","("+v.reviews+")")]),
-      h("span.faint","·"),
-      h("span.small",{style:{fontWeight:"700",color:"var(--rose-deep)"}},v.priceRange),
-      h("span.tag "+(v.priceLevel>=3?"tag-gold":"tag-rose"),priceLabel(v.priceLevel)),
+      h("span.row.gap6",{style:{color:"var(--ink2)"}},[icon("eye",15),h("b.small",(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en")),h("span.small.faint","views")]),
+      v.priceLevel?h("span.tag "+(v.priceLevel>=3?"tag-gold":"tag-rose"),priceLabel(v.priceLevel)):null,
+      v.featured?h("span.tag.tag-gold","★ Featured"):null,
     ]),
   ]));
+  // count this view (deduped per user), then refresh the number shown
+  if(typeof recordVendorView==="function")recordVendorView(v.id);
 
   // offer banner
   if(v.offer)kids.push(h("div.card.pad-s",{style:{background:"linear-gradient(135deg,var(--gold-soft),var(--rose-soft))",display:"flex",gap:"10px",alignItems:"center",marginTop:"8px"}},
@@ -1789,39 +1832,30 @@ route("/vendor/:id",(q,p)=>{
     actionBtn("pin","Map",()=>openLink("https://maps.google.com/?q="+encodeURIComponent(v.maps))),
   ]));
 
-  // gallery
-  kids.push(sectionTitle("Gallery"));
-  kids.push(h("div.scroll-x",{style:{display:"flex",gap:"10px",margin:"0 -20px",padding:"2px 20px 4px"}},
-    Array.from({length:6},(_,i)=>{const g=coverEl(v,"",i+2,i%3===0);g.style.width="150px";g.style.height="190px";g.style.flex="none";g.style.scrollSnapAlign="start";return g;})));
+  // gallery (only if the vendor has photos beyond the logo)
+  if(vendorImages(v).length>1){
+    kids.push(sectionTitle("Gallery"));
+    kids.push(h("div.scroll-x",{style:{display:"flex",gap:"10px",margin:"0 -20px",padding:"2px 20px 4px"}},
+      vendorImages(v).map((_,i)=>{const g=coverEl(v,"",i,false);g.style.width="150px";g.style.height="190px";g.style.flex="none";g.style.scrollSnapAlign="start";return g;})));
+  }
 
   // about
-  kids.push(sectionTitle("About"));
-  kids.push(h("p.muted",{style:{lineHeight:"1.6"}},v.desc));
+  if(v.desc||v.short){
+    kids.push(sectionTitle("About"));
+    kids.push(h("p.muted",{style:{lineHeight:"1.6"}},v.desc||v.short));
+  }
 
   // services
-  kids.push(sectionTitle("Services"));
-  kids.push(h("div.row.wrap.gap8",v.services.map(s=>h("span.chip",[icon("check",14),s]))));
-
-  // packages
-  kids.push(sectionTitle("Packages & pricing"));
-  kids.push(h("div.col.gap12",v.packages.map(pk=>h("div.card.pad"+(pk.popular?"":""),{style:pk.popular?{border:"1.5px solid var(--rose)",background:"var(--rose-tint)"}:{}},[
-    h("div.between",[h("h4",{style:{fontSize:"18px"}},[pk.name,pk.popular?h("span.tag.tag-rose",{style:{marginLeft:"8px"}},"Popular"):null]),
-      h("b",{style:{color:"var(--rose-deep)",fontFamily:"var(--font-d)",fontSize:"18px"}},pk.price)]),
-    h("div.col.gap6",{style:{marginTop:"10px"}},pk.items.map(it=>h("div.row.gap8.small.muted",[icon("check",15,"faint"),it]))),
-  ]))));
+  if(Array.isArray(v.services)&&v.services.length){
+    kids.push(sectionTitle("Services"));
+    kids.push(h("div.row.wrap.gap8",v.services.map(s=>h("span.chip",[icon("check",14),s]))));
+  }
 
   // working hours
-  kids.push(sectionTitle("Working hours"));
-  kids.push(h("div.card.pad-s.row.gap12",[icon("clock",20,"faint"),h("span",v.hours)]));
-
-  // reviews
-  kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Reviews"),h("span.small.muted",[starsEl(v.rating)," ",v.rating.toFixed(1)])]));
-  kids.push(h("div.col.gap12",v.reviewsList.map(r=>h("div.card.pad-s",[
-    h("div.between",[h("div.row.gap8",[h("span.avatar",{style:{width:"36px",height:"36px",fontSize:"14px",background:"linear-gradient(135deg,var(--rose),var(--gold))"}},initials(r.by)),
-      h("div",[h("b.small",r.by),h("div.tiny.faint",r.when)])]),
-      h("span.stars",{style:{"--v":r.stars}},h("i"))]),
-    h("p.small.muted",{style:{marginTop:"9px"}},r.text),
-  ]))));
+  if(v.hours){
+    kids.push(sectionTitle("Working hours"));
+    kids.push(h("div.card.pad-s.row.gap12",[icon("clock",20,"faint"),h("span",v.hours)]));
+  }
 
   // spacer for sticky bar
   kids.push(h("div",{style:{height:"92px"}}));
@@ -1880,7 +1914,7 @@ route("/search",(q)=>{
   function redraw(){
     const nb=filterBar(f,()=>redraw()); bar.replaceWith(nb); bar=nb;
     clear(results);
-    if(!query.trim() && !f.city && !f.price && !f.rating && !f.offers){
+    if(!query.trim() && !f.city && !f.price && !f.offers){
       // suggestions state: popular categories + trending vendors
       results.appendChild(h("div.eyebrow",{style:{margin:"6px 3px 12px"}},"Popular categories"));
       const grid=h("div.row.wrap.gap8");
@@ -2150,7 +2184,7 @@ function suggestBookingDate(){
 /* Sheet shown when a bride selects a vendor for a task: pick date/time then confirm. */
 function openBookingSheet(vendor,taskId,onConfirm){
   const existing=S.bookings[taskId];
-  const d={date:existing?.date||suggestBookingDate(),time:existing?.time||"11:00",note:existing?.note||""};
+  const d={date:existing?.date||suggestBookingDate(),time:existing?.time||"11:00",note:existing?.note||"",price:existing?.price!=null?existing.price:""};
   const task=templateById(taskId);
   const title=(task?shortTask(task.title):"Appointment")+" — "+vendor.name;
   let ref;
@@ -2162,18 +2196,20 @@ function openBookingSheet(vendor,taskId,onConfirm){
     ]));
     const dateI=h("input.field",{type:"date",value:d.date,min:new Date().toISOString().slice(0,10),max:S.bride.date||undefined,oninput:e=>d.date=e.target.value});
     const timeI=h("input.field",{type:"time",value:d.time,oninput:e=>d.time=e.target.value});
+    const priceI=h("input.field",{type:"number",min:"0",inputmode:"decimal",value:d.price,placeholder:"e.g. 350",oninput:e=>d.price=e.target.value});
     const noteI=h("input.field",{value:d.note,placeholder:"Add a note (optional)",oninput:e=>d.note=e.target.value});
     b.append(
       h("div.row.gap8",[h("div.grow",[h("label.lbl","Date"),dateI]),h("div",{style:{width:"120px"}},[h("label.lbl","Time"),timeI])]),
+      h("div",[h("label.lbl","Agreed price (OMR) — optional"),priceI]),
       h("div",[h("label.lbl","Note"),noteI]),
-      h("p.tiny.faint",{style:{margin:"0 2px"}},"Selecting confirms this vendor for “"+(task?shortTask(task.title):"this task")+"” and marks it done. We'll remind you a day before."),
+      h("p.tiny.faint",{style:{margin:"0 2px"}},"Selecting confirms this vendor for “"+(task?shortTask(task.title):"this task")+"”, marks it done, and tracks the price in your budget. We'll remind you a day before."),
     );
     return b;
   },actions:[
     h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
     h("button.btn.btn-pri.grow",{onclick:()=>{
       if(!d.date){toast("Please pick a date","📅");return;}
-      saveBooking(taskId,vendor.id,d.date,d.time,d.note);
+      saveBooking(taskId,vendor.id,d.date,d.time,d.note,d.price===""?null:d.price);
       selectVendorForTask(vendor.id,taskId);
       ref.close(); confetti();
       const opts={title:(task?shortTask(task.title):"Wedding appointment")+": "+vendor.name,date:d.date,time:d.time,
@@ -2215,7 +2251,8 @@ const CAT_KEYWORDS=[
   [/\bprint/,"printing"],[/\bgift\b/,"gifts"],[/\bfavou?r/,"favors"],[/\baccessor/,"accessories"],
   [/\bjewel|ring|diamond\b/,"jewelry"],[/\bperfume|scent|attar\b/,"perfumes"],[/\bhoneymoon|travel\b/,"honeymoon"],
 ];
-function bestVendor(catId){ return vendorsInCat(catId).sort((a,b)=>b.popularity-a.popularity)[0]; }
+function vpop(v){ return v.popularity!=null?v.popularity:(typeof viewCount==="function"?viewCount(v):0); }
+function bestVendor(catId){ return vendorsInCat(catId).sort((a,b)=>vpop(b)-vpop(a))[0]; }
 function budgetBreakdown(){
   const t=S.bride.budget||6000;
   const rows=[["Venue & hall",.34],["Catering & cake",.18],["Photography & video",.12],["Attire & beauty",.12],
@@ -2299,16 +2336,17 @@ function assistantAnswer(raw){
       const v=bestVendor(cat), cname=catById(cat)?.name||"vendors";
       if(!v)return {text:`I don't have any ${cname} yet, but the admin adds new vendors often. Try browsing the category.`,chips:[chip("Open "+cname,null,"/category/"+cat)]};
       const tip=CAT_TIP[cat]?("\n\n💡 "+CAT_TIP[cat]):"";
-      return {text:`For ${cname.toLowerCase()}, brides love ${v.name} in ${v.city} — ★${v.rating.toFixed(1)} from ${v.reviews} reviews, ${v.priceRange}. ${v.short}${tip}`,
+      const vv=(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en");
+      return {text:`For ${cname.toLowerCase()}, brides love ${v.name} in ${v.governorate||v.city} — ${vv} brides have viewed them${v.featured?" · ★ Featured":""}. ${v.short||""}${tip}`,
         chips:[chip("View "+v.name,null,"/vendor/"+v.id),chip("See all "+cname,null,"/category/"+cat)]};
     }
   }
 
   // general recommend / best
   if(has(/recommend|suggest|best|top rated|find.*vendor|who.*(good|best)/)){
-    const feats=VENDORS.filter(v=>v.featured&&v.approved).sort((a,b)=>b.rating-a.rating).slice(0,3);
-    const lines=feats.map(v=>`• ${v.name} — ${catById(v.catId).name}, ★${v.rating.toFixed(1)}`).join("\n");
-    return {text:`Some of our highest-rated vendors right now:\n\n${lines}\n\nTell me which service you need and I'll find the perfect match.`,
+    const feats=VENDORS.filter(v=>v.featured&&v.approved).sort((a,b)=>vpop(b)-vpop(a)).slice(0,3);
+    const lines=feats.map(v=>`• ${v.name} — ${catById(v.catId).name}, ${(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en")} views`).join("\n");
+    return {text:`Some of our most-viewed vendors right now:\n\n${lines}\n\nTell me which service you need and I'll find the perfect match.`,
       chips:feats.slice(0,2).map(v=>chip("View "+v.name,null,"/vendor/"+v.id)).concat([chip("Browse all",null,"/categories")])};
   }
 
@@ -2500,12 +2538,33 @@ async function api(path,{method="GET",body:payload}={}){
 }
 
 /* ---- cloud sync: catalog down, entitlement down, admin catalog up ---- */
+/* live vendor view counts (vendorId -> count), refreshed from the backend */
+let VIEWS={};
+function viewCount(v){
+  const id=typeof v==="object"?v.id:v;
+  if(VIEWS[id]!=null)return VIEWS[id];
+  // demo fallback: a stable, believable number when there's no backend yet
+  return 40 + (hashStr(String(id))%460);
+}
+async function refreshViews(){
+  if(!apiBase())return;
+  try{ const r=await api("/api/vendors/views"); if(r&&r.views)VIEWS=r.views; }catch(e){}
+}
+async function recordVendorView(id){
+  try{ if(localStorage.getItem("zaffa.viewed."+id))return; }catch{}
+  VIEWS[id]=(VIEWS[id]||viewCount(id))+1;                 // optimistic local bump
+  try{ localStorage.setItem("zaffa.viewed."+id,"1"); }catch{}
+  if(!apiBase())return;
+  try{ const r=await api("/api/vendors/"+encodeURIComponent(id)+"/view",{method:"POST"}); if(r&&r.views!=null)VIEWS[id]=r.views; }catch(e){}
+}
+
 let _applyingRemote=false;
 async function cloudInit(opts){
   if(!apiBase())return;
   opts=opts||{};
   _applyingRemote=true;               // suppress auto-publish while applying server data
   try{
+    refreshViews();
     const cat=await api("/api/catalog");
     let changed=false;
     if(Array.isArray(cat.categories)&&cat.categories.length){CATEGORIES.length=0;CATEGORIES.push(...cat.categories);changed=true;}
@@ -2863,7 +2922,7 @@ route("/admin",()=>{
   const pending=VENDORS.filter(v=>!v.approved).length;
   const featured=VENDORS.filter(v=>v.featured).length;
   const brides=USERS.filter(u=>u.role==="bride").length;
-  const avgRating=(VENDORS.reduce((s,v)=>s+v.rating,0)/VENDORS.length).toFixed(2);
+  const totalViews=VENDORS.reduce((s,v)=>s+(typeof viewCount==="function"?viewCount(v):0),0);
 
   const kids=[adminTop("Overview",h("button.icon-btn",{onclick:()=>adminSignOut()},icon("logout",20)))];
 
@@ -2881,7 +2940,7 @@ route("/admin",()=>{
     kpiCard(brides,"Brides","users",()=>go("/admin/users")),
     kpiCard(featured,"Featured","star",()=>go("/admin/vendors")),
     kpiCard(pending,"Pending approval","clock",()=>go("/admin/vendors")),
-    kpiCard(avgRating,"Avg rating","spark",null),
+    kpiCard(totalViews.toLocaleString("en"),"Total views","eye",null),
   ]));
 
   // vendors by category chart
@@ -3023,7 +3082,7 @@ function adminVendorRow(v,rerender){
       h("div.row.gap6",[h("b",{style:{fontSize:"15px"}},v.name),
         !v.approved?h("span.tag.tag-warn","Pending"):null,
         v.featured?h("span.tag.tag-gold","★"):null]),
-      h("div.tiny.faint",{style:{marginTop:"2px"}},[cat?.name," · ",v.city," · ★",v.rating.toFixed(1)]),
+      h("div.tiny.faint",{style:{marginTop:"2px"}},[cat?.name," · ",v.governorate||v.city," · ",(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en")," views"]),
     ]),
     h("button.icon-btn.plain",{onclick:()=>openVendorActions(v,rerender)},icon("sliders",20)),
   ]);
@@ -3048,9 +3107,9 @@ function openVendorActions(v,rerender){
 
 function openVendorForm(v,rerender){
   const isNew=!v;
-  const d=v?{...v}:{name:"",catId:CATEGORIES[0].id,city:CITIES[0],governorate:GOVERNORATES[0],rating:4.7,reviews:0,priceLevel:2,short:"",desc:"",
-    services:["Consultation","Bespoke packages"],hours:"Sat–Thu · 10:00 AM – 9:00 PM",instagram:"",whatsapp:"+968 ",phone:"+968 ",
-    maps:"",featured:false,approved:true,isNew:true,offer:null,packages:[],reviewsList:[],popularity:94};
+  const d=v?{...v}:{name:"",catId:CATEGORIES[0].id,city:CITIES[0],governorate:GOVERNORATES[0],priceLevel:2,short:"",
+    instagram:"",whatsapp:"+968 ",phone:"+968 ",
+    maps:"",featured:false,approved:true,isNew:true,offer:null};
   if(!d.governorate)d.governorate=govOfCity(d.city);
   let ref;
   ref=sheet({title:isNew?"Add vendor":"Edit vendor",body:(close)=>{
@@ -3064,25 +3123,21 @@ function openVendorForm(v,rerender){
     const cityI=h("input.field",{value:d.city,placeholder:"City / area (e.g. Muscat)",oninput:e=>d.city=e.target.value});
     const priceSel=h("select.field",[1,2,3,4].map(p=>h("option",{value:p,selected:p===d.priceLevel},priceLabel(p))));
     priceSel.onchange=e=>d.priceLevel=+e.target.value;
-    const rating=h("input.field",{type:"number",min:1,max:5,step:.1,value:d.rating,oninput:e=>d.rating=Math.min(5,Math.max(1,+e.target.value||0))});
-    const reviews=h("input.field",{type:"number",min:0,value:d.reviews,oninput:e=>d.reviews=+e.target.value||0});
-    const short=h("input.field",{value:d.short,placeholder:"One-line description",oninput:e=>d.short=e.target.value});
-    const desc=h("textarea.field",{placeholder:"Full description (optional)",oninput:e=>d.desc=e.target.value},d.desc||"");
+    const short=h("input.field",{value:d.short,placeholder:"One line about the vendor (optional)",oninput:e=>d.short=e.target.value});
     const ig=h("input.field",{value:d.instagram,placeholder:"@handle",oninput:e=>d.instagram=e.target.value});
     const wa=h("input.field",{value:d.whatsapp,placeholder:"+968 …",oninput:e=>d.whatsapp=e.target.value});
     const phone=h("input.field",{value:d.phone,placeholder:"+968 …",oninput:e=>d.phone=e.target.value});
     const maps=h("input.field",{value:d.maps||"",placeholder:"Google Maps link or address",oninput:e=>d.maps=e.target.value});
     // photos: cover + gallery URLs, with optional file upload for the cover
-    const cover=h("input.field",{value:d.cover||"",placeholder:"https://…/cover.jpg",oninput:e=>{d.cover=e.target.value;preview();}});
-    const gallery=h("textarea.field",{placeholder:"One image URL per line",oninput:e=>{d.gallery=e.target.value.split(/\n+/).map(s=>s.trim()).filter(Boolean);preview();}},(d.gallery||[]).join("\n"));
+    const cover=h("input.field",{value:d.cover||"",placeholder:"https://…/logo.jpg",oninput:e=>{d.cover=e.target.value;preview();}});
     const prev=h("div.gal",{style:{marginTop:"8px"}});
-    function preview(){clear(prev);vendorImages(d).slice(0,6).forEach(u=>{const t=h("div.thumb",{style:{width:"64px",height:"64px",flex:"none",backgroundImage:`url("${String(u).replace(/"/g,'%22')}")`}});prev.appendChild(t);});}
+    function preview(){clear(prev);vendorImages(d).slice(0,1).forEach(u=>{const t=h("div.thumb",{style:{width:"64px",height:"64px",flex:"none",backgroundImage:`url("${String(u).replace(/"/g,'%22')}")`}});prev.appendChild(t);});}
     const fileBtn=h("input",{type:"file",accept:"image/*",style:{display:"none"},onchange:e=>{
       const f=e.target.files[0]; if(!f)return;
       if(f.size>1200000){toast("Image too large — use a URL for big photos","⚠️");return;}
       const rd=new FileReader(); rd.onload=()=>{d.cover=rd.result;cover.value="(uploaded image)";preview();}; rd.readAsDataURL(f);
     }});
-    const uploadBtn=h("button.btn.btn-sec.btn-sm",{onclick:()=>fileBtn.click()},[icon("camera",15),"Upload cover"]);
+    const uploadBtn=h("button.btn.btn-sec.btn-sm",{onclick:()=>fileBtn.click()},[icon("camera",15),"Upload logo"]);
     preview();
     const feat=toggle("Featured vendor",d.featured,x=>d.featured=x);
     const appr=toggle("Approved & visible",d.approved,x=>d.approved=x);
@@ -3090,10 +3145,9 @@ function openVendorForm(v,rerender){
       F("Name",name),
       F("Category",catSel),
       h("div.row.gap8",[h("div.grow",F("Governorate",govSel)),h("div.grow",F("City / area",cityI))]),
-      h("div.row.gap8",[h("div.grow",F("Price tier",priceSel)),h("div.grow",F("Rating",rating)),h("div.grow",F("Reviews",reviews))]),
-      F("Short description",short),F("Full description",desc),
-      h("div",[h("div.between",{style:{marginBottom:"6px"}},[h("label.lbl",{style:{margin:0}},"Cover photo"),uploadBtn]),cover,fileBtn]),
-      F("Gallery photos",gallery),
+      F("Tier",priceSel),
+      F("Short description (optional)",short),
+      h("div",[h("div.between",{style:{marginBottom:"6px"}},[h("label.lbl",{style:{margin:0}},"Logo"),uploadBtn]),cover,fileBtn]),
       prev,
       h("div.row.gap8",[h("div.grow",F("Instagram",ig)),h("div.grow",F("WhatsApp",wa))]),
       h("div.row.gap8",[h("div.grow",F("Phone",phone)),h("div.grow",F("Location / map",maps))]),
@@ -3104,13 +3158,9 @@ function openVendorForm(v,rerender){
     h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
     h("button.btn.btn-pri.grow",{onclick:()=>{
       if(!d.name.trim()){toast("Please enter a name","⚠️");return;}
-      d.priceRange=d.priceRange||({1:"OMR 40–120",2:"OMR 120–350",3:"OMR 350–900",4:"OMR 900+"})[d.priceLevel];
       if(isNew){
         _vid++; d.id="v"+String(Date.now()).slice(-6);
-        d.services=d.services||["Consultation"]; d.hours=d.hours||"Sat–Thu · 10:00 AM – 9:00 PM";
-        d.maps=d.maps||d.city+", Oman"; d.popularity=d.rating*20+d.reviews/12;
-        d.packages=d.packages&&d.packages.length?d.packages:[{name:"Signature",price:d.priceRange,items:["Full service","Consultation included"],popular:true}];
-        d.reviewsList=d.reviewsList&&d.reviewsList.length?d.reviewsList:[{by:"Aisha K.",stars:5,text:"Wonderful experience!",when:"Recently"}];
+        d.maps=d.maps||d.city+", Oman";
         VENDORS.unshift(d); toast("Vendor added ✓","🎉");
       }else{
         Object.assign(v,d); toast("Vendor updated ✓");

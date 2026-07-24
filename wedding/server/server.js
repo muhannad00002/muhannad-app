@@ -170,6 +170,20 @@ async function handle(req, res) {
     if (p === "/api/governorates" && req.method === "GET")
       return json(res, 200, { governorates: auth.OMAN_GOVERNORATES });
 
+    /* ---------- Vendor view counts ---------- */
+    if (p === "/api/vendors/views" && req.method === "GET") {
+      const out = {};
+      for (const { key, value } of await db.list("views:")) out[key.slice(6)] = value || 0;
+      return json(res, 200, { views: out });
+    }
+    const mView = p.match(/^\/api\/vendors\/([^/]+)\/view$/);
+    if (mView && req.method === "POST") {
+      const id = decodeURIComponent(mView[1]);
+      const n = ((await db.get("views:" + id)) || 0) + 1;
+      await db.set("views:" + id, n);
+      return json(res, 200, { id, views: n });
+    }
+
     /* ---------- Vouchers (admin creates, customer redeems, single-use) ---------- */
     if (p === "/api/admin/vouchers" && req.method === "POST") {
       const user = await auth.fromRequest(req);
