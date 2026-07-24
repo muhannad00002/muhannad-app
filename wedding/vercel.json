@@ -3,6 +3,9 @@
   "buildCommand": "node app/build.js",
   "outputDirectory": "app",
   "functions": {
-    "api/[...path].js": { "maxDuration": 15 }
-  }
+    "api/index.js": { "maxDuration": 15 }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" }
+  ]
 }
