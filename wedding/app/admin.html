@@ -234,6 +234,16 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .tab.on svg{transform:translateY(-1px)}
 .tab .fab{margin-top:-26px;width:52px;height:52px;border-radius:var(--r-full);display:grid;place-items:center;
   background:linear-gradient(135deg,var(--rose),var(--rose-deep));color:var(--on-rose);box-shadow:var(--shadow-rose)}
+/* Plan tab uses the brand logo mark in a soft rounded chip */
+.tab-logo>span:first-child{background:var(--rose-soft);border-radius:var(--r-full);padding:4px;line-height:0;
+  transition:transform var(--dur) var(--ease),box-shadow var(--dur)}
+.tab-logo.on>span:first-child{box-shadow:var(--shadow-rose);transform:translateY(-1px)}
+
+/* splash screen (plays once on app launch) */
+#splash{position:fixed;inset:0;z-index:9999;background:var(--ink);display:grid;place-items:center;
+  opacity:1;transition:opacity .5s ease}
+#splash video{width:100%;height:100%;object-fit:cover}
+#splash.hide{opacity:0;pointer-events:none}
 
 /* toast */
 #toast-wrap{position:fixed;left:0;right:0;bottom:calc(var(--tab-h) + 16px);z-index:200;display:flex;flex-direction:column;
@@ -732,6 +742,28 @@ function icon(name,size=22,extra=""){
   return h("span",{class:"ic "+extra,html:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||""}</svg>`});
 }
 
+/* Splash video — plays once each time the app is launched, then fades to reveal
+   the app. Muted + playsinline so autoplay is allowed; tap to skip. */
+function showSplash(){
+  if(window.ZAFFA_ADMIN)return;                 // no splash on the admin panel
+  const ov=h("div#splash");
+  const vid=h("video",{muted:true,autoplay:true,preload:"auto",disablePictureInPicture:true});
+  vid.muted=true;                                // property + attribute for iOS autoplay
+  vid.setAttribute("muted","");
+  vid.setAttribute("playsinline","");
+  vid.setAttribute("webkit-playsinline","");
+  vid.src="assets/splash.mp4";
+  ov.appendChild(vid);
+  document.body.appendChild(ov);
+  let done=false;
+  const finish=()=>{ if(done)return; done=true; ov.classList.add("hide"); setTimeout(()=>ov.remove(),600); };
+  vid.addEventListener("ended",finish);
+  vid.addEventListener("error",finish);          // if the video can't load, don't block the app
+  ov.addEventListener("click",finish);           // tap to skip
+  setTimeout(finish,8000);                        // safety cap
+  const p=vid.play&&vid.play(); if(p&&p.catch)p.catch(()=>{});
+}
+
 /* ---- Generated cover art (deterministic gradient + soft blobs) ----
    No external images → fully offline, always beautiful. */
 function hashStr(s){let hnum=0;for(let i=0;i<s.length;i++){hnum=(hnum*31+s.charCodeAt(i))>>>0;}return hnum;}
@@ -1153,13 +1185,13 @@ function brideTabs(active){
   const tabs=[
     ["/home","home","Home"],
     ["/categories","grid","Explore"],
-    ["/checklist","list","Plan"],
+    ["/checklist","__logo","Plan"],
     ["/favorites","heart","Saved"],
     ["/profile","user","You"],
   ];
   return h("nav.tabbar",tabs.map(([path,ic,label])=>
-    h("button.tab"+(active===path?".on":""),{onclick:()=>go(path)},[
-      icon(ic,23),h("span",label),
+    h("button.tab"+(active===path?".on":"")+(ic==="__logo"?".tab-logo":""),{onclick:()=>go(path)},[
+      ic==="__logo"?logoMark(26):icon(ic,23),h("span",label),
     ])
   ));
 }
@@ -3593,6 +3625,7 @@ route("/admin/template",()=>{
 </script>
 <script>
 /* ============ ZAFFA — BOOT ============ */
+showSplash();             // brand splash video on launch (fades out on its own)
 load();
 if(window.ZAFFA_ADMIN){
   // dedicated admin page (admin.html) — always lands on the access-controlled panel

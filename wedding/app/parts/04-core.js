@@ -277,13 +277,13 @@ function brideTabs(active){
   const tabs=[
     ["/home","home","Home"],
     ["/categories","grid","Explore"],
-    ["/checklist","list","Plan"],
+    ["/checklist","__logo","Plan"],
     ["/favorites","heart","Saved"],
     ["/profile","user","You"],
   ];
   return h("nav.tabbar",tabs.map(([path,ic,label])=>
-    h("button.tab"+(active===path?".on":""),{onclick:()=>go(path)},[
-      icon(ic,23),h("span",label),
+    h("button.tab"+(active===path?".on":"")+(ic==="__logo"?".tab-logo":""),{onclick:()=>go(path)},[
+      ic==="__logo"?logoMark(26):icon(ic,23),h("span",label),
     ])
   ));
 }

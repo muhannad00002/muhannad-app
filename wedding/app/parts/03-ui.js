@@ -95,6 +95,28 @@ function icon(name,size=22,extra=""){
   return h("span",{class:"ic "+extra,html:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||""}</svg>`});
 }
 
+/* Splash video — plays once each time the app is launched, then fades to reveal
+   the app. Muted + playsinline so autoplay is allowed; tap to skip. */
+function showSplash(){
+  if(window.ZAFFA_ADMIN)return;                 // no splash on the admin panel
+  const ov=h("div#splash");
+  const vid=h("video",{muted:true,autoplay:true,preload:"auto",disablePictureInPicture:true});
+  vid.muted=true;                                // property + attribute for iOS autoplay
+  vid.setAttribute("muted","");
+  vid.setAttribute("playsinline","");
+  vid.setAttribute("webkit-playsinline","");
+  vid.src="assets/splash.mp4";
+  ov.appendChild(vid);
+  document.body.appendChild(ov);
+  let done=false;
+  const finish=()=>{ if(done)return; done=true; ov.classList.add("hide"); setTimeout(()=>ov.remove(),600); };
+  vid.addEventListener("ended",finish);
+  vid.addEventListener("error",finish);          // if the video can't load, don't block the app
+  ov.addEventListener("click",finish);           // tap to skip
+  setTimeout(finish,8000);                        // safety cap
+  const p=vid.play&&vid.play(); if(p&&p.catch)p.catch(()=>{});
+}
+
 /* ---- Generated cover art (deterministic gradient + soft blobs) ----
    No external images → fully offline, always beautiful. */
 function hashStr(s){let hnum=0;for(let i=0;i<s.length;i++){hnum=(hnum*31+s.charCodeAt(i))>>>0;}return hnum;}
