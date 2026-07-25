@@ -21,27 +21,29 @@ route("/welcome",()=>{
 
 /* ---------- ONBOARDING (name + date → generates checklist) ---------- */
 route("/onboard",()=>{
-  let step=0; const data={name:S.bride.name||"",date:S.bride.date||"",budget:S.bride.budget||6000};
+  let step=0; const data={name:S.bride.name||"",age:S.bride.age||"",governorate:S.bride.governorate||(S.account&&S.account.governorate)||GOVERNORATES[0],date:S.bride.date||"",budget:S.bride.budget||6000};
   const app=h("div.app");
   const s=h("div.screen.no-tab",{style:{minHeight:"100vh",display:"flex",flexDirection:"column"}});
   app.appendChild(s);
+  const refreshNext=()=>{ next.disabled=!steps[step].valid(); };
 
   const steps=[
     {em:"🌸",h:"What's your name?",sub:"So we can make Wedding & Co truly yours.",field:()=>{
       const i=h("input.field",{placeholder:"e.g. Sarah",value:data.name,style:{fontSize:"18px",textAlign:"center"},
-        oninput:e=>{data.name=e.target.value;next.disabled=!data.name.trim();}}); setTimeout(()=>i.focus(),200); return i;},
-      valid:()=>data.name.trim()},
+        oninput:e=>{data.name=e.target.value;refreshNext();}}); setTimeout(()=>i.focus(),200); return i;},
+      valid:()=>!!data.name.trim()},
+    {em:"🎂",h:"How old are you?",sub:"Helps us tailor advice to you.",field:()=>{
+      const i=h("input.field",{type:"number",min:18,max:100,inputmode:"numeric",placeholder:"e.g. 26",value:data.age,style:{fontSize:"18px",textAlign:"center"},
+        oninput:e=>{data.age=e.target.value;refreshNext();}}); setTimeout(()=>i.focus(),200); return i;},
+      valid:()=>{const a=parseInt(data.age,10);return a>=18&&a<=100;}},
+    {em:"📍",h:"Where's your wedding?",sub:"Your governorate — we'll show local vendors first.",field:()=>{
+      const sel=h("select.field",{style:{fontSize:"17px"}},GOVERNORATES.map(g=>h("option",{value:g,selected:g===data.governorate},g)));
+      sel.onchange=e=>{data.governorate=e.target.value;refreshNext();}; return sel;},
+      valid:()=>!!data.governorate},
     {em:"📅",h:"When's the big day?",sub:"We'll count down and pace your plan for you.",field:()=>{
       const i=h("input.field",{type:"date",value:data.date,min:new Date().toISOString().slice(0,10),style:{fontSize:"17px",textAlign:"center"},
-        oninput:e=>{data.date=e.target.value;next.disabled=!data.date;}}); return i;},
+        oninput:e=>{data.date=e.target.value;refreshNext();}}); return i;},
       valid:()=>!!data.date},
-    {em:"💰",h:"Your budget?",sub:"A guide — you can change it anytime.",field:()=>{
-      const wrap=h("div");
-      const view=h("div.center",{style:{fontFamily:"var(--font-d)",fontSize:"40px",color:"var(--rose-deep)",margin:"6px 0 14px"}},money(data.budget));
-      const r=h("input",{type:"range",min:1000,max:20000,step:500,value:data.budget,style:{width:"100%",accentColor:"var(--rose)"},
-        oninput:e=>{data.budget=+e.target.value;view.textContent=money(data.budget);}});
-      wrap.append(view,r,h("div.between.small.faint",{style:{marginTop:"6px"}},[h("span","OMR 1,000"),h("span","OMR 20,000")]));
-      return wrap;},valid:()=>true},
   ];
 
   const dots=h("div.row",{style:{justifyContent:"center",gap:"7px",padding:"18px 0 8px"}});
@@ -70,8 +72,9 @@ route("/onboard",()=>{
   }
   next.onclick=()=>{
     if(step<steps.length-1){step++;draw();return;}
-    // finish
+    // finish — save profile + generate the checklist
     S.bride.name=data.name.trim(); S.bride.date=data.date; S.bride.budget=data.budget;
+    S.bride.age=parseInt(data.age,10)||null; S.bride.governorate=data.governorate;
     S.onboarded=true; S.role="bride";
     S.checklist={}; CHECKLIST_TEMPLATE.forEach(t=>S.checklist[t.id]="todo");
     // give the demo a realistic head-start so the app feels lived-in
@@ -79,7 +82,15 @@ route("/onboard",()=>{
     ["photo","makeup","dress"].forEach(id=>S.checklist[id]="prog");
     S.selectedVendor={hall:"v011",planner:"v053"};
     save();
-    go("/home"); setTimeout(confetti,250); setTimeout(()=>toast("Your wedding plan is ready 💗"),500);
+    go("/home"); setTimeout(confetti,250);
+    // then ask to register a phone number — fully skippable
+    setTimeout(()=>{
+      if(typeof openAccountSheet==="function" && apiBase() && !(S.account&&S.account.token)){
+        openAccountSheet(()=>{}, {skippable:true, prefill:{name:data.name.trim(),age:data.age,governorate:data.governorate}});
+      }else{
+        toast("Your wedding plan is ready 💗");
+      }
+    },650);
   };
   draw();
   return app;
