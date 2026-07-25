@@ -60,10 +60,15 @@ let _applyingRemote=false;
 async function cloudInit(opts){
   if(!apiBase())return;
   opts=opts||{};
+  let _seedBaseline=false;
   _applyingRemote=true;               // suppress auto-publish while applying server data
   try{
     refreshViews();
     const cat=await api("/api/catalog");
+    // First-run: the cloud catalog is empty. If an admin is here, publish the
+    // current catalog once so customers get a real baseline (and it can never
+    // stay stuck at version 0). Actual publish is fired after _applyingRemote clears.
+    _seedBaseline = !cat.version;
     let changed=false;
     if(Array.isArray(cat.categories)&&cat.categories.length){CATEGORIES.length=0;CATEGORIES.push(...cat.categories);changed=true;}
     if(Array.isArray(cat.vendors)&&cat.vendors.length){VENDORS.length=0;VENDORS.push(...cat.vendors);VENDORS.forEach(v=>{if(!v.governorate)v.governorate=govOfCity(v.city);});changed=true;}
@@ -84,6 +89,7 @@ async function cloudInit(opts){
     if(changed){save(); if(!opts.silent) render();}
   }catch(e){/* offline or backend down — local data keeps working */}
   finally{ _applyingRemote=false; }
+  if(_seedBaseline && isAdmin() && apiBase()) autoPublish();  // seed empty cloud catalog once
 }
 
 /* Publish the current catalog to the backend. Called automatically (debounced)
@@ -94,17 +100,36 @@ async function publishCatalog(){
   if(r&&r.version){S._catalogVersion=r.version; save();}
   return r;
 }
-let _pubTimer=null, _pubPending=false;
-function autoPublish(){
-  if(_applyingRemote || !(isAdmin() && apiBase()))return;
+let _pubTimer=null, _pubPending=false, _pubRetries=0;
+function schedulePublish(delay){
   _pubPending=true;
   clearTimeout(_pubTimer);
-  _pubTimer=setTimeout(async()=>{
-    _pubPending=false;
-    try{ await publishCatalog(); syncDot("ok"); }
-    catch(e){ syncDot("err"); }
-  },900); // debounce rapid edits into one publish
+  _pubTimer=setTimeout(runPublish,delay);
   syncDot("pending");
+}
+async function runPublish(){
+  _pubPending=false;
+  try{ await publishCatalog(); _pubRetries=0; syncDot("ok"); }
+  catch(e){
+    const msg=String((e&&e.message)||"");
+    if(/admin_only|not_signed_in|\(401\)|\(403\)/i.test(msg)){ handleAdminAuthLost(); return; }
+    if(_pubRetries<4){ _pubRetries++; syncDot("err"); schedulePublish(1500*_pubRetries); } // network — back off & retry
+    else syncDot("err");
+  }
+}
+function autoPublish(){
+  if(_applyingRemote || !(isAdmin() && apiBase()))return;
+  schedulePublish(900); // debounce rapid edits into one publish
+}
+/* The stored admin token is no longer valid on the server (expired, or the
+   auth secret rotated after a DB reset). Drop the local admin session and
+   send them back to the sign-in gate so their next publish actually lands. */
+function handleAdminAuthLost(){
+  _pubRetries=0;
+  try{ S.account=null; S.role="bride"; save(); }catch(e){}
+  toast("Your admin session expired — please sign in again to publish","🔒");
+  if(typeof go==="function") go("/admin");
+  if(typeof render==="function") render();
 }
 /* tiny live "saving…/saved" indicator for the admin */
 function syncDot(state){
@@ -140,9 +165,11 @@ function startCatalogPolling(){
 /* ---- account sheet: WhatsApp OTP sign-up / sign-in ----
    Step 1: phone → we send a 6-digit code to WhatsApp.
    Step 2: code (+ name, age, city for first-time users) → signed in. */
-function openAccountSheet(onDone){
+function openAccountSheet(onDone,opts){
+  opts=opts||{};
+  const pf=opts.prefill||{};
   let step="phone", existing=false, devCode="", timer=null;
-  const d={phone:"",code:"",name:S.bride.name||"",age:"",governorate:GOVERNORATES[0]};
+  const d={phone:"",code:"",name:pf.name||S.bride.name||"",age:pf.age||"",governorate:pf.governorate||GOVERNORATES[0]};
   let ref;
   ref=sheet({title:"Your account",onClose:()=>timer&&clearInterval(timer),body:(close)=>{
     const wrap=h("div.col.gap12",{style:{marginTop:"4px"}});
@@ -166,6 +193,9 @@ function openAccountSheet(onDone){
           }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Send code on WhatsApp";}
         }},"Send code on WhatsApp");
         wrap.appendChild(btn);
+        if(opts.skippable) wrap.appendChild(h("button.btn.btn-quiet.btn-block",{onclick:()=>{
+          ref.close(); toast("No problem — add your number anytime from your profile 💗"); onDone&&onDone();
+        }},"Skip for now"));
         setTimeout(()=>phoneI.focus(),200);
       }else{
         wrap.appendChild(h("p.small.muted",{style:{padding:"0 2px"}},

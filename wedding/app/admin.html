@@ -1279,27 +1279,29 @@ route("/welcome",()=>{
 
 /* ---------- ONBOARDING (name + date → generates checklist) ---------- */
 route("/onboard",()=>{
-  let step=0; const data={name:S.bride.name||"",date:S.bride.date||"",budget:S.bride.budget||6000};
+  let step=0; const data={name:S.bride.name||"",age:S.bride.age||"",governorate:S.bride.governorate||(S.account&&S.account.governorate)||GOVERNORATES[0],date:S.bride.date||"",budget:S.bride.budget||6000};
   const app=h("div.app");
   const s=h("div.screen.no-tab",{style:{minHeight:"100vh",display:"flex",flexDirection:"column"}});
   app.appendChild(s);
+  const refreshNext=()=>{ next.disabled=!steps[step].valid(); };
 
   const steps=[
     {em:"🌸",h:"What's your name?",sub:"So we can make Wedding & Co truly yours.",field:()=>{
       const i=h("input.field",{placeholder:"e.g. Sarah",value:data.name,style:{fontSize:"18px",textAlign:"center"},
-        oninput:e=>{data.name=e.target.value;next.disabled=!data.name.trim();}}); setTimeout(()=>i.focus(),200); return i;},
-      valid:()=>data.name.trim()},
+        oninput:e=>{data.name=e.target.value;refreshNext();}}); setTimeout(()=>i.focus(),200); return i;},
+      valid:()=>!!data.name.trim()},
+    {em:"🎂",h:"How old are you?",sub:"Helps us tailor advice to you.",field:()=>{
+      const i=h("input.field",{type:"number",min:18,max:100,inputmode:"numeric",placeholder:"e.g. 26",value:data.age,style:{fontSize:"18px",textAlign:"center"},
+        oninput:e=>{data.age=e.target.value;refreshNext();}}); setTimeout(()=>i.focus(),200); return i;},
+      valid:()=>{const a=parseInt(data.age,10);return a>=18&&a<=100;}},
+    {em:"📍",h:"Where's your wedding?",sub:"Your governorate — we'll show local vendors first.",field:()=>{
+      const sel=h("select.field",{style:{fontSize:"17px"}},GOVERNORATES.map(g=>h("option",{value:g,selected:g===data.governorate},g)));
+      sel.onchange=e=>{data.governorate=e.target.value;refreshNext();}; return sel;},
+      valid:()=>!!data.governorate},
     {em:"📅",h:"When's the big day?",sub:"We'll count down and pace your plan for you.",field:()=>{
       const i=h("input.field",{type:"date",value:data.date,min:new Date().toISOString().slice(0,10),style:{fontSize:"17px",textAlign:"center"},
-        oninput:e=>{data.date=e.target.value;next.disabled=!data.date;}}); return i;},
+        oninput:e=>{data.date=e.target.value;refreshNext();}}); return i;},
       valid:()=>!!data.date},
-    {em:"💰",h:"Your budget?",sub:"A guide — you can change it anytime.",field:()=>{
-      const wrap=h("div");
-      const view=h("div.center",{style:{fontFamily:"var(--font-d)",fontSize:"40px",color:"var(--rose-deep)",margin:"6px 0 14px"}},money(data.budget));
-      const r=h("input",{type:"range",min:1000,max:20000,step:500,value:data.budget,style:{width:"100%",accentColor:"var(--rose)"},
-        oninput:e=>{data.budget=+e.target.value;view.textContent=money(data.budget);}});
-      wrap.append(view,r,h("div.between.small.faint",{style:{marginTop:"6px"}},[h("span","OMR 1,000"),h("span","OMR 20,000")]));
-      return wrap;},valid:()=>true},
   ];
 
   const dots=h("div.row",{style:{justifyContent:"center",gap:"7px",padding:"18px 0 8px"}});
@@ -1328,8 +1330,9 @@ route("/onboard",()=>{
   }
   next.onclick=()=>{
     if(step<steps.length-1){step++;draw();return;}
-    // finish
+    // finish — save profile + generate the checklist
     S.bride.name=data.name.trim(); S.bride.date=data.date; S.bride.budget=data.budget;
+    S.bride.age=parseInt(data.age,10)||null; S.bride.governorate=data.governorate;
     S.onboarded=true; S.role="bride";
     S.checklist={}; CHECKLIST_TEMPLATE.forEach(t=>S.checklist[t.id]="todo");
     // give the demo a realistic head-start so the app feels lived-in
@@ -1337,7 +1340,15 @@ route("/onboard",()=>{
     ["photo","makeup","dress"].forEach(id=>S.checklist[id]="prog");
     S.selectedVendor={hall:"v011",planner:"v053"};
     save();
-    go("/home"); setTimeout(confetti,250); setTimeout(()=>toast("Your wedding plan is ready 💗"),500);
+    go("/home"); setTimeout(confetti,250);
+    // then ask to register a phone number — fully skippable
+    setTimeout(()=>{
+      if(typeof openAccountSheet==="function" && apiBase() && !(S.account&&S.account.token)){
+        openAccountSheet(()=>{}, {skippable:true, prefill:{name:data.name.trim(),age:data.age,governorate:data.governorate}});
+      }else{
+        toast("Your wedding plan is ready 💗");
+      }
+    },650);
   };
   draw();
   return app;
@@ -1744,7 +1755,7 @@ function openTaskSheet(taskId,rerender){
 /* ============ ZAFFA — BRIDE SCREENS · B (vendors · detail · search · saved · profile) ============ */
 
 /* the customer's home governorate (from their account), if signed in */
-function myGovernorate(){ return (S.account && S.account.governorate) || ""; }
+function myGovernorate(){ return (S.account && S.account.governorate) || (S.bride && S.bride.governorate) || ""; }
 
 /* shared filter state for a category / search view */
 function makeFilters(){return {gov:"",price:0,sort:"popular",offers:false};}
@@ -1905,12 +1916,16 @@ route("/vendor/:id",(q,p)=>{
   if(v.offer)kids.push(h("div.card.pad-s",{style:{background:"linear-gradient(135deg,var(--gold-soft),var(--rose-soft))",display:"flex",gap:"10px",alignItems:"center",marginTop:"8px"}},
     [h("span",{style:{fontSize:"24px"}},"🎁"),h("div",[h("b.small","Special offer"),h("div.small.muted",v.offer.label)])]));
 
-  // quick actions
+  // quick actions — guard missing fields, and use robust link opening
+  const waNum=String(v.whatsapp||"").replace(/[^0-9]/g,"");
+  const telNum=String(v.phone||"").replace(/[^0-9+]/g,"");
+  const igHandle=String(v.instagram||"").replace(/^https?:\/\/(www\.)?instagram\.com\//i,"").replace(/^@/,"").replace(/\/$/,"").trim();
+  const mapQ=String(v.maps||v.city||v.governorate||"").trim();
   kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"9px",margin:"16px 0 4px"}},[
-    actionBtn("chat","WhatsApp",()=>openLink("https://wa.me/"+v.whatsapp.replace(/[^0-9]/g,""))),
-    actionBtn("phone","Call",()=>openLink("tel:"+v.phone.replace(/\s/g,""))),
-    actionBtn("ig","Instagram",()=>openLink("https://instagram.com/"+v.instagram.replace("@",""))),
-    actionBtn("pin","Map",()=>openLink("https://maps.google.com/?q="+encodeURIComponent(v.maps))),
+    actionBtn("chat","WhatsApp",()=> waNum?openLink("https://wa.me/"+waNum):toast("No WhatsApp number for this vendor","💬")),
+    actionBtn("phone","Call",()=> telNum?openLink("tel:"+telNum):toast("No phone number for this vendor","📞")),
+    actionBtn("ig","Instagram",()=> igHandle?openLink((/^https?:/i.test(v.instagram||"")?v.instagram:"https://instagram.com/"+igHandle)):toast("No Instagram for this vendor","📷")),
+    actionBtn("pin","Map",()=> mapQ?openLink(/^https?:/i.test(mapQ)?mapQ:"https://maps.google.com/?q="+encodeURIComponent(mapQ)):toast("No location for this vendor","📍")),
   ]));
 
   // gallery (only if the vendor has photos beyond the logo)
@@ -1968,7 +1983,21 @@ route("/vendor/:id",(q,p)=>{
 });
 function sectionTitle(t){return h("h3",{style:{fontSize:"20px",margin:"26px 0 12px"}},t);}
 function shortTask(t){return t.replace(/^(Book|Buy|Order|Choose|Arrange|Send|Set up|Reserve|Select|Consider|Prepare|Confirm|Draft|Print|Add|Plan|Hire) /,"");}
-function openLink(url){try{window.open(url,"_blank");}catch{location.href=url;}}
+/* Robust external-link opener. window.open("_blank") is unreliable for
+   tel:/wa.me/maps inside mobile webviews (silently blocked), so synthesize a
+   real anchor click — which every browser and the Capacitor webview honor. */
+function openLink(url){
+  if(!url)return;
+  try{
+    const a=document.createElement("a");
+    a.href=url;
+    if(/^https?:/i.test(url)){a.target="_blank";a.rel="noopener noreferrer";}
+    a.style.display="none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>a.remove(),0);
+  }catch(e){ try{location.href=url;}catch(_){} }
+}
 
 /* ---------- GLOBAL SEARCH ---------- */
 route("/search",(q)=>{
@@ -2643,10 +2672,15 @@ let _applyingRemote=false;
 async function cloudInit(opts){
   if(!apiBase())return;
   opts=opts||{};
+  let _seedBaseline=false;
   _applyingRemote=true;               // suppress auto-publish while applying server data
   try{
     refreshViews();
     const cat=await api("/api/catalog");
+    // First-run: the cloud catalog is empty. If an admin is here, publish the
+    // current catalog once so customers get a real baseline (and it can never
+    // stay stuck at version 0). Actual publish is fired after _applyingRemote clears.
+    _seedBaseline = !cat.version;
     let changed=false;
     if(Array.isArray(cat.categories)&&cat.categories.length){CATEGORIES.length=0;CATEGORIES.push(...cat.categories);changed=true;}
     if(Array.isArray(cat.vendors)&&cat.vendors.length){VENDORS.length=0;VENDORS.push(...cat.vendors);VENDORS.forEach(v=>{if(!v.governorate)v.governorate=govOfCity(v.city);});changed=true;}
@@ -2667,6 +2701,7 @@ async function cloudInit(opts){
     if(changed){save(); if(!opts.silent) render();}
   }catch(e){/* offline or backend down — local data keeps working */}
   finally{ _applyingRemote=false; }
+  if(_seedBaseline && isAdmin() && apiBase()) autoPublish();  // seed empty cloud catalog once
 }
 
 /* Publish the current catalog to the backend. Called automatically (debounced)
@@ -2677,17 +2712,36 @@ async function publishCatalog(){
   if(r&&r.version){S._catalogVersion=r.version; save();}
   return r;
 }
-let _pubTimer=null, _pubPending=false;
-function autoPublish(){
-  if(_applyingRemote || !(isAdmin() && apiBase()))return;
+let _pubTimer=null, _pubPending=false, _pubRetries=0;
+function schedulePublish(delay){
   _pubPending=true;
   clearTimeout(_pubTimer);
-  _pubTimer=setTimeout(async()=>{
-    _pubPending=false;
-    try{ await publishCatalog(); syncDot("ok"); }
-    catch(e){ syncDot("err"); }
-  },900); // debounce rapid edits into one publish
+  _pubTimer=setTimeout(runPublish,delay);
   syncDot("pending");
+}
+async function runPublish(){
+  _pubPending=false;
+  try{ await publishCatalog(); _pubRetries=0; syncDot("ok"); }
+  catch(e){
+    const msg=String((e&&e.message)||"");
+    if(/admin_only|not_signed_in|\(401\)|\(403\)/i.test(msg)){ handleAdminAuthLost(); return; }
+    if(_pubRetries<4){ _pubRetries++; syncDot("err"); schedulePublish(1500*_pubRetries); } // network — back off & retry
+    else syncDot("err");
+  }
+}
+function autoPublish(){
+  if(_applyingRemote || !(isAdmin() && apiBase()))return;
+  schedulePublish(900); // debounce rapid edits into one publish
+}
+/* The stored admin token is no longer valid on the server (expired, or the
+   auth secret rotated after a DB reset). Drop the local admin session and
+   send them back to the sign-in gate so their next publish actually lands. */
+function handleAdminAuthLost(){
+  _pubRetries=0;
+  try{ S.account=null; S.role="bride"; save(); }catch(e){}
+  toast("Your admin session expired — please sign in again to publish","🔒");
+  if(typeof go==="function") go("/admin");
+  if(typeof render==="function") render();
 }
 /* tiny live "saving…/saved" indicator for the admin */
 function syncDot(state){
@@ -2723,9 +2777,11 @@ function startCatalogPolling(){
 /* ---- account sheet: WhatsApp OTP sign-up / sign-in ----
    Step 1: phone → we send a 6-digit code to WhatsApp.
    Step 2: code (+ name, age, city for first-time users) → signed in. */
-function openAccountSheet(onDone){
+function openAccountSheet(onDone,opts){
+  opts=opts||{};
+  const pf=opts.prefill||{};
   let step="phone", existing=false, devCode="", timer=null;
-  const d={phone:"",code:"",name:S.bride.name||"",age:"",governorate:GOVERNORATES[0]};
+  const d={phone:"",code:"",name:pf.name||S.bride.name||"",age:pf.age||"",governorate:pf.governorate||GOVERNORATES[0]};
   let ref;
   ref=sheet({title:"Your account",onClose:()=>timer&&clearInterval(timer),body:(close)=>{
     const wrap=h("div.col.gap12",{style:{marginTop:"4px"}});
@@ -2749,6 +2805,9 @@ function openAccountSheet(onDone){
           }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Send code on WhatsApp";}
         }},"Send code on WhatsApp");
         wrap.appendChild(btn);
+        if(opts.skippable) wrap.appendChild(h("button.btn.btn-quiet.btn-block",{onclick:()=>{
+          ref.close(); toast("No problem — add your number anytime from your profile 💗"); onDone&&onDone();
+        }},"Skip for now"));
         setTimeout(()=>phoneI.focus(),200);
       }else{
         wrap.appendChild(h("p.small.muted",{style:{padding:"0 2px"}},

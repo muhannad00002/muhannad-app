@@ -1,7 +1,7 @@
 /* ============ ZAFFA — BRIDE SCREENS · B (vendors · detail · search · saved · profile) ============ */
 
 /* the customer's home governorate (from their account), if signed in */
-function myGovernorate(){ return (S.account && S.account.governorate) || ""; }
+function myGovernorate(){ return (S.account && S.account.governorate) || (S.bride && S.bride.governorate) || ""; }
 
 /* shared filter state for a category / search view */
 function makeFilters(){return {gov:"",price:0,sort:"popular",offers:false};}
@@ -162,12 +162,16 @@ route("/vendor/:id",(q,p)=>{
   if(v.offer)kids.push(h("div.card.pad-s",{style:{background:"linear-gradient(135deg,var(--gold-soft),var(--rose-soft))",display:"flex",gap:"10px",alignItems:"center",marginTop:"8px"}},
     [h("span",{style:{fontSize:"24px"}},"🎁"),h("div",[h("b.small","Special offer"),h("div.small.muted",v.offer.label)])]));
 
-  // quick actions
+  // quick actions — guard missing fields, and use robust link opening
+  const waNum=String(v.whatsapp||"").replace(/[^0-9]/g,"");
+  const telNum=String(v.phone||"").replace(/[^0-9+]/g,"");
+  const igHandle=String(v.instagram||"").replace(/^https?:\/\/(www\.)?instagram\.com\//i,"").replace(/^@/,"").replace(/\/$/,"").trim();
+  const mapQ=String(v.maps||v.city||v.governorate||"").trim();
   kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"9px",margin:"16px 0 4px"}},[
-    actionBtn("chat","WhatsApp",()=>openLink("https://wa.me/"+v.whatsapp.replace(/[^0-9]/g,""))),
-    actionBtn("phone","Call",()=>openLink("tel:"+v.phone.replace(/\s/g,""))),
-    actionBtn("ig","Instagram",()=>openLink("https://instagram.com/"+v.instagram.replace("@",""))),
-    actionBtn("pin","Map",()=>openLink("https://maps.google.com/?q="+encodeURIComponent(v.maps))),
+    actionBtn("chat","WhatsApp",()=> waNum?openLink("https://wa.me/"+waNum):toast("No WhatsApp number for this vendor","💬")),
+    actionBtn("phone","Call",()=> telNum?openLink("tel:"+telNum):toast("No phone number for this vendor","📞")),
+    actionBtn("ig","Instagram",()=> igHandle?openLink((/^https?:/i.test(v.instagram||"")?v.instagram:"https://instagram.com/"+igHandle)):toast("No Instagram for this vendor","📷")),
+    actionBtn("pin","Map",()=> mapQ?openLink(/^https?:/i.test(mapQ)?mapQ:"https://maps.google.com/?q="+encodeURIComponent(mapQ)):toast("No location for this vendor","📍")),
   ]));
 
   // gallery (only if the vendor has photos beyond the logo)
@@ -225,7 +229,21 @@ route("/vendor/:id",(q,p)=>{
 });
 function sectionTitle(t){return h("h3",{style:{fontSize:"20px",margin:"26px 0 12px"}},t);}
 function shortTask(t){return t.replace(/^(Book|Buy|Order|Choose|Arrange|Send|Set up|Reserve|Select|Consider|Prepare|Confirm|Draft|Print|Add|Plan|Hire) /,"");}
-function openLink(url){try{window.open(url,"_blank");}catch{location.href=url;}}
+/* Robust external-link opener. window.open("_blank") is unreliable for
+   tel:/wa.me/maps inside mobile webviews (silently blocked), so synthesize a
+   real anchor click — which every browser and the Capacitor webview honor. */
+function openLink(url){
+  if(!url)return;
+  try{
+    const a=document.createElement("a");
+    a.href=url;
+    if(/^https?:/i.test(url)){a.target="_blank";a.rel="noopener noreferrer";}
+    a.style.display="none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>a.remove(),0);
+  }catch(e){ try{location.href=url;}catch(_){} }
+}
 
 /* ---------- GLOBAL SEARCH ---------- */
 route("/search",(q)=>{
