@@ -1517,7 +1517,8 @@ route("/checklist",()=>{
   ]));
 
   // expense tracker — total spent across booked vendors vs budget
-  kids.push(expenseCard());
+  let expCard=expenseCard();
+  kids.push(expCard);
 
   // filter segmented
   let filter="all";
@@ -1529,6 +1530,9 @@ route("/checklist",()=>{
   kids.push(seg); kids.push(listWrap);
 
   function drawList(){
+    // keep the expense summary in sync with any newly-booked prices
+    // (only once it's mounted — the first call happens before appFrame renders)
+    if(expCard.isConnected){const nc=expenseCard(); expCard.replaceWith(nc); expCard=nc;}
     clear(listWrap);
     // group by phase
     const phases=[...new Set(CHECKLIST_TEMPLATE.map(t=>t.phase))];
@@ -1557,10 +1561,10 @@ function expenseCard(){
   const budget=+S.bride.budget||0;
   const over=budget&&spent>budget;
   const pct=budget?Math.min(100,Math.round(spent/budget*100)):0;
-  // booked line items that carry a price
+  // booked line items that carry a price (vendor-linked or a personal task)
   const items=Object.entries(S.bookings)
-    .map(([taskId,b])=>({taskId,b,vendor:vendorById(b&&b.vendorId),task:templateById(taskId)}))
-    .filter(x=>x.vendor&&x.b&&x.b.price)
+    .map(([taskId,b])=>({taskId,b,vendor:b&&b.vendorId?vendorById(b.vendorId):null,task:templateById(taskId)}))
+    .filter(x=>x.b&&x.b.price)
     .sort((a,b)=>(+b.b.price)-(+a.b.price));
   const card=h("div.card.pad",{style:{marginTop:"14px"}});
   card.append(
@@ -1576,9 +1580,9 @@ function expenseCard(){
   if(items.length){
     const list=h("div.col.gap8",{style:{marginTop:"12px"}});
     items.forEach(({taskId,b,vendor,task})=>list.appendChild(
-      h("button.lrow",{style:{cursor:"pointer",width:"100%",textAlign:"left"},onclick:()=>openTaskSheet(taskId)},[
-        h("div.grow",{style:{minWidth:0}},[h("b.small",vendor.name),
-          h("div.tiny.faint",[task?shortTask(task.title):"Booked",b.date?(" · "+new Date(b.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"})):""])]),
+      h("button.lrow",{style:{cursor:"pointer",width:"100%",textAlign:"left"},onclick:()=>openBookedSheet(taskId,()=>go("/checklist"))},[
+        h("div.grow",{style:{minWidth:0}},[h("b.small",vendor?vendor.name:(task?shortTask(task.title):"Booking")),
+          h("div.tiny.faint",[vendor&&task?shortTask(task.title):"Booked",b.date?(" · "+new Date(b.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"})):""])]),
         h("b.small",{style:{flex:"none",color:"var(--rose-deep)"}},money(+b.price)),
       ])));
     card.append(list);
@@ -1592,21 +1596,65 @@ function checkRow(t,rerender){
   const st=S.checklist[t.id]||"todo";
   const cat=t.catId?catById(t.catId):null;
   const sv=S.selectedVendor[t.id]?vendorById(S.selectedVendor[t.id]):null;
+  const bk=S.bookings[t.id];
   const box=h("button.cbox"+(st==="done"?".done":st==="prog"?".prog":""),{"aria-label":"Toggle status",
     onclick:e=>{e.stopPropagation();
       const nxt= st==="todo"?"prog":st==="prog"?"done":"todo";
+      // checking an item off → capture booking date + price so she can track expenses
+      if(nxt==="done"){ openBookedSheet(t.id,rerender); return; }
       setTask(t.id,nxt);
-      if(nxt==="done")confetti();
       rerender();
     }},st==="done"?icon("check",17):st==="prog"?h("span",{style:{fontSize:"11px",fontWeight:"800"}},"~"):null);
   return h("div.check"+(st==="done"?".done":""),{onclick:()=>openTaskSheet(t.id,rerender),style:{cursor:"pointer"}},[
     box,
     h("div.grow",[
       h("div.ct",{style:{fontWeight:"600"}},t.title),
-      h("div.tiny.faint",{style:{marginTop:"2px"}}, sv?("✓ "+sv.name) : cat?("Browse "+cat.name.toLowerCase()) : statusLabel(st)),
+      h("div.tiny.faint",{style:{marginTop:"2px"}}, bookingSubtitle(bk,sv,cat,st)),
     ]),
     st!=="done"&&cat ? h("span.tag.tag-rose",{style:{flex:"none"},onclick:e=>{e.stopPropagation();go("/category/"+cat.id);}},"Browse") : h("span.tag "+statusTag(st),{style:{flex:"none"}},statusLabel(st)),
   ]);
+}
+/* row subtitle: prefer booked date + price, then vendor, then a hint */
+function bookingSubtitle(bk,sv,cat,st){
+  if(bk&&(bk.date||bk.price)){
+    const parts=[];
+    if(sv)parts.push("✓ "+sv.name); else parts.push("✓ Booked");
+    if(bk.date)parts.push(new Date(bk.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"}));
+    if(bk.price)parts.push(money(+bk.price));
+    return parts.join(" · ");
+  }
+  if(sv)return "✓ "+sv.name;
+  if(cat)return "Browse "+cat.name.toLowerCase();
+  return statusLabel(st);
+}
+/* sheet shown when a bride checks a task off: capture booking date + price */
+function openBookedSheet(taskId,rerender){
+  const t=templateById(taskId);
+  const ex=S.bookings[taskId]||{};
+  const sv=S.selectedVendor[taskId]?vendorById(S.selectedVendor[taskId]):null;
+  const d={date:ex.date||"",price:ex.price!=null?ex.price:""};
+  let ref;
+  ref=sheet({title:"Mark as booked",body:(close)=>{
+    const b=h("div.col.gap16",{style:{marginTop:"4px"}});
+    b.appendChild(h("div.row.gap8",[h("span",{style:{fontSize:"24px"}},"✅"),
+      h("div",[h("b",t?shortTask(t.title):"Task"),sv?h("div.tiny.faint",[icon("check",12),sv.name]):h("div.tiny.faint","Add your booking details")])]));
+    const dateI=h("input.field",{type:"date",value:d.date,max:S.bride.date||undefined,oninput:e=>d.date=e.target.value});
+    const priceI=h("input.field",{type:"number",min:"0",inputmode:"decimal",value:d.price,placeholder:"e.g. 350",oninput:e=>d.price=e.target.value});
+    b.append(
+      h("div",[h("label.lbl","Booking date"),dateI]),
+      h("div",[h("label.lbl","Price (OMR)"),priceI]),
+      h("p.tiny.faint",{style:{margin:"0 2px"}},"Both are optional — add them to track your bookings and expenses on this screen."),
+    );
+    return b;
+  },actions:[
+    h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
+    h("button.btn.btn-pri.grow",{onclick:()=>{
+      saveBooking(taskId,(sv&&sv.id)||(S.bookings[taskId]&&S.bookings[taskId].vendorId)||null,d.date,ex.time||"",ex.note||"",d.price===""?null:d.price);
+      setTask(taskId,"done"); confetti();
+      ref.close(); rerender&&rerender();
+    }},[icon("check",17),"Mark booked"]),
+  ]});
+  return ref;
 }
 const statusLabel=s=>({todo:"Not started",prog:"In progress",done:"Done"})[s]||s;
 const statusTag=s=>({todo:"tag-todo",prog:"tag-prog",done:"tag-done"})[s]||"tag-todo";
