@@ -51,8 +51,12 @@ function goPremium(tier){
 function cancelPremium(){ S.subscription={plan:"free",tier:null,since:null}; save(); }
 
 /* ---- Bookings / appointments ---- */
-function saveBooking(taskId,vendorId,date,time,note){
-  S.bookings[taskId]={vendorId,date,time:time||"",note:note||""}; save();
+function saveBooking(taskId,vendorId,date,time,note,price){
+  S.bookings[taskId]={vendorId,date,time:time||"",note:note||"",price:price!=null?+price:null}; save();
+}
+/* total the bride has committed across all booked vendors */
+function totalSpent(){
+  return Object.values(S.bookings).reduce((s,b)=>s+(b&&b.price?+b.price:0),0);
 }
 function upcomingBookings(){
   return Object.entries(S.bookings).map(([taskId,b])=>({taskId,...b,vendor:vendorById(b.vendorId),task:templateById(taskId)}))
@@ -273,13 +277,13 @@ function brideTabs(active){
   const tabs=[
     ["/home","home","Home"],
     ["/categories","grid","Explore"],
-    ["/checklist","list","Plan"],
+    ["/checklist","__logo","Plan"],
     ["/favorites","heart","Saved"],
     ["/profile","user","You"],
   ];
   return h("nav.tabbar",tabs.map(([path,ic,label])=>
-    h("button.tab"+(active===path?".on":""),{onclick:()=>go(path)},[
-      icon(ic,23),h("span",label),
+    h("button.tab"+(active===path?".on":"")+(ic==="__logo"?".tab-logo":""),{onclick:()=>go(path)},[
+      ic==="__logo"?logoMark(26):icon(ic,23),h("span",label),
     ])
   ));
 }
@@ -330,12 +334,12 @@ function vendorCard(v,{horizontal}={}){
     cover,
     h("div.pad-s",[
       h("div.between",[h("h4",{style:{fontSize:"17px"}},v.name),
-        h("span.row.gap6",{style:{flex:"none"}},[h("span",{style:{color:"var(--gold)",fontSize:"13px"}},"★"),h("b.small",v.rating.toFixed(1))])]),
-      h("div.row.gap6",{style:{marginTop:"3px",color:"var(--ink2)"}},[icon("pin",13),h("span.small",v.city),h("span.faint",{style:{margin:"0 2px"}},"·"),h("span.small",cat?cat.name:"")]),
-      h("p.small.muted",{style:{margin:"7px 0 0",display:"-webkit-box",WebkitLineClamp:"2",WebkitBoxOrient:"vertical",overflow:"hidden"}},v.short),
+        v.priceLevel?h("span.tag "+(v.priceLevel>=3?"tag-gold":"tag-rose"),{style:{flex:"none"}},priceLabel(v.priceLevel)):null]),
+      h("div.row.gap6",{style:{marginTop:"3px",color:"var(--ink2)"}},[icon("pin",13),h("span.small",v.governorate||v.city),h("span.faint",{style:{margin:"0 2px"}},"·"),h("span.small",cat?cat.name:"")]),
+      v.short?h("p.small.muted",{style:{margin:"7px 0 0",display:"-webkit-box",WebkitLineClamp:"2",WebkitBoxOrient:"vertical",overflow:"hidden"}},v.short):null,
       h("div.between",{style:{marginTop:"10px"}},[
-        h("b.small",{style:{color:"var(--rose-deep)"}},v.priceRange),
-        h("span.tiny.faint",v.reviews+" reviews"),
+        h("span.tiny.faint.row.gap6",[icon("eye",13),(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en")+" views"]),
+        v.featured?h("span.tiny",{style:{color:"var(--gold)",fontWeight:"700"}},"★ Featured"):null,
       ]),
     ]),
   ]);

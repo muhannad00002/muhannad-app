@@ -77,6 +77,7 @@ const ICONS={
   sliders:'<path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h8M16 18h4"/><circle cx="15" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="14" cy="18" r="2"/>',
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   send:'<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/>',
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
 };
 /* Wedding & Co brand mark — gold ring + cyan diamond (echoes the logo) */
 function logoMark(size=64){
@@ -92,6 +93,28 @@ function logoMark(size=64){
 
 function icon(name,size=22,extra=""){
   return h("span",{class:"ic "+extra,html:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||""}</svg>`});
+}
+
+/* Splash video — plays once each time the app is launched, then fades to reveal
+   the app. Muted + playsinline so autoplay is allowed; tap to skip. */
+function showSplash(){
+  if(window.ZAFFA_ADMIN)return;                 // no splash on the admin panel
+  const ov=h("div#splash");
+  const vid=h("video",{muted:true,autoplay:true,preload:"auto",disablePictureInPicture:true});
+  vid.muted=true;                                // property + attribute for iOS autoplay
+  vid.setAttribute("muted","");
+  vid.setAttribute("playsinline","");
+  vid.setAttribute("webkit-playsinline","");
+  vid.src="assets/splash.mp4";
+  ov.appendChild(vid);
+  document.body.appendChild(ov);
+  let done=false;
+  const finish=()=>{ if(done)return; done=true; ov.classList.add("hide"); setTimeout(()=>ov.remove(),600); };
+  vid.addEventListener("ended",finish);
+  vid.addEventListener("error",finish);          // if the video can't load, don't block the app
+  ov.addEventListener("click",finish);           // tap to skip
+  setTimeout(finish,8000);                        // safety cap
+  const p=vid.play&&vid.play(); if(p&&p.catch)p.catch(()=>{});
 }
 
 /* ---- Generated cover art (deterministic gradient + soft blobs) ----

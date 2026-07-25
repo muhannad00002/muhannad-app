@@ -85,7 +85,7 @@ function suggestBookingDate(){
 /* Sheet shown when a bride selects a vendor for a task: pick date/time then confirm. */
 function openBookingSheet(vendor,taskId,onConfirm){
   const existing=S.bookings[taskId];
-  const d={date:existing?.date||suggestBookingDate(),time:existing?.time||"11:00",note:existing?.note||""};
+  const d={date:existing?.date||suggestBookingDate(),time:existing?.time||"11:00",note:existing?.note||"",price:existing?.price!=null?existing.price:""};
   const task=templateById(taskId);
   const title=(task?shortTask(task.title):"Appointment")+" — "+vendor.name;
   let ref;
@@ -97,18 +97,20 @@ function openBookingSheet(vendor,taskId,onConfirm){
     ]));
     const dateI=h("input.field",{type:"date",value:d.date,min:new Date().toISOString().slice(0,10),max:S.bride.date||undefined,oninput:e=>d.date=e.target.value});
     const timeI=h("input.field",{type:"time",value:d.time,oninput:e=>d.time=e.target.value});
+    const priceI=h("input.field",{type:"number",min:"0",inputmode:"decimal",value:d.price,placeholder:"e.g. 350",oninput:e=>d.price=e.target.value});
     const noteI=h("input.field",{value:d.note,placeholder:"Add a note (optional)",oninput:e=>d.note=e.target.value});
     b.append(
       h("div.row.gap8",[h("div.grow",[h("label.lbl","Date"),dateI]),h("div",{style:{width:"120px"}},[h("label.lbl","Time"),timeI])]),
+      h("div",[h("label.lbl","Agreed price (OMR) — optional"),priceI]),
       h("div",[h("label.lbl","Note"),noteI]),
-      h("p.tiny.faint",{style:{margin:"0 2px"}},"Selecting confirms this vendor for “"+(task?shortTask(task.title):"this task")+"” and marks it done. We'll remind you a day before."),
+      h("p.tiny.faint",{style:{margin:"0 2px"}},"Selecting confirms this vendor for “"+(task?shortTask(task.title):"this task")+"”, marks it done, and tracks the price in your budget. We'll remind you a day before."),
     );
     return b;
   },actions:[
     h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
     h("button.btn.btn-pri.grow",{onclick:()=>{
       if(!d.date){toast("Please pick a date","📅");return;}
-      saveBooking(taskId,vendor.id,d.date,d.time,d.note);
+      saveBooking(taskId,vendor.id,d.date,d.time,d.note,d.price===""?null:d.price);
       selectVendorForTask(vendor.id,taskId);
       ref.close(); confetti();
       const opts={title:(task?shortTask(task.title):"Wedding appointment")+": "+vendor.name,date:d.date,time:d.time,
@@ -150,7 +152,8 @@ const CAT_KEYWORDS=[
   [/\bprint/,"printing"],[/\bgift\b/,"gifts"],[/\bfavou?r/,"favors"],[/\baccessor/,"accessories"],
   [/\bjewel|ring|diamond\b/,"jewelry"],[/\bperfume|scent|attar\b/,"perfumes"],[/\bhoneymoon|travel\b/,"honeymoon"],
 ];
-function bestVendor(catId){ return vendorsInCat(catId).sort((a,b)=>b.popularity-a.popularity)[0]; }
+function vpop(v){ return v.popularity!=null?v.popularity:(typeof viewCount==="function"?viewCount(v):0); }
+function bestVendor(catId){ return vendorsInCat(catId).sort((a,b)=>vpop(b)-vpop(a))[0]; }
 function budgetBreakdown(){
   const t=S.bride.budget||6000;
   const rows=[["Venue & hall",.34],["Catering & cake",.18],["Photography & video",.12],["Attire & beauty",.12],
@@ -234,16 +237,17 @@ function assistantAnswer(raw){
       const v=bestVendor(cat), cname=catById(cat)?.name||"vendors";
       if(!v)return {text:`I don't have any ${cname} yet, but the admin adds new vendors often. Try browsing the category.`,chips:[chip("Open "+cname,null,"/category/"+cat)]};
       const tip=CAT_TIP[cat]?("\n\n💡 "+CAT_TIP[cat]):"";
-      return {text:`For ${cname.toLowerCase()}, brides love ${v.name} in ${v.city} — ★${v.rating.toFixed(1)} from ${v.reviews} reviews, ${v.priceRange}. ${v.short}${tip}`,
+      const vv=(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en");
+      return {text:`For ${cname.toLowerCase()}, brides love ${v.name} in ${v.governorate||v.city} — ${vv} brides have viewed them${v.featured?" · ★ Featured":""}. ${v.short||""}${tip}`,
         chips:[chip("View "+v.name,null,"/vendor/"+v.id),chip("See all "+cname,null,"/category/"+cat)]};
     }
   }
 
   // general recommend / best
   if(has(/recommend|suggest|best|top rated|find.*vendor|who.*(good|best)/)){
-    const feats=VENDORS.filter(v=>v.featured&&v.approved).sort((a,b)=>b.rating-a.rating).slice(0,3);
-    const lines=feats.map(v=>`• ${v.name} — ${catById(v.catId).name}, ★${v.rating.toFixed(1)}`).join("\n");
-    return {text:`Some of our highest-rated vendors right now:\n\n${lines}\n\nTell me which service you need and I'll find the perfect match.`,
+    const feats=VENDORS.filter(v=>v.featured&&v.approved).sort((a,b)=>vpop(b)-vpop(a)).slice(0,3);
+    const lines=feats.map(v=>`• ${v.name} — ${catById(v.catId).name}, ${(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en")} views`).join("\n");
+    return {text:`Some of our most-viewed vendors right now:\n\n${lines}\n\nTell me which service you need and I'll find the perfect match.`,
       chips:feats.slice(0,2).map(v=>chip("View "+v.name,null,"/vendor/"+v.id)).concat([chip("Browse all",null,"/categories")])};
   }
 

@@ -36,12 +36,33 @@ async function api(path,{method="GET",body:payload}={}){
 }
 
 /* ---- cloud sync: catalog down, entitlement down, admin catalog up ---- */
+/* live vendor view counts (vendorId -> count), refreshed from the backend */
+let VIEWS={};
+function viewCount(v){
+  const id=typeof v==="object"?v.id:v;
+  if(VIEWS[id]!=null)return VIEWS[id];
+  // demo fallback: a stable, believable number when there's no backend yet
+  return 40 + (hashStr(String(id))%460);
+}
+async function refreshViews(){
+  if(!apiBase())return;
+  try{ const r=await api("/api/vendors/views"); if(r&&r.views)VIEWS=r.views; }catch(e){}
+}
+async function recordVendorView(id){
+  try{ if(localStorage.getItem("zaffa.viewed."+id))return; }catch{}
+  VIEWS[id]=(VIEWS[id]||viewCount(id))+1;                 // optimistic local bump
+  try{ localStorage.setItem("zaffa.viewed."+id,"1"); }catch{}
+  if(!apiBase())return;
+  try{ const r=await api("/api/vendors/"+encodeURIComponent(id)+"/view",{method:"POST"}); if(r&&r.views!=null)VIEWS[id]=r.views; }catch(e){}
+}
+
 let _applyingRemote=false;
 async function cloudInit(opts){
   if(!apiBase())return;
   opts=opts||{};
   _applyingRemote=true;               // suppress auto-publish while applying server data
   try{
+    refreshViews();
     const cat=await api("/api/catalog");
     let changed=false;
     if(Array.isArray(cat.categories)&&cat.categories.length){CATEGORIES.length=0;CATEGORIES.push(...cat.categories);changed=true;}

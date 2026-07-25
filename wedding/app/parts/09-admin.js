@@ -55,7 +55,7 @@ route("/admin",()=>{
   const pending=VENDORS.filter(v=>!v.approved).length;
   const featured=VENDORS.filter(v=>v.featured).length;
   const brides=USERS.filter(u=>u.role==="bride").length;
-  const avgRating=(VENDORS.reduce((s,v)=>s+v.rating,0)/VENDORS.length).toFixed(2);
+  const totalViews=VENDORS.reduce((s,v)=>s+(typeof viewCount==="function"?viewCount(v):0),0);
 
   const kids=[adminTop("Overview",h("button.icon-btn",{onclick:()=>adminSignOut()},icon("logout",20)))];
 
@@ -73,7 +73,7 @@ route("/admin",()=>{
     kpiCard(brides,"Brides","users",()=>go("/admin/users")),
     kpiCard(featured,"Featured","star",()=>go("/admin/vendors")),
     kpiCard(pending,"Pending approval","clock",()=>go("/admin/vendors")),
-    kpiCard(avgRating,"Avg rating","spark",null),
+    kpiCard(totalViews.toLocaleString("en"),"Total views","eye",null),
   ]));
 
   // vendors by category chart
@@ -215,7 +215,7 @@ function adminVendorRow(v,rerender){
       h("div.row.gap6",[h("b",{style:{fontSize:"15px"}},v.name),
         !v.approved?h("span.tag.tag-warn","Pending"):null,
         v.featured?h("span.tag.tag-gold","★"):null]),
-      h("div.tiny.faint",{style:{marginTop:"2px"}},[cat?.name," · ",v.city," · ★",v.rating.toFixed(1)]),
+      h("div.tiny.faint",{style:{marginTop:"2px"}},[cat?.name," · ",v.governorate||v.city," · ",(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en")," views"]),
     ]),
     h("button.icon-btn.plain",{onclick:()=>openVendorActions(v,rerender)},icon("sliders",20)),
   ]);
@@ -240,9 +240,9 @@ function openVendorActions(v,rerender){
 
 function openVendorForm(v,rerender){
   const isNew=!v;
-  const d=v?{...v}:{name:"",catId:CATEGORIES[0].id,city:CITIES[0],governorate:GOVERNORATES[0],rating:4.7,reviews:0,priceLevel:2,short:"",desc:"",
-    services:["Consultation","Bespoke packages"],hours:"Sat–Thu · 10:00 AM – 9:00 PM",instagram:"",whatsapp:"+968 ",phone:"+968 ",
-    maps:"",featured:false,approved:true,isNew:true,offer:null,packages:[],reviewsList:[],popularity:94};
+  const d=v?{...v}:{name:"",catId:CATEGORIES[0].id,city:CITIES[0],governorate:GOVERNORATES[0],priceLevel:2,short:"",
+    instagram:"",whatsapp:"+968 ",phone:"+968 ",
+    maps:"",featured:false,approved:true,isNew:true,offer:null};
   if(!d.governorate)d.governorate=govOfCity(d.city);
   let ref;
   ref=sheet({title:isNew?"Add vendor":"Edit vendor",body:(close)=>{
@@ -256,25 +256,21 @@ function openVendorForm(v,rerender){
     const cityI=h("input.field",{value:d.city,placeholder:"City / area (e.g. Muscat)",oninput:e=>d.city=e.target.value});
     const priceSel=h("select.field",[1,2,3,4].map(p=>h("option",{value:p,selected:p===d.priceLevel},priceLabel(p))));
     priceSel.onchange=e=>d.priceLevel=+e.target.value;
-    const rating=h("input.field",{type:"number",min:1,max:5,step:.1,value:d.rating,oninput:e=>d.rating=Math.min(5,Math.max(1,+e.target.value||0))});
-    const reviews=h("input.field",{type:"number",min:0,value:d.reviews,oninput:e=>d.reviews=+e.target.value||0});
-    const short=h("input.field",{value:d.short,placeholder:"One-line description",oninput:e=>d.short=e.target.value});
-    const desc=h("textarea.field",{placeholder:"Full description (optional)",oninput:e=>d.desc=e.target.value},d.desc||"");
+    const short=h("input.field",{value:d.short,placeholder:"One line about the vendor (optional)",oninput:e=>d.short=e.target.value});
     const ig=h("input.field",{value:d.instagram,placeholder:"@handle",oninput:e=>d.instagram=e.target.value});
     const wa=h("input.field",{value:d.whatsapp,placeholder:"+968 …",oninput:e=>d.whatsapp=e.target.value});
     const phone=h("input.field",{value:d.phone,placeholder:"+968 …",oninput:e=>d.phone=e.target.value});
     const maps=h("input.field",{value:d.maps||"",placeholder:"Google Maps link or address",oninput:e=>d.maps=e.target.value});
     // photos: cover + gallery URLs, with optional file upload for the cover
-    const cover=h("input.field",{value:d.cover||"",placeholder:"https://…/cover.jpg",oninput:e=>{d.cover=e.target.value;preview();}});
-    const gallery=h("textarea.field",{placeholder:"One image URL per line",oninput:e=>{d.gallery=e.target.value.split(/\n+/).map(s=>s.trim()).filter(Boolean);preview();}},(d.gallery||[]).join("\n"));
+    const cover=h("input.field",{value:d.cover||"",placeholder:"https://…/logo.jpg",oninput:e=>{d.cover=e.target.value;preview();}});
     const prev=h("div.gal",{style:{marginTop:"8px"}});
-    function preview(){clear(prev);vendorImages(d).slice(0,6).forEach(u=>{const t=h("div.thumb",{style:{width:"64px",height:"64px",flex:"none",backgroundImage:`url("${String(u).replace(/"/g,'%22')}")`}});prev.appendChild(t);});}
+    function preview(){clear(prev);vendorImages(d).slice(0,1).forEach(u=>{const t=h("div.thumb",{style:{width:"64px",height:"64px",flex:"none",backgroundImage:`url("${String(u).replace(/"/g,'%22')}")`}});prev.appendChild(t);});}
     const fileBtn=h("input",{type:"file",accept:"image/*",style:{display:"none"},onchange:e=>{
       const f=e.target.files[0]; if(!f)return;
       if(f.size>1200000){toast("Image too large — use a URL for big photos","⚠️");return;}
       const rd=new FileReader(); rd.onload=()=>{d.cover=rd.result;cover.value="(uploaded image)";preview();}; rd.readAsDataURL(f);
     }});
-    const uploadBtn=h("button.btn.btn-sec.btn-sm",{onclick:()=>fileBtn.click()},[icon("camera",15),"Upload cover"]);
+    const uploadBtn=h("button.btn.btn-sec.btn-sm",{onclick:()=>fileBtn.click()},[icon("camera",15),"Upload logo"]);
     preview();
     const feat=toggle("Featured vendor",d.featured,x=>d.featured=x);
     const appr=toggle("Approved & visible",d.approved,x=>d.approved=x);
@@ -282,10 +278,9 @@ function openVendorForm(v,rerender){
       F("Name",name),
       F("Category",catSel),
       h("div.row.gap8",[h("div.grow",F("Governorate",govSel)),h("div.grow",F("City / area",cityI))]),
-      h("div.row.gap8",[h("div.grow",F("Price tier",priceSel)),h("div.grow",F("Rating",rating)),h("div.grow",F("Reviews",reviews))]),
-      F("Short description",short),F("Full description",desc),
-      h("div",[h("div.between",{style:{marginBottom:"6px"}},[h("label.lbl",{style:{margin:0}},"Cover photo"),uploadBtn]),cover,fileBtn]),
-      F("Gallery photos",gallery),
+      F("Tier",priceSel),
+      F("Short description (optional)",short),
+      h("div",[h("div.between",{style:{marginBottom:"6px"}},[h("label.lbl",{style:{margin:0}},"Logo"),uploadBtn]),cover,fileBtn]),
       prev,
       h("div.row.gap8",[h("div.grow",F("Instagram",ig)),h("div.grow",F("WhatsApp",wa))]),
       h("div.row.gap8",[h("div.grow",F("Phone",phone)),h("div.grow",F("Location / map",maps))]),
@@ -296,13 +291,9 @@ function openVendorForm(v,rerender){
     h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
     h("button.btn.btn-pri.grow",{onclick:()=>{
       if(!d.name.trim()){toast("Please enter a name","⚠️");return;}
-      d.priceRange=d.priceRange||({1:"OMR 40–120",2:"OMR 120–350",3:"OMR 350–900",4:"OMR 900+"})[d.priceLevel];
       if(isNew){
         _vid++; d.id="v"+String(Date.now()).slice(-6);
-        d.services=d.services||["Consultation"]; d.hours=d.hours||"Sat–Thu · 10:00 AM – 9:00 PM";
-        d.maps=d.maps||d.city+", Oman"; d.popularity=d.rating*20+d.reviews/12;
-        d.packages=d.packages&&d.packages.length?d.packages:[{name:"Signature",price:d.priceRange,items:["Full service","Consultation included"],popular:true}];
-        d.reviewsList=d.reviewsList&&d.reviewsList.length?d.reviewsList:[{by:"Aisha K.",stars:5,text:"Wonderful experience!",when:"Recently"}];
+        d.maps=d.maps||d.city+", Oman";
         VENDORS.unshift(d); toast("Vendor added ✓","🎉");
       }else{
         Object.assign(v,d); toast("Vendor updated ✓");

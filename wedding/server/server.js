@@ -77,12 +77,25 @@ function ready() {
     await auth.seedAdmin();
     const spCfg = await db.get("config:smartpay");
     if (spCfg) smartpay.setConfig(spCfg);
-  })();
+  })().catch((e) => {
+    // Never cache a failed init — otherwise one transient DB hiccup on a cold
+    // start poisons this function instance forever. Clear it so the next
+    // request retries a fresh connection.
+    _ready = null;
+    throw e;
+  });
   return _ready;
 }
 
 async function handle(req, res) {
-  await ready();                     // idempotent; makes the handler serverless-safe
+  try {
+    await ready();                   // idempotent; makes the handler serverless-safe
+  } catch (e) {
+    // Init (usually the DB) is unavailable. Return a clean 503 instead of
+    // letting the rejection bubble up as FUNCTION_INVOCATION_FAILED.
+    console.error("backend init failed:", (e && e.message) || e);
+    return json(res, 503, { error: "backend_unavailable" });
+  }
   const url = new URL(req.url, "http://x");
   const p = url.pathname;
   if (req.method === "OPTIONS") return json(res, 204, {});
@@ -169,6 +182,20 @@ async function handle(req, res) {
     /* public list of Oman governorates for the sign-up form */
     if (p === "/api/governorates" && req.method === "GET")
       return json(res, 200, { governorates: auth.OMAN_GOVERNORATES });
+
+    /* ---------- Vendor view counts ---------- */
+    if (p === "/api/vendors/views" && req.method === "GET") {
+      const out = {};
+      for (const { key, value } of await db.list("views:")) out[key.slice(6)] = value || 0;
+      return json(res, 200, { views: out });
+    }
+    const mView = p.match(/^\/api\/vendors\/([^/]+)\/view$/);
+    if (mView && req.method === "POST") {
+      const id = decodeURIComponent(mView[1]);
+      const n = ((await db.get("views:" + id)) || 0) + 1;
+      await db.set("views:" + id, n);
+      return json(res, 200, { id, views: n });
+    }
 
     /* ---------- Vouchers (admin creates, customer redeems, single-use) ---------- */
     if (p === "/api/admin/vouchers" && req.method === "POST") {

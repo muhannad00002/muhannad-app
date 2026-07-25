@@ -4,18 +4,17 @@
 function myGovernorate(){ return (S.account && S.account.governorate) || ""; }
 
 /* shared filter state for a category / search view */
-function makeFilters(){return {gov:"",price:0,rating:0,sort:"popular",offers:false};}
+function makeFilters(){return {gov:"",price:0,sort:"popular",offers:false};}
+function vViews(v){ return typeof viewCount==="function"?viewCount(v):(v.popularity||0); }
 
 function applyFilters(list,f,q){
   let r=list.slice();
   if(q){const s=q.toLowerCase();r=r.filter(v=>v.name.toLowerCase().includes(s)||(v.city||"").toLowerCase().includes(s)||(v.governorate||"").toLowerCase().includes(s)||(catById(v.catId)?.name.toLowerCase().includes(s))||v.short.toLowerCase().includes(s));}
   if(f.gov)r=r.filter(v=>(v.governorate||govOfCity(v.city))===f.gov);
   if(f.price)r=r.filter(v=>v.priceLevel===f.price);
-  if(f.rating)r=r.filter(v=>v.rating>=f.rating);
   if(f.offers)r=r.filter(v=>v.offer);
   const sorters={
-    popular:(a,b)=>b.popularity-a.popularity,
-    rating:(a,b)=>b.rating-a.rating,
+    popular:(a,b)=>vViews(b)-vViews(a),
     priceLow:(a,b)=>a.priceLevel-b.priceLevel,
     priceHigh:(a,b)=>b.priceLevel-a.priceLevel,
     newest:(a,b)=>(b.isNew-a.isNew)||(b.id>a.id?1:-1),
@@ -31,14 +30,14 @@ function applyFilters(list,f,q){
 }
 
 function filterBar(f,onChange){
-  const activeCount=[f.gov,f.price,f.rating,f.offers].filter(Boolean).length;
+  const activeCount=[f.gov,f.price,f.offers].filter(Boolean).length;
   const bar=h("div.scroll-x",{style:{display:"flex",gap:"8px",padding:"2px 20px 12px",margin:"0 -20px"}});
   bar.appendChild(h("button.chip"+(activeCount?".on":""),{onclick:()=>openFilterSheet(f,onChange)},
     [icon("sliders",15),"Filters",activeCount?h("span",{style:{background:"rgba(255,255,255,.3)",borderRadius:"9px",padding:"0 6px",fontSize:"11px"}},activeCount):null]));
   // one-tap "near me" using the customer's governorate
   const mine=myGovernorate();
   if(mine)bar.appendChild(h("button.chip"+(f.gov===mine?".on":""),{onclick:()=>{f.gov=f.gov===mine?"":mine;onChange();}},["📍 ",mine]));
-  const sortLabels={popular:"Popular",rating:"Top rated",priceLow:"Price ↑",priceHigh:"Price ↓",newest:"Newest"};
+  const sortLabels={popular:"Most viewed",priceLow:"Price ↑",priceHigh:"Price ↓",newest:"Newest"};
   bar.appendChild(h("button.chip",{onclick:()=>{
     let ref; ref=sheet({title:"Sort by",body:(close)=>h("div.col.gap8",Object.entries(sortLabels).map(([k,l])=>
       h("button.lrow",{style:{cursor:"pointer",width:"100%"},onclick:()=>{f.sort=k;close();onChange();}},[
@@ -62,8 +61,6 @@ function openFilterSheet(f,onChange){
     b.appendChild(fGroup("Governorate",["",...govs].map(c=>chip(c||"All Oman",f.gov===c,()=>{f.gov=c;refreshMarks();}))));
     // price
     b.appendChild(fGroup("Price",[0,1,2,3,4].map(p=>chip(p?priceLabel(p):"Any",f.price===p,()=>{f.price=p;refreshMarks();}))));
-    // rating
-    b.appendChild(fGroup("Minimum rating",[0,4,4.5,4.8].map(rt=>chip(rt?("★ "+rt+"+"):"Any",f.rating===rt,()=>{f.rating=rt;refreshMarks();}))));
     // offers
     b.appendChild(fGroup("Only show",[chip("🎁 Special offers",f.offers,()=>{f.offers=!f.offers;refreshMarks();})]));
     function refreshMarks(){ref.close();setTimeout(()=>openFilterSheet(f,onChange),10);} // simple re-render
@@ -153,12 +150,13 @@ route("/vendor/:id",(q,p)=>{
           h("span.faint","·"),h("span.small",cat?cat.name:"")])]),
     ]),
     h("div.row.gap12",{style:{marginTop:"12px",flexWrap:"wrap"}},[
-      h("span.row.gap6",[starsEl(v.rating),h("b.small",v.rating.toFixed(1)),h("span.small.faint","("+v.reviews+")")]),
-      h("span.faint","·"),
-      h("span.small",{style:{fontWeight:"700",color:"var(--rose-deep)"}},v.priceRange),
-      h("span.tag "+(v.priceLevel>=3?"tag-gold":"tag-rose"),priceLabel(v.priceLevel)),
+      h("span.row.gap6",{style:{color:"var(--ink2)"}},[icon("eye",15),h("b.small",(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en")),h("span.small.faint","views")]),
+      v.priceLevel?h("span.tag "+(v.priceLevel>=3?"tag-gold":"tag-rose"),priceLabel(v.priceLevel)):null,
+      v.featured?h("span.tag.tag-gold","★ Featured"):null,
     ]),
   ]));
+  // count this view (deduped per user), then refresh the number shown
+  if(typeof recordVendorView==="function")recordVendorView(v.id);
 
   // offer banner
   if(v.offer)kids.push(h("div.card.pad-s",{style:{background:"linear-gradient(135deg,var(--gold-soft),var(--rose-soft))",display:"flex",gap:"10px",alignItems:"center",marginTop:"8px"}},
@@ -172,39 +170,30 @@ route("/vendor/:id",(q,p)=>{
     actionBtn("pin","Map",()=>openLink("https://maps.google.com/?q="+encodeURIComponent(v.maps))),
   ]));
 
-  // gallery
-  kids.push(sectionTitle("Gallery"));
-  kids.push(h("div.scroll-x",{style:{display:"flex",gap:"10px",margin:"0 -20px",padding:"2px 20px 4px"}},
-    Array.from({length:6},(_,i)=>{const g=coverEl(v,"",i+2,i%3===0);g.style.width="150px";g.style.height="190px";g.style.flex="none";g.style.scrollSnapAlign="start";return g;})));
+  // gallery (only if the vendor has photos beyond the logo)
+  if(vendorImages(v).length>1){
+    kids.push(sectionTitle("Gallery"));
+    kids.push(h("div.scroll-x",{style:{display:"flex",gap:"10px",margin:"0 -20px",padding:"2px 20px 4px"}},
+      vendorImages(v).map((_,i)=>{const g=coverEl(v,"",i,false);g.style.width="150px";g.style.height="190px";g.style.flex="none";g.style.scrollSnapAlign="start";return g;})));
+  }
 
   // about
-  kids.push(sectionTitle("About"));
-  kids.push(h("p.muted",{style:{lineHeight:"1.6"}},v.desc));
+  if(v.desc||v.short){
+    kids.push(sectionTitle("About"));
+    kids.push(h("p.muted",{style:{lineHeight:"1.6"}},v.desc||v.short));
+  }
 
   // services
-  kids.push(sectionTitle("Services"));
-  kids.push(h("div.row.wrap.gap8",v.services.map(s=>h("span.chip",[icon("check",14),s]))));
-
-  // packages
-  kids.push(sectionTitle("Packages & pricing"));
-  kids.push(h("div.col.gap12",v.packages.map(pk=>h("div.card.pad"+(pk.popular?"":""),{style:pk.popular?{border:"1.5px solid var(--rose)",background:"var(--rose-tint)"}:{}},[
-    h("div.between",[h("h4",{style:{fontSize:"18px"}},[pk.name,pk.popular?h("span.tag.tag-rose",{style:{marginLeft:"8px"}},"Popular"):null]),
-      h("b",{style:{color:"var(--rose-deep)",fontFamily:"var(--font-d)",fontSize:"18px"}},pk.price)]),
-    h("div.col.gap6",{style:{marginTop:"10px"}},pk.items.map(it=>h("div.row.gap8.small.muted",[icon("check",15,"faint"),it]))),
-  ]))));
+  if(Array.isArray(v.services)&&v.services.length){
+    kids.push(sectionTitle("Services"));
+    kids.push(h("div.row.wrap.gap8",v.services.map(s=>h("span.chip",[icon("check",14),s]))));
+  }
 
   // working hours
-  kids.push(sectionTitle("Working hours"));
-  kids.push(h("div.card.pad-s.row.gap12",[icon("clock",20,"faint"),h("span",v.hours)]));
-
-  // reviews
-  kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Reviews"),h("span.small.muted",[starsEl(v.rating)," ",v.rating.toFixed(1)])]));
-  kids.push(h("div.col.gap12",v.reviewsList.map(r=>h("div.card.pad-s",[
-    h("div.between",[h("div.row.gap8",[h("span.avatar",{style:{width:"36px",height:"36px",fontSize:"14px",background:"linear-gradient(135deg,var(--rose),var(--gold))"}},initials(r.by)),
-      h("div",[h("b.small",r.by),h("div.tiny.faint",r.when)])]),
-      h("span.stars",{style:{"--v":r.stars}},h("i"))]),
-    h("p.small.muted",{style:{marginTop:"9px"}},r.text),
-  ]))));
+  if(v.hours){
+    kids.push(sectionTitle("Working hours"));
+    kids.push(h("div.card.pad-s.row.gap12",[icon("clock",20,"faint"),h("span",v.hours)]));
+  }
 
   // spacer for sticky bar
   kids.push(h("div",{style:{height:"92px"}}));
@@ -263,7 +252,7 @@ route("/search",(q)=>{
   function redraw(){
     const nb=filterBar(f,()=>redraw()); bar.replaceWith(nb); bar=nb;
     clear(results);
-    if(!query.trim() && !f.city && !f.price && !f.rating && !f.offers){
+    if(!query.trim() && !f.city && !f.price && !f.offers){
       // suggestions state: popular categories + trending vendors
       results.appendChild(h("div.eyebrow",{style:{margin:"6px 3px 12px"}},"Popular categories"));
       const grid=h("div.row.wrap.gap8");

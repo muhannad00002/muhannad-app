@@ -1,4 +1,5 @@
 /* ============ ZAFFA — BOOT ============ */
+showSplash();             // brand splash video on launch (fades out on its own)
 load();
 if(window.ZAFFA_ADMIN){
   // dedicated admin page (admin.html) — always lands on the access-controlled panel
