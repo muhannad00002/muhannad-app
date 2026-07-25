@@ -77,12 +77,25 @@ function ready() {
     await auth.seedAdmin();
     const spCfg = await db.get("config:smartpay");
     if (spCfg) smartpay.setConfig(spCfg);
-  })();
+  })().catch((e) => {
+    // Never cache a failed init — otherwise one transient DB hiccup on a cold
+    // start poisons this function instance forever. Clear it so the next
+    // request retries a fresh connection.
+    _ready = null;
+    throw e;
+  });
   return _ready;
 }
 
 async function handle(req, res) {
-  await ready();                     // idempotent; makes the handler serverless-safe
+  try {
+    await ready();                   // idempotent; makes the handler serverless-safe
+  } catch (e) {
+    // Init (usually the DB) is unavailable. Return a clean 503 instead of
+    // letting the rejection bubble up as FUNCTION_INVOCATION_FAILED.
+    console.error("backend init failed:", (e && e.message) || e);
+    return json(res, 503, { error: "backend_unavailable" });
+  }
   const url = new URL(req.url, "http://x");
   const p = url.pathname;
   if (req.method === "OPTIONS") return json(res, 204, {});
