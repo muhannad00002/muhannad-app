@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Wedding & Co</title>
+<link rel="icon" href="assets/icon-192.png">
+<style>
+  :root{--ink:#2B2B2F;--ink2:#5b5b62;--cream:#FBF6F2;--gold:#B3874F;--line:#eadfd3;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,"Noto Sans Arabic",sans-serif;
+    --serif:"Cormorant Garamond",Georgia,serif;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);color:var(--ink);background:var(--cream);line-height:1.7}
+  [dir=rtl]{font-family:"Noto Kufi Arabic",Tahoma,var(--font)}
+  .wrap{max-width:760px;margin:0 auto;padding:0 24px}
+  header{position:sticky;top:0;background:color-mix(in srgb,var(--cream) 85%,transparent);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);z-index:10}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800}
+  a{color:var(--gold);font-weight:700;text-decoration:none}
+  .lang{font-weight:800;font-size:13px;padding:8px 14px;border-radius:999px;border:1.5px solid var(--line);background:#fff;cursor:pointer}
+  main{padding:44px 0 80px}
+  h1{font-family:var(--serif);font-size:clamp(34px,6vw,50px);font-weight:700;margin-bottom:6px}
+  .upd{color:var(--ink2);font-size:14px;margin-bottom:30px}
+  h2{font-size:21px;margin:30px 0 8px;letter-spacing:-.01em}
+  p,li{color:#3c3c42;font-size:16px;margin-bottom:10px}
+  ul{padding-inline-start:22px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:28px 26px;margin-top:20px}
+  footer{border-top:1px solid var(--line);padding:30px 0;text-align:center;color:var(--ink2);font-size:14px;background:#fff}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+  <div class="brand"><svg viewBox="0 0 64 64" width="30" height="30" fill="none"><circle cx="32" cy="40" r="15" stroke="#C48A93" stroke-width="4.5"/><path d="M32 8 L40 18 L32 24 L24 18 Z" fill="#2AA3BC"/></svg><span>Wedding &amp; Co</span></div>
+  <button class="lang" onclick="toggleLang()" id="langBtn">العربية</button>
+</div></header>
+<main class="wrap">
+  <h1 data-i="title">Privacy Policy</h1>
+  <div class="upd" data-i="updated">Last updated: July 2026</div>
+  <div id="body"></div>
+  <div class="card"><p style="margin:0" data-i="contact"></p></div>
+  <p style="margin-top:26px"><a href="landing.html" data-i="back">← Back to Wedding &amp; Co</a></p>
+</main>
+<footer><div class="wrap" data-i="copy">© 2026 Wedding &amp; Co</div></footer>
+<script>
+const T={
+  en:{dir:"ltr",title:"Privacy Policy",updated:"Last updated: July 2026",back:"← Back to Wedding & Co",copy:"© 2026 Wedding & Co",
+    contact:"Questions about your privacy? Contact us at hello@weddingandco.app and we'll respond promptly.",
+    body:[
+     ["Who we are","Wedding & Co (\"we\", \"our\", \"the app\") is a wedding-planning app and vendor marketplace for Oman. This policy explains what we collect, why, and your choices."],
+     ["Information we collect","We keep data collection to the minimum needed to run the app:",
+       ["<b>Account details</b> — your name, age, governorate, and WhatsApp phone number, used to create your account and verify it with a one-time code (OTP).",
+        "<b>Your planning data</b> — checklist progress, budget, saved vendors, bookings (dates and prices you enter). This is stored to power your plan across devices.",
+        "<b>Payment status</b> — if you subscribe to Premium, we store that you are subscribed. Card details are handled entirely by the payment provider (Bank Muscat / Apple / Google) and are never seen or stored by us."]],
+     ["How we use your information","To provide and personalise the app: build your checklist, show local vendors, track your budget, send your verification code over WhatsApp, and manage your subscription. We do <b>not</b> sell your data or use it for third-party advertising."],
+     ["Sharing","We share data only with the service providers that make the app work: our hosting/database provider, the WhatsApp gateway used to send your login code, and the payment processors when you choose to pay. Each handles data solely to perform that function."],
+     ["Data security","Passwords and codes are stored only as encrypted hashes, sessions use signed tokens, connections use HTTPS, and payments are encrypted end-to-end by the provider."],
+     ["Your choices & rights","You can edit your profile, sign out at any time, and request deletion of your account and data by contacting us. You may stop using WhatsApp verification by not signing in."],
+     ["Children","The app is intended for adults planning a wedding and is not directed at children under 18."],
+     ["Changes","We may update this policy; material changes will be reflected here with a new date."]
+    ]},
+  ar:{dir:"rtl",title:"سياسة الخصوصية",updated:"آخر تحديث: يوليو ٢٠٢٦",back:"← العودة إلى Wedding & Co",copy:"© ٢٠٢٦ Wedding & Co",
+    contact:"لديكِ أسئلة حول خصوصيتكِ؟ تواصلي معنا على hello@weddingandco.app وسنردّ عليكِ سريعاً.",
+    body:[
+     ["من نحن","تطبيق Wedding & Co (\"نحن\"، \"التطبيق\") هو تطبيق لتخطيط الزفاف وسوق للمزوّدين في عُمان. توضّح هذه السياسة ما نجمعه ولماذا، وخياراتكِ."],
+     ["المعلومات التي نجمعها","نحرص على جمع الحد الأدنى اللازم لتشغيل التطبيق:",
+       ["<b>بيانات الحساب</b> — اسمكِ وعمركِ ومحافظتكِ ورقم واتساب، لإنشاء حسابكِ والتحقق منه عبر رمز لمرة واحدة (OTP).",
+        "<b>بيانات التخطيط</b> — تقدّم قائمة المهام والميزانية والمزوّدين المحفوظين والحجوزات (التواريخ والأسعار التي تُدخلينها)، وتُحفَظ لتشغيل خطتكِ عبر أجهزتكِ.",
+        "<b>حالة الدفع</b> — عند الاشتراك في الخدمة المميّزة نحفظ أنكِ مشتركة فقط. أما بيانات البطاقة فيتولّاها مزوّد الدفع (بنك مسقط / آبل / جوجل) بالكامل ولا نراها أو نخزّنها إطلاقاً."]],
+     ["كيف نستخدم معلوماتكِ","لتقديم التطبيق وتخصيصه: بناء قائمة مهامكِ، وعرض المزوّدين المحليين، وتتبّع ميزانيتكِ، وإرسال رمز التحقق عبر واتساب، وإدارة اشتراككِ. نحن <b>لا</b> نبيع بياناتكِ ولا نستخدمها لإعلانات طرف ثالث."],
+     ["المشاركة","نشارك البيانات فقط مع مزوّدي الخدمات اللازمين لتشغيل التطبيق: مزوّد الاستضافة وقاعدة البيانات، وبوابة واتساب لإرسال رمز الدخول، ومعالِجات الدفع عند اختياركِ الدفع. ويعالج كلٌّ منها البيانات لأداء تلك المهمة فقط."],
+     ["أمان البيانات","تُخزَّن كلمات المرور والرموز كتجزئات مشفّرة فقط، وتستخدم الجلسات رموزاً موقّعة، والاتصالات عبر HTTPS، والمدفوعات مشفّرة من طرف إلى طرف عبر المزوّد."],
+     ["خياراتكِ وحقوقكِ","يمكنكِ تعديل ملفكِ الشخصي، وتسجيل الخروج في أي وقت، وطلب حذف حسابكِ وبياناتكِ بالتواصل معنا. ويمكنكِ التوقف عن استخدام التحقق عبر واتساب بعدم تسجيل الدخول."],
+     ["الأطفال","التطبيق موجّه للبالغين الذين يخطّطون لحفل زفاف وليس موجّهاً للأطفال دون الثامنة عشرة."],
+     ["التغييرات","قد نُحدّث هذه السياسة؛ وستظهر التغييرات الجوهرية هنا بتاريخ جديد."]
+    ]}
+};
+let LANG=(localStorage.getItem("wco.lang")||((navigator.language||"").slice(0,2)==="ar"?"ar":"en"));
+function render(){
+  const t=T[LANG];
+  document.documentElement.lang=LANG; document.documentElement.dir=t.dir;
+  document.getElementById("langBtn").textContent=LANG==="en"?"العربية":"English";
+  document.querySelectorAll("[data-i]").forEach(el=>{const k=el.getAttribute("data-i");if(typeof t[k]==="string")el.innerHTML=t[k];});
+  document.getElementById("body").innerHTML=t.body.map(sec=>{
+    let html="<h2>"+sec[0]+"</h2>";
+    if(sec[1]) html+="<p>"+sec[1]+"</p>";
+    if(sec[2]) html+="<ul>"+sec[2].map(li=>"<li>"+li+"</li>").join("")+"</ul>";
+    return html;
+  }).join("");
+}
+function toggleLang(){LANG=LANG==="en"?"ar":"en";localStorage.setItem("wco.lang",LANG);render();}
+render();
+</script>
+</body>
+</html>

@@ -283,12 +283,22 @@ async function handle(req, res) {
     if (p === "/api/admin/catalog" && req.method === "PUT") {
       const user = await auth.fromRequest(req);
       if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
-      const b = parseBody(await body(req), req.headers["content-type"]);
-      const allowed = ["categories", "vendors", "tips", "ads"];
-      for (const k of allowed) if (b[k] !== undefined) await db.set("catalog:" + k, b[k]);
-      const version = Date.now();                 // server-authoritative version
-      await db.set("catalog:version", version);
-      return json(res, 200, { ok: true, version, published: allowed.filter(k => b[k] !== undefined) });
+      const raw = await body(req);
+      let b;
+      try { b = parseBody(raw, req.headers["content-type"]); }
+      catch (e) { return json(res, 400, { error: "invalid_json" }); }
+      if (!b || typeof b !== "object") return json(res, 400, { error: "empty_body" });
+      try {
+        const allowed = ["categories", "vendors", "tips", "ads"];
+        for (const k of allowed) if (b[k] !== undefined) await db.set("catalog:" + k, b[k]);
+        const version = Date.now();               // server-authoritative version
+        await db.set("catalog:version", version);
+        return json(res, 200, { ok: true, version, published: allowed.filter(k => b[k] !== undefined) });
+      } catch (e) {
+        // Admin-only endpoint — surface the real reason so publish issues are diagnosable.
+        console.error("catalog publish failed:", (e && e.message) || e);
+        return json(res, 500, { error: "publish_failed: " + ((e && e.message) || "unknown") });
+      }
     }
 
     /* ---------- SmartPay checkout ---------- */

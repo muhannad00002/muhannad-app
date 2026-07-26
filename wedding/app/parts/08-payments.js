@@ -30,9 +30,11 @@ function apiBase(){
 async function api(path,{method="GET",body:payload}={}){
   const headers={"Content-Type":"application/json"};
   if(S.account&&S.account.token)headers.Authorization="Bearer "+S.account.token;
-  const r=await fetch(apiBase()+path,{method,headers,body:payload?JSON.stringify(payload):undefined});
+  let r;
+  try{ r=await fetch(apiBase()+path,{method,headers,body:payload?JSON.stringify(payload):undefined}); }
+  catch(netErr){ const e=new Error("Network error — check your connection"); e.status=0; throw e; }
   const data=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error(data.error||("Request failed ("+r.status+")"));
+  if(!r.ok){ const e=new Error((data.error||"Request failed")+" ("+r.status+")"); e.status=r.status; throw e; }
   return data;
 }
 
@@ -114,7 +116,7 @@ async function publishCatalog(){
   if(r&&r.version){S._catalogVersion=r.version; save();}
   return r;
 }
-let _pubTimer=null, _pubPending=false, _pubRetries=0;
+let _pubTimer=null, _pubPending=false, _pubRetries=0, _lastPubError="";
 function schedulePublish(delay){
   _pubPending=true;
   clearTimeout(_pubTimer);
@@ -123,14 +125,15 @@ function schedulePublish(delay){
 }
 async function runPublish(){
   _pubPending=false;
-  try{ await publishCatalog(); _pubRetries=0; syncDot("ok"); }
+  try{ await publishCatalog(); _pubRetries=0; _lastPubError=""; syncDot("ok"); }
   catch(e){
-    const msg=String((e&&e.message)||"");
-    if(/admin_only|not_signed_in|\(401\)|\(403\)/i.test(msg)){ handleAdminAuthLost(); return; }
-    if(_pubRetries<4){ _pubRetries++; syncDot("err"); schedulePublish(1500*_pubRetries); } // network — back off & retry
-    else syncDot("err");
+    _lastPubError=(e&&e.message)||"error";
+    if(e&&(e.status===401||e.status===403)){ handleAdminAuthLost(); return; } // token invalid
+    if(_pubRetries<4){ _pubRetries++; syncDot("err",_lastPubError); schedulePublish(1500*_pubRetries); } // retry
+    else syncDot("err",_lastPubError);
   }
 }
+function lastPublishError(){ return _lastPubError; }
 function autoPublish(){
   if(_applyingRemote || !(isAdmin() && apiBase()))return;
   schedulePublish(900); // debounce rapid edits into one publish
@@ -146,13 +149,14 @@ function handleAdminAuthLost(){
   if(typeof render==="function") render();
 }
 /* tiny live "saving…/saved" indicator for the admin */
-function syncDot(state){
+function syncDot(state,detail){
   let el=document.getElementById("sync-dot");
   if(!el){el=h("div#sync-dot",{style:{position:"fixed",top:"10px",left:"50%",transform:"translateX(-50%)",zIndex:"120",
     padding:"5px 12px",borderRadius:"999px",fontSize:"12px",fontWeight:"600",boxShadow:"var(--shadow-2)",transition:"opacity .3s",pointerEvents:"none"}});
     document.body.appendChild(el);}
   const map={pending:["Saving…","var(--surface)","var(--ink2)"],ok:["✓ Saved & live","var(--good-soft)","var(--good)"],err:["⚠ Not live yet — retrying…","var(--warn-soft)","var(--warn)"]};
-  const [txt,bg,col]=map[state]||map.ok;
+  let [txt,bg,col]=map[state]||map.ok;
+  if(state==="err" && detail) txt="⚠ "+detail;   // show the real reason
   el.textContent=txt; el.style.background=bg; el.style.color=col; el.style.opacity="1";
   clearTimeout(el._t);
   // only the success chip auto-hides; "pending" and "err" stay visible so the

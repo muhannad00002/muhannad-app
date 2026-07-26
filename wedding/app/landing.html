@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wedding & Co — Plan your wedding in Oman</title>
+<meta name="description" content="Wedding & Co — your personal wedding planner and vendor marketplace for Oman. Checklist, budget, vendors, and Aya AI in one beautiful app.">
+<link rel="icon" href="assets/icon-192.png">
+<style>
+  :root{
+    --ink:#2B2B2F; --ink2:#5b5b62; --cream:#FBF6F2; --surface:#ffffff;
+    --gold:#B3874F; --gold-2:#C9A24B; --gold-soft:#F3E7D0; --cyan:#2AA3BC;
+    --rose:#C48A93; --rose-soft:#F6E7E9; --line:#eadfd3;
+    --r:20px; --r-l:28px; --maxw:1120px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans Arabic",sans-serif;
+    --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--font);color:var(--ink);background:var(--cream);overflow-x:hidden;line-height:1.6}
+  [dir=rtl]{font-family:"Noto Kufi Arabic","Segoe UI",Tahoma,var(--font)}
+  a{color:inherit;text-decoration:none}
+  img{max-width:100%}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  section{position:relative}
+
+  /* ---------- nav ---------- */
+  header{position:sticky;top:0;z-index:50;backdrop-filter:saturate(1.4) blur(14px);
+    background:color-mix(in srgb,var(--cream) 82%,transparent);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:19px;letter-spacing:-.02em}
+  .brand .mark{width:34px;height:34px;flex:none}
+  .nav-actions{display:flex;align-items:center;gap:10px}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14.5px;padding:11px 20px;
+    border-radius:999px;cursor:pointer;border:0;transition:transform .18s ease,box-shadow .25s ease,filter .2s}
+  .btn:active{transform:scale(.96)}
+  .btn-gold{background:linear-gradient(135deg,var(--gold-2),var(--gold));color:#fff;box-shadow:0 8px 22px rgba(179,135,79,.35)}
+  .btn-gold:hover{filter:brightness(1.06);box-shadow:0 12px 30px rgba(179,135,79,.45)}
+  .btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{background:#fff}
+  .lang{font-weight:800;font-size:13px;letter-spacing:.04em;padding:9px 14px;border-radius:999px;
+    border:1.5px solid var(--line);background:#fff;cursor:pointer;transition:transform .15s}
+  .lang:active{transform:scale(.94)}
+
+  /* ---------- hero ---------- */
+  .hero{padding:70px 0 90px;position:relative}
+  .hero::before{content:"";position:absolute;inset:0;z-index:-1;
+    background:
+      radial-gradient(600px 400px at 82% 6%,rgba(201,162,75,.20),transparent 60%),
+      radial-gradient(560px 420px at 6% 92%,rgba(42,163,188,.14),transparent 60%);}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:12.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--gold);background:var(--gold-soft);padding:7px 14px;border-radius:999px}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(42px,6.4vw,74px);line-height:1.02;letter-spacing:-.01em;margin:18px 0 16px}
+  h1 .grad{background:linear-gradient(115deg,var(--gold),var(--rose),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lede{font-size:clamp(16px,2vw,19px);color:var(--ink2);max-width:520px}
+  .hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+  .stats{display:flex;gap:30px;margin-top:38px;flex-wrap:wrap}
+  .stat .n{font-family:var(--serif);font-size:34px;font-weight:700;color:var(--ink);line-height:1}
+  .stat .l{font-size:13px;color:var(--ink2)}
+
+  /* phone mockup */
+  .phone-wrap{display:grid;place-items:center;position:relative}
+  .phone{width:290px;height:590px;border-radius:44px;background:linear-gradient(160deg,#3a3b3e,#2b2b2f);
+    padding:13px;box-shadow:0 40px 90px rgba(30,30,35,.34),0 10px 30px rgba(30,30,35,.2);
+    position:relative;animation:float 6s ease-in-out infinite}
+  .phone .screen{width:100%;height:100%;border-radius:32px;overflow:hidden;background:var(--cream);position:relative}
+  .phone .notch{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#2b2b2f;border-radius:0 0 16px 16px;z-index:3}
+  .screen-hero{height:210px;background:linear-gradient(140deg,#4C4D51,#2C2D2F);color:#fff;padding:34px 20px 0;position:relative;overflow:hidden}
+  .screen-hero::after{content:"";position:absolute;inset:0;background:radial-gradient(120px 120px at 84% 16%,rgba(226,180,81,.5),transparent 62%),radial-gradient(120px 120px at 6% 96%,rgba(42,163,188,.4),transparent 62%)}
+  .sh-lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;opacity:.85;font-weight:700}
+  .sh-days{font-family:var(--serif);font-size:56px;font-weight:700;line-height:1;margin-top:6px}
+  .sh-sub{font-size:12px;opacity:.9}
+  .card-row{padding:16px;display:flex;flex-direction:column;gap:11px}
+  .mini{background:#fff;border-radius:16px;padding:13px 14px;box-shadow:0 4px 14px rgba(40,40,45,.06);display:flex;align-items:center;gap:11px;
+    opacity:0;transform:translateY(10px);animation:rise .6s ease forwards}
+  .mini:nth-child(1){animation-delay:.5s}.mini:nth-child(2){animation-delay:.7s}.mini:nth-child(3){animation-delay:.9s}
+  .mini .dot{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;flex:none;background:var(--rose-soft)}
+  .mini .g{flex:1}.mini b{font-size:13px}.mini .m{font-size:11px;color:var(--ink2)}
+  .float-badge{position:absolute;background:#fff;border-radius:16px;padding:12px 15px;box-shadow:0 16px 40px rgba(30,30,35,.16);
+    display:flex;align-items:center;gap:10px;font-weight:700;font-size:13px}
+  .float-badge .e{font-size:20px}
+  .fb-1{top:40px;left:-30px;animation:float 5s ease-in-out infinite}
+  .fb-2{bottom:70px;right:-26px;animation:float 5.6s ease-in-out .6s infinite}
+
+  /* ---------- trust marquee ---------- */
+  .marquee{overflow:hidden;padding:26px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff}
+  .track{display:flex;gap:16px;width:max-content;animation:scroll 32s linear infinite}
+  [dir=rtl] .track{animation-direction:reverse}
+  .chip{white-space:nowrap;font-weight:700;font-size:14px;color:var(--ink2);background:var(--cream);border:1px solid var(--line);
+    padding:10px 18px;border-radius:999px;display:inline-flex;gap:8px;align-items:center}
+
+  /* ---------- features ---------- */
+  .band{padding:86px 0}
+  .head{text-align:center;max-width:640px;margin:0 auto 52px}
+  .head h2{font-family:var(--serif);font-size:clamp(30px,4.4vw,46px);font-weight:700;letter-spacing:-.01em}
+  .head p{color:var(--ink2);margin-top:12px;font-size:17px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .feat{background:#fff;border:1px solid var(--line);border-radius:var(--r-l);padding:28px;transition:transform .3s ease,box-shadow .3s ease}
+  .feat:hover{transform:translateY(-6px);box-shadow:0 24px 50px rgba(40,40,45,.10)}
+  .feat .ic{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;font-size:26px;margin-bottom:16px;
+    background:linear-gradient(135deg,var(--gold-soft),#fff)}
+  .feat h3{font-size:20px;margin-bottom:7px;letter-spacing:-.01em}
+  .feat p{color:var(--ink2);font-size:15px}
+
+  /* how it works */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;counter-reset:s}
+  .step{position:relative;background:var(--cream);border-radius:var(--r-l);padding:32px 26px;border:1px solid var(--line)}
+  .step::before{counter-increment:s;content:counter(s);position:absolute;top:-18px;inset-inline-start:26px;width:44px;height:44px;border-radius:50%;
+    display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:22px;color:#fff;
+    background:linear-gradient(135deg,var(--gold-2),var(--gold));box-shadow:0 8px 20px rgba(179,135,79,.35)}
+  .step h3{margin:14px 0 6px;font-size:20px}
+  .step p{color:var(--ink2);font-size:15px}
+
+  /* CTA */
+  .cta{margin:40px 0 90px}
+  .cta-card{background:linear-gradient(140deg,#4C4D51,#2C2D2F);border-radius:36px;padding:64px 40px;text-align:center;color:#fff;position:relative;overflow:hidden}
+  .cta-card::after{content:"";position:absolute;inset:0;background:radial-gradient(300px 260px at 84% 10%,rgba(226,180,81,.4),transparent 60%),radial-gradient(300px 260px at 8% 96%,rgba(42,163,188,.3),transparent 60%)}
+  .cta-card h2{font-family:var(--serif);font-size:clamp(30px,4.6vw,48px);font-weight:700;position:relative}
+  .cta-card p{opacity:.9;margin:14px auto 26px;max-width:460px;position:relative}
+  .stores{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative}
+  .store{display:inline-flex;align-items:center;gap:10px;background:#fff;color:var(--ink);border-radius:14px;padding:12px 20px;font-weight:700}
+  .store small{display:block;font-size:10px;color:var(--ink2);font-weight:600}
+  .store .e{font-size:22px}
+
+  /* footer */
+  footer{border-top:1px solid var(--line);padding:44px 0 60px;background:#fff}
+  .foot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+  .foot a{color:var(--ink2);font-weight:600;font-size:14px}
+  .foot a:hover{color:var(--gold)}
+  .foot-links{display:flex;gap:22px;flex-wrap:wrap}
+
+  /* reveal animation */
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  @keyframes rise{to{opacity:1;transform:none}}
+  @keyframes scroll{to{transform:translateX(-50%)}}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important}.reveal{opacity:1;transform:none}}
+
+  @media(max-width:860px){
+    .hero-grid{grid-template-columns:1fr;gap:20px}.phone-wrap{order:-1}
+    .grid,.steps{grid-template-columns:1fr}
+    .phone{width:250px;height:510px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 64 64" width="34" height="34" fill="none"><circle cx="32" cy="40" r="15" stroke="#C48A93" stroke-width="4.5"/><path d="M32 8 L40 18 L32 24 L24 18 Z" fill="#2AA3BC"/><path d="M32 8 L40 18 L32 24 Z" fill="#1E8296" opacity=".55"/><path d="M26 12 L23 6 M32 11 L32 4 M38 12 L41 6" stroke="#2AA3BC" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg></span>
+      <span>Wedding &amp; Co</span>
+    </div>
+    <div class="nav-actions">
+      <button class="lang" id="langBtn" onclick="toggleLang()">العربية</button>
+      <a class="btn btn-gold" href="index.html" data-i="openApp">Open the app</a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero"><div class="wrap hero-grid">
+  <div class="reveal">
+    <span class="eyebrow" data-i="eyebrow">✦ Oman's wedding companion</span>
+    <h1 data-i="h1">Plan the wedding of your dreams, <span class="grad" data-i="h1b">effortlessly</span></h1>
+    <p class="lede" data-i="lede">Every vendor, every task, every riyal — beautifully in one place. Your smart checklist, budget tracker, and vendor marketplace, with Aya, your AI wedding assistant.</p>
+    <div class="hero-cta">
+      <a class="btn btn-gold" href="index.html" data-i="cta1">Start planning — free</a>
+      <a class="btn btn-ghost" href="#features" data-i="cta2">See features</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n">35+</div><div class="l" data-i="s1">Vendor categories</div></div>
+      <div class="stat"><div class="n">11</div><div class="l" data-i="s2">Governorates covered</div></div>
+      <div class="stat"><div class="n">OMR&nbsp;0.99</div><div class="l" data-i="s3">Premium / month</div></div>
+    </div>
+  </div>
+  <div class="phone-wrap reveal">
+    <div class="float-badge fb-1"><span class="e">💰</span><span data-i="fb1">Budget on track</span></div>
+    <div class="float-badge fb-2"><span class="e">💍</span><span data-i="fb2">Vendor booked</span></div>
+    <div class="phone"><div class="screen">
+      <div class="notch"></div>
+      <div class="screen-hero">
+        <div class="sh-lbl" data-i="ph1">Your wedding is in</div>
+        <div class="sh-days">128</div>
+        <div class="sh-sub" data-i="ph2">days · everything under control</div>
+      </div>
+      <div class="card-row">
+        <div class="mini"><span class="dot">📸</span><div class="g"><b data-i="m1">Book the photographer</b><div class="m" data-i="m1b">Tap to browse Photography</div></div></div>
+        <div class="mini"><span class="dot">🏛️</span><div class="g"><b data-i="m2">Grand Hall — booked</b><div class="m" data-i="m2b">Oct 4 · OMR 850</div></div></div>
+        <div class="mini"><span class="dot">💄</span><div class="g"><b data-i="m3">Makeup artist</b><div class="m" data-i="m3b">In progress</div></div></div>
+      </div>
+    </div></div>
+  </div>
+</div></section>
+
+<!-- MARQUEE -->
+<div class="marquee"><div class="track" id="track"></div></div>
+
+<!-- FEATURES -->
+<section class="band" id="features"><div class="wrap">
+  <div class="head reveal">
+    <h2 data-i="fh">Everything for your big day</h2>
+    <p data-i="fp">Thoughtfully designed for brides in Oman — from the first idea to the final dance.</p>
+  </div>
+  <div class="grid" id="featGrid"></div>
+</div></section>
+
+<!-- HOW -->
+<section class="band" style="padding-top:0"><div class="wrap">
+  <div class="head reveal"><h2 data-i="hh">How it works</h2><p data-i="hp">Three simple steps to a stress-free celebration.</p></div>
+  <div class="steps" id="steps"></div>
+</div></section>
+
+<!-- CTA -->
+<section class="cta"><div class="wrap"><div class="cta-card reveal">
+  <h2 data-i="ctah">Your dream wedding starts here</h2>
+  <p data-i="ctap">Download Wedding &amp; Co and plan with confidence — beautifully, in Arabic or English.</p>
+  <div class="stores">
+    <a class="store" href="index.html"><span class="e"></span><span><small data-i="dl1">Download on the</small>App Store</span></a>
+    <a class="store" href="index.html"><span class="e">▶</span><span><small data-i="dl2">Get it on</small>Google Play</span></a>
+    <a class="btn btn-gold" href="index.html" data-i="ctaWeb">Open web app</a>
+  </div>
+</div></div></section>
+
+<footer><div class="wrap foot">
+  <div class="brand"><span class="mark"><svg viewBox="0 0 64 64" width="30" height="30" fill="none"><circle cx="32" cy="40" r="15" stroke="#C48A93" stroke-width="4.5"/><path d="M32 8 L40 18 L32 24 L24 18 Z" fill="#2AA3BC"/></svg></span><span>Wedding &amp; Co</span></div>
+  <div class="foot-links">
+    <a href="privacy.html" data-i="priv">Privacy Policy</a>
+    <a href="index.html" data-i="openApp2">Open app</a>
+    <a href="mailto:hello@weddingandco.app" data-i="contact">Contact</a>
+  </div>
+  <div style="color:var(--ink2);font-size:13px" data-i="copy">© 2026 Wedding &amp; Co · Made with 💗 in Oman</div>
+</div></footer>
+
+<script>
+const I18N = {
+  en:{ dir:"ltr", openApp:"Open the app", openApp2:"Open app",
+    eyebrow:"✦ Oman's wedding companion",
+    h1:"Plan the wedding of your dreams,", h1b:"effortlessly",
+    lede:"Every vendor, every task, every riyal — beautifully in one place. Your smart checklist, budget tracker, and vendor marketplace, with Aya, your AI wedding assistant.",
+    cta1:"Start planning — free", cta2:"See features",
+    s1:"Vendor categories", s2:"Governorates covered", s3:"Premium / month",
+    fb1:"Budget on track", fb2:"Vendor booked",
+    ph1:"Your wedding is in", ph2:"days · everything under control",
+    m1:"Book the photographer", m1b:"Tap to browse Photography",
+    m2:"Grand Hall — booked", m2b:"Oct 4 · OMR 850", m3:"Makeup artist", m3b:"In progress",
+    fh:"Everything for your big day", fp:"Thoughtfully designed for brides in Oman — from the first idea to the final dance.",
+    hh:"How it works", hp:"Three simple steps to a stress-free celebration.",
+    ctah:"Your dream wedding starts here", ctap:"Download Wedding & Co and plan with confidence — beautifully, in Arabic or English.",
+    ctaWeb:"Open web app", dl1:"Download on the", dl2:"Get it on",
+    priv:"Privacy Policy", contact:"Contact", copy:"© 2026 Wedding & Co · Made with 💗 in Oman",
+    chips:["📸 Photography","🏛️ Wedding Halls","💄 Makeup","🌸 Flowers","🎂 Cake","💍 Jewelry","🎥 Videography","🍽️ Catering","👰 Dresses","🎧 DJ","✨ Lighting","🚗 Luxury Cars"],
+    feats:[["✅","Smart checklist","A complete wedding timeline that paces itself around your date — nothing forgotten."],
+      ["🛍️","Vendor marketplace","Browse trusted vendors across 35+ categories, filtered by your governorate."],
+      ["💰","Budget & expenses","Set your budget, record what you booked and paid, and always know where you stand."],
+      ["💬","Aya, your AI assistant","Ask for vendor picks, budget splits, and next steps — anytime, in your language."],
+      ["📅","Bookings & calendar","Save appointments with date and price, and sync them to your calendar."],
+      ["🔒","Private & secure","WhatsApp sign-in, encrypted payments, and your data kept safe."]],
+    steps:[["Tell us about your day","Your name, date, governorate and budget — takes a minute."],
+      ["Plan & book vendors","Work your checklist, browse vendors, and lock in dates and prices."],
+      ["Relax & celebrate","Track everything in one place and enjoy your big day, stress-free."]]
+  },
+  ar:{ dir:"rtl", openApp:"افتح التطبيق", openApp2:"افتح التطبيق",
+    eyebrow:"✦ رفيقتكِ لتخطيط الزفاف في عُمان",
+    h1:"خطّطي لزفاف أحلامكِ", h1b:"بكل سهولة",
+    lede:"كل مزوّد، كل مهمة، كل ريال — في مكان واحد أنيق. قائمة مهامكِ الذكية، ومتتبّع الميزانية، وسوق المزوّدين، مع «آية» مساعدتكِ الذكية لتخطيط الزفاف.",
+    cta1:"ابدئي التخطيط — مجاناً", cta2:"اكتشفي المزايا",
+    s1:"فئة مزوّدين", s2:"محافظات مغطّاة", s3:"الاشتراك المميّز / شهرياً",
+    fb1:"الميزانية تحت السيطرة", fb2:"تم حجز المزوّد",
+    ph1:"زفافكِ بعد", ph2:"يوم · كل شيء تحت السيطرة",
+    m1:"احجزي المصوّر", m1b:"اضغطي لتصفّح التصوير",
+    m2:"القاعة الكبرى — محجوزة", m2b:"٤ أكتوبر · ٨٥٠ ر.ع", m3:"خبيرة المكياج", m3b:"قيد التنفيذ",
+    fh:"كل ما يلزم ليومكِ الكبير", fp:"مصمّم بعناية للعرائس في عُمان — من الفكرة الأولى حتى الرقصة الأخيرة.",
+    hh:"كيف يعمل التطبيق", hp:"ثلاث خطوات بسيطة نحو احتفال بلا توتر.",
+    ctah:"زفاف أحلامكِ يبدأ من هنا", ctap:"حمّلي تطبيق Wedding & Co وخطّطي بثقة — بالعربية أو الإنجليزية.",
+    ctaWeb:"افتحي نسخة الويب", dl1:"حمّلوه من", dl2:"احصلوا عليه من",
+    priv:"سياسة الخصوصية", contact:"تواصلي معنا", copy:"© ٢٠٢٦ Wedding & Co · صُنع بحب 💗 في عُمان",
+    chips:["📸 تصوير","🏛️ قاعات أفراح","💄 مكياج","🌸 زهور","🎂 كيك","💍 مجوهرات","🎥 فيديو","🍽️ ضيافة","👰 فساتين","🎧 دي جي","✨ إضاءة","🚗 سيارات فخمة"],
+    feats:[["✅","قائمة مهام ذكية","جدول زمني متكامل يتناسب مع موعد زفافكِ — دون نسيان أي تفصيل."],
+      ["🛍️","سوق المزوّدين","تصفّحي مزوّدين موثوقين في أكثر من ٣٥ فئة، مع تصفية حسب محافظتكِ."],
+      ["💰","الميزانية والمصاريف","حدّدي ميزانيتكِ، وسجّلي ما حجزتِه ودفعتِه، واعرفي موقفكِ دائماً."],
+      ["💬","«آية» مساعدتكِ الذكية","اسأليها عن أفضل المزوّدين وتوزيع الميزانية والخطوة التالية — في أي وقت وبلغتكِ."],
+      ["📅","الحجوزات والتقويم","احفظي المواعيد بالتاريخ والسعر وأضيفيها إلى تقويمكِ."],
+      ["🔒","خصوصية وأمان","تسجيل دخول عبر واتساب، ومدفوعات مشفّرة، وبياناتكِ محفوظة بأمان."]],
+    steps:[["أخبرينا عن يومكِ","اسمكِ وتاريخ الزفاف والمحافظة والميزانية — يستغرق دقيقة."],
+      ["خطّطي واحجزي المزوّدين","أنجزي قائمة مهامكِ، وتصفّحي المزوّدين، وثبّتي التواريخ والأسعار."],
+      ["استرخي واحتفلي","تابعي كل شيء في مكان واحد واستمتعي بيومكِ الكبير بلا توتر."]]
+  }
+};
+let LANG = (localStorage.getItem("wco.lang")|| (navigator.language||"").slice(0,2)==="ar" ? "ar":"en");
+
+function render(){
+  const t = I18N[LANG];
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = t.dir;
+  document.getElementById("langBtn").textContent = LANG==="en" ? "العربية" : "English";
+  document.querySelectorAll("[data-i]").forEach(el=>{ const k=el.getAttribute("data-i"); if(t[k]!=null) el.textContent=t[k]; });
+  // marquee chips (doubled for seamless loop)
+  const track=document.getElementById("track");
+  track.innerHTML = t.chips.concat(t.chips).map(c=>`<span class="chip">${c}</span>`).join("");
+  // features
+  document.getElementById("featGrid").innerHTML = t.feats.map(f=>
+    `<div class="feat reveal"><div class="ic">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join("");
+  // steps
+  document.getElementById("steps").innerHTML = t.steps.map(s=>
+    `<div class="step reveal"><h3>${s[0]}</h3><p>${s[1]}</p></div>`).join("");
+  observe();
+}
+function toggleLang(){ LANG = LANG==="en" ? "ar" : "en"; localStorage.setItem("wco.lang",LANG); render(); }
+
+let io;
+function observe(){
+  if(io) io.disconnect();
+  io = new IntersectionObserver((es)=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } }),{threshold:.12});
+  document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
+}
+render();
+</script>
+</body>
+</html>

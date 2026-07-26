@@ -294,16 +294,26 @@ function openVendorForm(v,rerender){
     return b;
   },actions:[
     h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
-    h("button.btn.btn-pri.grow",{onclick:()=>{
+    h("button.btn.btn-pri.grow",{onclick:async(e)=>{
       if(!d.name.trim()){toast("Please enter a name","⚠️");return;}
       if(isNew){
         _vid++; d.id="v"+String(Date.now()).slice(-6);
         d.maps=d.maps||d.city+", Oman";
-        VENDORS.unshift(d); toast("Vendor added ✓","🎉");
+        VENDORS.unshift(d);
       }else{
-        Object.assign(v,d); toast("Vendor updated ✓");
+        Object.assign(v,d);
       }
-      save(); ref.close(); rerender?rerender():render();
+      save();
+      // publish immediately and report the real result so failures are never silent
+      if(typeof isAdmin==="function" && isAdmin() && typeof apiBase==="function" && apiBase() && typeof publishCatalog==="function"){
+        const btn=e.target; btn.disabled=true; const orig=btn.textContent; btn.textContent="Publishing…";
+        try{ await publishCatalog(); toast(isNew?"Vendor added & live ✓":"Vendor updated & live ✓","🎉"); }
+        catch(err){ toast("Saved locally, but publish failed: "+((err&&err.message)||"error"),"⚠️"); }
+        btn.disabled=false; btn.textContent=orig;
+      }else{
+        toast(isNew?"Vendor added ✓":"Vendor updated ✓","🎉");
+      }
+      ref.close(); rerender?rerender():render();
     }},isNew?"Add vendor":"Save"),
   ]});
 }
