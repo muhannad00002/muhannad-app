@@ -9,8 +9,8 @@ const PREMIUM_BENEFITS=[
   ["bell","Smart reminders","Never miss a booking as the day nears."],
 ];
 const PLANS=[
-  {id:"monthly",name:"Monthly",price:"$2.99",per:"per month",note:"Billed monthly · cancel anytime"},
-  {id:"annual",name:"Annual",price:"$24",per:"per year",sub:"$2.00 / month",note:"Save 33% · best value",best:true},
+  {id:"monthly",name:"Monthly",price:"OMR 0.99",per:"per month",note:"Billed monthly · cancel anytime"},
+  {id:"annual",name:"Annual",price:"OMR 9.99",per:"per year",sub:"OMR 0.83 / month",note:"Save 16% · best value",best:true},
 ];
 
 function openPaywall(reason){

@@ -12,7 +12,7 @@ const PAY_CONFIG = {
   // Set an absolute URL only if the API lives on a different domain.
   backendBase: "",
   appleProducts: { monthly: "com.zaffa.premium.monthly", annual: "com.zaffa.premium.annual" },
-  prices: { monthly: "$2.99", annual: "$24" },
+  prices: { monthly: "OMR 0.99", annual: "OMR 9.99" },
 };
 
 /* Backend base:
@@ -137,10 +137,13 @@ function syncDot(state){
   if(!el){el=h("div#sync-dot",{style:{position:"fixed",top:"10px",left:"50%",transform:"translateX(-50%)",zIndex:"120",
     padding:"5px 12px",borderRadius:"999px",fontSize:"12px",fontWeight:"600",boxShadow:"var(--shadow-2)",transition:"opacity .3s",pointerEvents:"none"}});
     document.body.appendChild(el);}
-  const map={pending:["Saving…","var(--surface)","var(--ink2)"],ok:["✓ Saved & live","var(--good-soft)","var(--good)"],err:["⚠ Offline — will retry","var(--warn-soft)","var(--warn)"]};
+  const map={pending:["Saving…","var(--surface)","var(--ink2)"],ok:["✓ Saved & live","var(--good-soft)","var(--good)"],err:["⚠ Not live yet — retrying…","var(--warn-soft)","var(--warn)"]};
   const [txt,bg,col]=map[state]||map.ok;
   el.textContent=txt; el.style.background=bg; el.style.color=col; el.style.opacity="1";
-  if(state!=="pending"){clearTimeout(el._t); el._t=setTimeout(()=>{el.style.opacity="0";},1800);}
+  clearTimeout(el._t);
+  // only the success chip auto-hides; "pending" and "err" stay visible so the
+  // admin always knows whether their changes actually reached customers.
+  if(state==="ok"){ el._t=setTimeout(()=>{el.style.opacity="0";},1800); }
 }
 
 /* ---- Real-time polling: pull admin changes into open customer apps ---- */

@@ -349,4 +349,45 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .ring-wrap{position:relative;display:grid;place-items:center}
 .ring-wrap .ring-c{position:absolute;text-align:center}
 .ring-wrap .ring-c .v{font-family:var(--font-d);font-weight:600;line-height:1}
+
+/* ============ UI/UX POLISH LAYER ============ */
+/* tactile feedback: cards & rows dip slightly on press */
+.card{transition:transform .18s var(--ease),box-shadow .22s var(--ease)}
+.card-2[onclick],.card[style*="cursor:pointer"],.check,.lrow{transition:transform .16s var(--ease),box-shadow .22s var(--ease),background .18s}
+.check:active,.lrow:active{transform:scale(.985)}
+/* vendor cards lift on hover (desktop) and press down on tap (mobile) */
+@media(hover:hover){ .card-2:hover{transform:translateY(-3px);box-shadow:var(--shadow-3)} }
+.card-2:active{transform:scale(.985)}
+/* buttons: crisper press + smoother transitions */
+.btn{transition:transform .14s var(--ease),filter .18s,background .18s,box-shadow .22s}
+.btn:active{transform:scale(.97)}
+.btn-lg:active{transform:scale(.98)}
+.icon-btn{transition:transform .14s var(--ease),background .18s,color .18s}
+.icon-btn:active{transform:scale(.9)}
+.chip{transition:transform .14s var(--ease),background .18s,color .18s,box-shadow .2s}
+.chip:active{transform:scale(.95)}
+/* section headers: refined weight + optical alignment */
+.sec-h h3{font-weight:650;letter-spacing:-.01em}
+.sec-h .link{display:inline-flex;align-items:center;gap:3px;opacity:.9;transition:opacity .18s}
+.sec-h .link:active{opacity:.6}
+/* horizontal rails: soft snap + edge breathing room */
+.scroll-x{scroll-padding-left:20px}
+/* gentle entrance for stacked content */
+.stagger>*{animation:rise .5s var(--ease) both}
+.stagger>*:nth-child(1){animation-delay:.02s}.stagger>*:nth-child(2){animation-delay:.06s}
+.stagger>*:nth-child(3){animation-delay:.10s}.stagger>*:nth-child(4){animation-delay:.14s}
+.stagger>*:nth-child(5){animation-delay:.18s}.stagger>*:nth-child(6){animation-delay:.22s}
+.stagger>*:nth-child(n+7){animation-delay:.26s}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.stagger>*{animation:none}.card,.btn,.chip{transition:none}}
+/* tab bar: active tab gets a subtle pill */
+.tab{position:relative;transition:color .2s}
+.tab.on::before{content:"";position:absolute;top:2px;left:50%;margin-left:-19px;width:38px;height:30px;border-radius:var(--r-m);
+  background:var(--rose-soft);z-index:0;opacity:.7}
+.tab>*{position:relative;z-index:1}
+.tab.tab-logo.on::before{display:none}
+/* inputs: clearer focus ring */
+.field:focus,.field:focus-visible{outline:none;border-color:var(--rose);box-shadow:0 0 0 3px var(--rose-soft)}
+/* headings crispness */
+h1,h2,h3,h4{letter-spacing:-.015em}
 </style>
