@@ -77,10 +77,9 @@ route("/onboard",()=>{
     S.bride.age=parseInt(data.age,10)||null; S.bride.governorate=data.governorate;
     S.onboarded=true; S.role="bride";
     S.checklist={}; CHECKLIST_TEMPLATE.forEach(t=>S.checklist[t.id]="todo");
-    // give the demo a realistic head-start so the app feels lived-in
-    ["budget","date","guests","hall","planner"].forEach(id=>S.checklist[id]="done");
-    ["photo","makeup","dress"].forEach(id=>S.checklist[id]="prog");
-    S.selectedVendor={hall:"v011",planner:"v053"};
+    // the date + budget steps are genuinely completed during onboarding
+    S.checklist.date="done"; S.checklist.budget="done";
+    S.selectedVendor={}; S.bookings={};
     save();
     go("/home"); setTimeout(confetti,250);
     // then ask to register a phone number — fully skippable
@@ -442,9 +441,9 @@ function openTaskSheet(taskId,rerender){
     const stat=h("div.stat3");
     [["todo","Not started","on-todo"],["prog","In progress","on-prog"],["done","Done","on-done"]].forEach(([k,l,onc])=>{
       stat.appendChild(h("button"+(cur===k?"."+onc:""),{onclick:()=>{
-        setTask(taskId,k); if(k==="done")confetti();
-        [...stat.children].forEach(x=>x.className="");
-        stat.children[k==="todo"?0:k==="prog"?1:2].className=onc.replace("on-","on-"); // reflect
+        // marking Done captures the booking date + price so expenses are tracked
+        if(k==="done"){ close(); openBookedSheet(taskId,rerender); return; }
+        setTask(taskId,k);
         [...stat.children].forEach((x,i)=>{x.className=(["todo","prog","done"][i]===k)?onc:"";});
         rerender&&rerender();
       }},l));

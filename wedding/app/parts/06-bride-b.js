@@ -412,10 +412,13 @@ route("/profile",()=>{
       themeSeg(),
     ]),
   ]));
-  kids.push(h("button.btn.btn-sec.btn-block",{style:{marginTop:"16px",color:"var(--crit)"},onclick:()=>{
-    confirmSheet("Reset demo?","This clears your plan and restores the original demo data.","Reset",()=>{
-      localStorage.removeItem(LS_KEY);location.hash="#/welcome";load();render();toast("Demo reset");},true);
-  }},[icon("logout",18),"Reset demo data"]));
+  if(S.account&&(S.account.token||S.account.phone)){
+    kids.push(h("button.btn.btn-sec.btn-block",{style:{marginTop:"16px",color:"var(--crit)"},onclick:()=>{
+      confirmSheet("Sign out?","You can sign back in anytime with your WhatsApp number.","Sign out",()=>{
+        S.account=null; save(); toast("Signed out"); go("/home"); render();
+      },true);
+    }},[icon("logout",18),"Sign out"]));
+  }
   kids.push(h("p.center.faint.tiny",{style:{padding:"22px 0 6px"}},"Wedding & Co · Version 2.0"));
 
   return appFrame(h("div.stagger",kids),{tabs:brideTabs("/profile")});
