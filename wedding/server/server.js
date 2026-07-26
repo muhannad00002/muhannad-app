@@ -47,6 +47,16 @@ function genVoucherCode() {
   return "WED-" + pick(4) + "-" + pick(4);
 }
 
+/* Payment order reference: strictly alphanumeric, <= 16 chars (Bank Muscat
+   SmartPay requires the order id to be alphanumeric with no special
+   characters). A base36 timestamp keeps it short and time-ordered, plus a
+   random suffix for uniqueness within the same millisecond. */
+function genOrderId(prefix = "WC") {
+  const t = Date.now().toString(36);                       // ~8 chars, alphanumeric
+  const rand = crypto.randomBytes(8).toString("hex");      // hex = alphanumeric
+  return (prefix + t + rand).replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 16);
+}
+
 /* ---- subscriptions & orders (persisted) ---- */
 async function grantPremium(userId, plan, meta = {}) {
   await db.set("sub:" + (userId || "anon"),
@@ -263,7 +273,7 @@ async function handle(req, res) {
     /* ---------- SmartPay credential self-test page ---------- */
     if (p === "/api/payments/smartpay/testpage" && req.method === "GET") {
       const planId = url.searchParams.get("plan") || "monthly";
-      const orderId = "ZF-TEST-" + Date.now();
+      const orderId = genOrderId("WCT");
       await db.set("order:" + orderId, { userId: "credential-test", planId, status: "created", createdAt: Date.now() });
       const s = smartpay.createSession({ planId, orderId,
         customer: { name: "Credential Test", email: "", userId: "credential-test" } });
@@ -287,7 +297,7 @@ unless you intend to pay. An abandoned initiation costs nothing.</p>
       const b = parseBody(await body(req), req.headers["content-type"]);
       const user = await auth.fromRequest(req);          // prefer the signed-in account
       const userId = user ? user.id : (b.userId || "anon");
-      const orderId = "ZF-" + Date.now() + "-" + crypto.randomBytes(2).toString("hex");
+      const orderId = genOrderId("WC");
       await db.set("order:" + orderId, { userId, planId: b.planId, status: "created", createdAt: Date.now() });
       const session = smartpay.createSession({ planId: b.planId, orderId,
         customer: { name: user ? user.name : b.name, email: userId, userId } });
