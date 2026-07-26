@@ -352,6 +352,47 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .ring-wrap{position:relative;display:grid;place-items:center}
 .ring-wrap .ring-c{position:absolute;text-align:center}
 .ring-wrap .ring-c .v{font-family:var(--font-d);font-weight:600;line-height:1}
+
+/* ============ UI/UX POLISH LAYER ============ */
+/* tactile feedback: cards & rows dip slightly on press */
+.card{transition:transform .18s var(--ease),box-shadow .22s var(--ease)}
+.card-2[onclick],.card[style*="cursor:pointer"],.check,.lrow{transition:transform .16s var(--ease),box-shadow .22s var(--ease),background .18s}
+.check:active,.lrow:active{transform:scale(.985)}
+/* vendor cards lift on hover (desktop) and press down on tap (mobile) */
+@media(hover:hover){ .card-2:hover{transform:translateY(-3px);box-shadow:var(--shadow-3)} }
+.card-2:active{transform:scale(.985)}
+/* buttons: crisper press + smoother transitions */
+.btn{transition:transform .14s var(--ease),filter .18s,background .18s,box-shadow .22s}
+.btn:active{transform:scale(.97)}
+.btn-lg:active{transform:scale(.98)}
+.icon-btn{transition:transform .14s var(--ease),background .18s,color .18s}
+.icon-btn:active{transform:scale(.9)}
+.chip{transition:transform .14s var(--ease),background .18s,color .18s,box-shadow .2s}
+.chip:active{transform:scale(.95)}
+/* section headers: refined weight + optical alignment */
+.sec-h h3{font-weight:650;letter-spacing:-.01em}
+.sec-h .link{display:inline-flex;align-items:center;gap:3px;opacity:.9;transition:opacity .18s}
+.sec-h .link:active{opacity:.6}
+/* horizontal rails: soft snap + edge breathing room */
+.scroll-x{scroll-padding-left:20px}
+/* gentle entrance for stacked content */
+.stagger>*{animation:rise .5s var(--ease) both}
+.stagger>*:nth-child(1){animation-delay:.02s}.stagger>*:nth-child(2){animation-delay:.06s}
+.stagger>*:nth-child(3){animation-delay:.10s}.stagger>*:nth-child(4){animation-delay:.14s}
+.stagger>*:nth-child(5){animation-delay:.18s}.stagger>*:nth-child(6){animation-delay:.22s}
+.stagger>*:nth-child(n+7){animation-delay:.26s}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.stagger>*{animation:none}.card,.btn,.chip{transition:none}}
+/* tab bar: active tab gets a subtle pill */
+.tab{position:relative;transition:color .2s}
+.tab.on::before{content:"";position:absolute;top:2px;left:50%;margin-left:-19px;width:38px;height:30px;border-radius:var(--r-m);
+  background:var(--rose-soft);z-index:0;opacity:.7}
+.tab>*{position:relative;z-index:1}
+.tab.tab-logo.on::before{display:none}
+/* inputs: clearer focus ring */
+.field:focus,.field:focus-visible{outline:none;border-color:var(--rose);box-shadow:0 0 0 3px var(--rose-soft)}
+/* headings crispness */
+h1,h2,h3,h4{letter-spacing:-.015em}
 </style>
 <script>window.ZAFFA_ADMIN=true;</script>
 </head>
@@ -1441,18 +1482,15 @@ route("/home",()=>{
     icon("fwd",18,"faint"),
   ]));
 
-  // Today's suggested tasks
-  if(suggest.length){
-    kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Suggested for you"),h("span.link",{onclick:()=>go("/checklist")},"See plan")]));
-    kids.push(h("div.col.gap8",suggest.map(t=>{
-      const cat=t.catId?catById(t.catId):null;
-      return h("div.check",{onclick:()=>openTaskSheet(t.id),style:{cursor:"pointer"}},[
-        h("span",{style:{fontSize:"22px",width:"34px",textAlign:"center"}},cat?cat.icon:"📝"),
-        h("div.grow",[h("div",{style:{fontWeight:"600"}},t.title),
-          h("div.tiny.faint",t.catId?"Tap to browse "+cat.name.toLowerCase():"Tap to update")]),
-        icon("fwd",18,"faint"),
-      ]);
-    })));
+  // Featured vendors
+  const mineGov=(typeof myGovernorate==="function")?myGovernorate():"";
+  const featuredV=VENDORS.filter(v=>v.featured&&v.approved)
+    .sort((a,b)=>((b.governorate===mineGov)-(a.governorate===mineGov)) || ((typeof viewCount==="function"?viewCount(b)-viewCount(a):0)))
+    .slice(0,10);
+  if(featuredV.length){
+    kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Featured vendors"),h("span.link",{onclick:()=>go("/categories")},"See all")]));
+    kids.push(h("div.scroll-x",{style:{display:"flex",gap:"13px",margin:"0 -20px",padding:"2px 20px 6px",scrollSnapType:"x mandatory"}},
+      featuredV.map(v=>vendorCard(v,{horizontal:true}))));
   }
 
   // Vendor categories grid
@@ -2218,8 +2256,8 @@ const PREMIUM_BENEFITS=[
   ["bell","Smart reminders","Never miss a booking as the day nears."],
 ];
 const PLANS=[
-  {id:"monthly",name:"Monthly",price:"$2.99",per:"per month",note:"Billed monthly · cancel anytime"},
-  {id:"annual",name:"Annual",price:"$24",per:"per year",sub:"$2.00 / month",note:"Save 33% · best value",best:true},
+  {id:"monthly",name:"Monthly",price:"OMR 0.99",per:"per month",note:"Billed monthly · cancel anytime"},
+  {id:"annual",name:"Annual",price:"OMR 9.99",per:"per year",sub:"OMR 0.83 / month",note:"Save 16% · best value",best:true},
 ];
 
 function openPaywall(reason){
@@ -2624,7 +2662,7 @@ const PAY_CONFIG = {
   // Set an absolute URL only if the API lives on a different domain.
   backendBase: "",
   appleProducts: { monthly: "com.zaffa.premium.monthly", annual: "com.zaffa.premium.annual" },
-  prices: { monthly: "$2.99", annual: "$24" },
+  prices: { monthly: "OMR 0.99", annual: "OMR 9.99" },
 };
 
 /* Backend base:
@@ -2749,10 +2787,13 @@ function syncDot(state){
   if(!el){el=h("div#sync-dot",{style:{position:"fixed",top:"10px",left:"50%",transform:"translateX(-50%)",zIndex:"120",
     padding:"5px 12px",borderRadius:"999px",fontSize:"12px",fontWeight:"600",boxShadow:"var(--shadow-2)",transition:"opacity .3s",pointerEvents:"none"}});
     document.body.appendChild(el);}
-  const map={pending:["Saving…","var(--surface)","var(--ink2)"],ok:["✓ Saved & live","var(--good-soft)","var(--good)"],err:["⚠ Offline — will retry","var(--warn-soft)","var(--warn)"]};
+  const map={pending:["Saving…","var(--surface)","var(--ink2)"],ok:["✓ Saved & live","var(--good-soft)","var(--good)"],err:["⚠ Not live yet — retrying…","var(--warn-soft)","var(--warn)"]};
   const [txt,bg,col]=map[state]||map.ok;
   el.textContent=txt; el.style.background=bg; el.style.color=col; el.style.opacity="1";
-  if(state!=="pending"){clearTimeout(el._t); el._t=setTimeout(()=>{el.style.opacity="0";},1800);}
+  clearTimeout(el._t);
+  // only the success chip auto-hides; "pending" and "err" stay visible so the
+  // admin always knows whether their changes actually reached customers.
+  if(state==="ok"){ el._t=setTimeout(()=>{el.style.opacity="0";},1800); }
 }
 
 /* ---- Real-time polling: pull admin changes into open customer apps ---- */

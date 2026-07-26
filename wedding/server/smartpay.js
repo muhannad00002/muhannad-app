@@ -93,8 +93,8 @@ function parseResponseString(str) {
 
 /* Plans → price (kept under US$3 / month). Amounts are in OMR (NUMERIC 10,3). */
 const PLANS = {
-  monthly: { amount: "1.150", label: "Zaffa Premium — Monthly" },   // ≈ $2.99
-  annual:  { amount: "9.200", label: "Zaffa Premium — Annual"  },   // ≈ $23.9 / yr
+  monthly: { amount: "0.990", label: "Wedding & Co Premium — Monthly" },   // OMR 0.99
+  annual:  { amount: "9.990", label: "Wedding & Co Premium — Annual"  },   // OMR 9.99 / yr
 };
 
 /* ---- Build the auto-submitting redirect form for the Bank-hosted page ---- */

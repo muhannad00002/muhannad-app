@@ -183,18 +183,15 @@ route("/home",()=>{
     icon("fwd",18,"faint"),
   ]));
 
-  // Today's suggested tasks
-  if(suggest.length){
-    kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Suggested for you"),h("span.link",{onclick:()=>go("/checklist")},"See plan")]));
-    kids.push(h("div.col.gap8",suggest.map(t=>{
-      const cat=t.catId?catById(t.catId):null;
-      return h("div.check",{onclick:()=>openTaskSheet(t.id),style:{cursor:"pointer"}},[
-        h("span",{style:{fontSize:"22px",width:"34px",textAlign:"center"}},cat?cat.icon:"📝"),
-        h("div.grow",[h("div",{style:{fontWeight:"600"}},t.title),
-          h("div.tiny.faint",t.catId?"Tap to browse "+cat.name.toLowerCase():"Tap to update")]),
-        icon("fwd",18,"faint"),
-      ]);
-    })));
+  // Featured vendors
+  const mineGov=(typeof myGovernorate==="function")?myGovernorate():"";
+  const featuredV=VENDORS.filter(v=>v.featured&&v.approved)
+    .sort((a,b)=>((b.governorate===mineGov)-(a.governorate===mineGov)) || ((typeof viewCount==="function"?viewCount(b)-viewCount(a):0)))
+    .slice(0,10);
+  if(featuredV.length){
+    kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Featured vendors"),h("span.link",{onclick:()=>go("/categories")},"See all")]));
+    kids.push(h("div.scroll-x",{style:{display:"flex",gap:"13px",margin:"0 -20px",padding:"2px 20px 6px",scrollSnapType:"x mandatory"}},
+      featuredV.map(v=>vendorCard(v,{horizontal:true}))));
   }
 
   // Vendor categories grid
