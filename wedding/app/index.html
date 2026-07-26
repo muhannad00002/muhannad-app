@@ -782,6 +782,33 @@ function icon(name,size=22,extra=""){
   return h("span",{class:"ic "+extra,html:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||""}</svg>`});
 }
 
+/* Downscale + re-encode an image (File/Blob or data-URI) to a small JPEG data
+   URI. Keeps vendor logos tiny so the published catalog stays well under the
+   serverless request-size limit. Resolves the original on any failure. */
+function compressImage(src, maxDim=512, quality=0.8){
+  return new Promise((resolve)=>{
+    try{
+      const isBlob = (typeof Blob!=="undefined") && src instanceof Blob;
+      const url = isBlob ? URL.createObjectURL(src) : String(src);
+      const img = new Image();
+      img.onload = ()=>{
+        try{
+          let w=img.naturalWidth||img.width, hh=img.naturalHeight||img.height;
+          const scale = Math.min(1, maxDim/Math.max(w,hh||1));
+          w=Math.max(1,Math.round(w*scale)); hh=Math.max(1,Math.round(hh*scale));
+          const c=document.createElement("canvas"); c.width=w; c.height=hh;
+          c.getContext("2d").drawImage(img,0,0,w,hh);
+          const out=c.toDataURL("image/jpeg",quality);
+          if(isBlob) URL.revokeObjectURL(url);
+          resolve(out && out.length>20 ? out : (isBlob?null:String(src)));
+        }catch(e){ resolve(isBlob?null:String(src)); }
+      };
+      img.onerror=()=>{ if(isBlob)URL.revokeObjectURL(url); resolve(isBlob?null:String(src)); };
+      img.src=url;
+    }catch(e){ resolve(null); }
+  });
+}
+
 /* Splash video — plays once each time the app is launched, then fades to reveal
    the app. Muted + playsinline so autoplay is allowed; tap to skip. */
 function showSplash(){
@@ -1500,11 +1527,6 @@ route("/home",()=>{
     h("span.em",{style:{background:"var(--gold-soft)"}},icon("grid",22)),h("span.nm","More")]));
   kids.push(grid);
 
-  // Featured vendors rail
-  kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Featured vendors"),h("span.link",{onclick:()=>go("/search")},"See all")]));
-  kids.push(h("div.scroll-x",{style:{display:"flex",gap:"14px",padding:"2px 0 4px",margin:"0 -20px",paddingLeft:"20px",paddingRight:"20px"}},
-    feat.map(v=>vendorCard(v,{horizontal:true}))));
-
   // Ad banner
   const ad=ADS.find(a=>a.active&&a.placement==="home");
   if(ad){
@@ -1517,16 +1539,6 @@ route("/home",()=>{
         h("p.small.muted",ad.body)]),
     ]));
   }
-
-  // Wedding tips carousel
-  kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Wedding tips"),h("span.faint.small","Swipe →")]));
-  kids.push(h("div.scroll-x",{style:{display:"flex",gap:"12px",margin:"0 -20px",padding:"2px 20px 4px"}},
-    TIPS.map((t,i)=>h("div.card.pad",{style:{minWidth:"270px",maxWidth:"270px",scrollSnapAlign:"start",
-      background:i%2?"linear-gradient(145deg,var(--gold-soft),var(--surface))":"linear-gradient(145deg,var(--rose-soft),var(--surface))"}},[
-      h("div",{style:{fontSize:"28px",marginBottom:"8px"}},t.em),
-      h("h4",{style:{fontSize:"18px",marginBottom:"6px"}},t.t),
-      h("p.small.muted",t.b),
-    ]))));
 
   kids.push(h("div",{style:{textAlign:"center",padding:"30px 0 6px"}},
     h("span.faint.tiny","Made with 💗 for your big day")));
@@ -2309,8 +2321,8 @@ function openPaywall(reason){
     }},payLabel);
     b.appendChild(payBtn);
     b.appendChild(h("p.center.tiny.faint",{style:{margin:"12px 0 2px"}},
-      prov==="demo" ? "Demo — no real payment is taken. Both plans stay under $3 / month."
-                    : "Secured by "+providerLabel()+" · both plans stay under $3 / month."));
+      prov==="demo" ? "Demo — no real payment is taken. Billed in OMR."
+                    : "Secured by "+providerLabel()+" · billed in Omani Rial (OMR)."));
     // pay OR redeem a code
     b.appendChild(h("div.orline",{style:{margin:"12px 0 8px"}},"or"));
     b.appendChild(h("button.btn.btn-sec.btn-block",{onclick:()=>{ref.close();openRedeemSheet();}},[icon("gift",17),"Redeem a code"]));
@@ -2744,7 +2756,20 @@ async function cloudInit(opts){
 /* Publish the current catalog to the backend. Called automatically (debounced)
    whenever an admin makes a change, so edits go live for customers with no
    manual "publish" step. */
+/* Compress any oversized embedded (data-URI) images in place before publishing,
+   so the catalog payload stays well under the serverless request-size limit. */
+async function slimCatalogImages(){
+  if(typeof compressImage!=="function")return;
+  const big=(s)=>typeof s==="string" && s.startsWith("data:image") && s.length>90000;
+  for(const v of VENDORS){
+    if(big(v.cover)){ const c=await compressImage(v.cover,512,0.8); if(c)v.cover=c; }
+    if(Array.isArray(v.gallery)){
+      for(let i=0;i<v.gallery.length;i++){ if(big(v.gallery[i])){ const c=await compressImage(v.gallery[i],512,0.8); if(c)v.gallery[i]=c; } }
+    }
+  }
+}
 async function publishCatalog(){
+  await slimCatalogImages();
   const r=await api("/api/admin/catalog",{method:"PUT",body:{categories:CATEGORIES,vendors:VENDORS,tips:TIPS,ads:ADS}});
   if(r&&r.version){S._catalogVersion=r.version; save();}
   return r;
@@ -3314,8 +3339,13 @@ function openVendorForm(v,rerender){
     function preview(){clear(prev);vendorImages(d).slice(0,1).forEach(u=>{const t=h("div.thumb",{style:{width:"64px",height:"64px",flex:"none",backgroundImage:`url("${String(u).replace(/"/g,'%22')}")`}});prev.appendChild(t);});}
     const fileBtn=h("input",{type:"file",accept:"image/*",style:{display:"none"},onchange:e=>{
       const f=e.target.files[0]; if(!f)return;
-      if(f.size>1200000){toast("Image too large — use a URL for big photos","⚠️");return;}
-      const rd=new FileReader(); rd.onload=()=>{d.cover=rd.result;cover.value="(uploaded image)";preview();}; rd.readAsDataURL(f);
+      if(f.size>15000000){toast("Image too large — please pick one under 15MB","⚠️");return;}
+      // compress to a small logo so the published catalog stays tiny
+      cover.value="Optimizing…";
+      compressImage(f,512,0.8).then(dataUri=>{
+        if(!dataUri){toast("Couldn't read that image","⚠️");cover.value=d.cover||"";return;}
+        d.cover=dataUri; cover.value="(uploaded logo)"; preview();
+      });
     }});
     const uploadBtn=h("button.btn.btn-sec.btn-sm",{onclick:()=>fileBtn.click()},[icon("camera",15),"Upload logo"]);
     preview();

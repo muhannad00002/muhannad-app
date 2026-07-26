@@ -202,11 +202,6 @@ route("/home",()=>{
     h("span.em",{style:{background:"var(--gold-soft)"}},icon("grid",22)),h("span.nm","More")]));
   kids.push(grid);
 
-  // Featured vendors rail
-  kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Featured vendors"),h("span.link",{onclick:()=>go("/search")},"See all")]));
-  kids.push(h("div.scroll-x",{style:{display:"flex",gap:"14px",padding:"2px 0 4px",margin:"0 -20px",paddingLeft:"20px",paddingRight:"20px"}},
-    feat.map(v=>vendorCard(v,{horizontal:true}))));
-
   // Ad banner
   const ad=ADS.find(a=>a.active&&a.placement==="home");
   if(ad){
@@ -219,16 +214,6 @@ route("/home",()=>{
         h("p.small.muted",ad.body)]),
     ]));
   }
-
-  // Wedding tips carousel
-  kids.push(h("div.sec-h",{style:{marginTop:"26px"}},[h("h3","Wedding tips"),h("span.faint.small","Swipe →")]));
-  kids.push(h("div.scroll-x",{style:{display:"flex",gap:"12px",margin:"0 -20px",padding:"2px 20px 4px"}},
-    TIPS.map((t,i)=>h("div.card.pad",{style:{minWidth:"270px",maxWidth:"270px",scrollSnapAlign:"start",
-      background:i%2?"linear-gradient(145deg,var(--gold-soft),var(--surface))":"linear-gradient(145deg,var(--rose-soft),var(--surface))"}},[
-      h("div",{style:{fontSize:"28px",marginBottom:"8px"}},t.em),
-      h("h4",{style:{fontSize:"18px",marginBottom:"6px"}},t.t),
-      h("p.small.muted",t.b),
-    ]))));
 
   kids.push(h("div",{style:{textAlign:"center",padding:"30px 0 6px"}},
     h("span.faint.tiny","Made with 💗 for your big day")));

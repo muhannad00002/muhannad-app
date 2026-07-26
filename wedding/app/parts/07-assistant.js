@@ -63,8 +63,8 @@ function openPaywall(reason){
     }},payLabel);
     b.appendChild(payBtn);
     b.appendChild(h("p.center.tiny.faint",{style:{margin:"12px 0 2px"}},
-      prov==="demo" ? "Demo — no real payment is taken. Both plans stay under $3 / month."
-                    : "Secured by "+providerLabel()+" · both plans stay under $3 / month."));
+      prov==="demo" ? "Demo — no real payment is taken. Billed in OMR."
+                    : "Secured by "+providerLabel()+" · billed in Omani Rial (OMR)."));
     // pay OR redeem a code
     b.appendChild(h("div.orline",{style:{margin:"12px 0 8px"}},"or"));
     b.appendChild(h("button.btn.btn-sec.btn-block",{onclick:()=>{ref.close();openRedeemSheet();}},[icon("gift",17),"Redeem a code"]));
