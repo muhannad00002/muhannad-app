@@ -95,6 +95,33 @@ function icon(name,size=22,extra=""){
   return h("span",{class:"ic "+extra,html:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||""}</svg>`});
 }
 
+/* Downscale + re-encode an image (File/Blob or data-URI) to a small JPEG data
+   URI. Keeps vendor logos tiny so the published catalog stays well under the
+   serverless request-size limit. Resolves the original on any failure. */
+function compressImage(src, maxDim=512, quality=0.8){
+  return new Promise((resolve)=>{
+    try{
+      const isBlob = (typeof Blob!=="undefined") && src instanceof Blob;
+      const url = isBlob ? URL.createObjectURL(src) : String(src);
+      const img = new Image();
+      img.onload = ()=>{
+        try{
+          let w=img.naturalWidth||img.width, hh=img.naturalHeight||img.height;
+          const scale = Math.min(1, maxDim/Math.max(w,hh||1));
+          w=Math.max(1,Math.round(w*scale)); hh=Math.max(1,Math.round(hh*scale));
+          const c=document.createElement("canvas"); c.width=w; c.height=hh;
+          c.getContext("2d").drawImage(img,0,0,w,hh);
+          const out=c.toDataURL("image/jpeg",quality);
+          if(isBlob) URL.revokeObjectURL(url);
+          resolve(out && out.length>20 ? out : (isBlob?null:String(src)));
+        }catch(e){ resolve(isBlob?null:String(src)); }
+      };
+      img.onerror=()=>{ if(isBlob)URL.revokeObjectURL(url); resolve(isBlob?null:String(src)); };
+      img.src=url;
+    }catch(e){ resolve(null); }
+  });
+}
+
 /* Splash video — plays once each time the app is launched, then fades to reveal
    the app. Muted + playsinline so autoplay is allowed; tap to skip. */
 function showSplash(){

@@ -95,7 +95,20 @@ async function cloudInit(opts){
 /* Publish the current catalog to the backend. Called automatically (debounced)
    whenever an admin makes a change, so edits go live for customers with no
    manual "publish" step. */
+/* Compress any oversized embedded (data-URI) images in place before publishing,
+   so the catalog payload stays well under the serverless request-size limit. */
+async function slimCatalogImages(){
+  if(typeof compressImage!=="function")return;
+  const big=(s)=>typeof s==="string" && s.startsWith("data:image") && s.length>90000;
+  for(const v of VENDORS){
+    if(big(v.cover)){ const c=await compressImage(v.cover,512,0.8); if(c)v.cover=c; }
+    if(Array.isArray(v.gallery)){
+      for(let i=0;i<v.gallery.length;i++){ if(big(v.gallery[i])){ const c=await compressImage(v.gallery[i],512,0.8); if(c)v.gallery[i]=c; } }
+    }
+  }
+}
 async function publishCatalog(){
+  await slimCatalogImages();
   const r=await api("/api/admin/catalog",{method:"PUT",body:{categories:CATEGORIES,vendors:VENDORS,tips:TIPS,ads:ADS}});
   if(r&&r.version){S._catalogVersion=r.version; save();}
   return r;

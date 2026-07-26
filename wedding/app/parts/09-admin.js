@@ -267,8 +267,13 @@ function openVendorForm(v,rerender){
     function preview(){clear(prev);vendorImages(d).slice(0,1).forEach(u=>{const t=h("div.thumb",{style:{width:"64px",height:"64px",flex:"none",backgroundImage:`url("${String(u).replace(/"/g,'%22')}")`}});prev.appendChild(t);});}
     const fileBtn=h("input",{type:"file",accept:"image/*",style:{display:"none"},onchange:e=>{
       const f=e.target.files[0]; if(!f)return;
-      if(f.size>1200000){toast("Image too large — use a URL for big photos","⚠️");return;}
-      const rd=new FileReader(); rd.onload=()=>{d.cover=rd.result;cover.value="(uploaded image)";preview();}; rd.readAsDataURL(f);
+      if(f.size>15000000){toast("Image too large — please pick one under 15MB","⚠️");return;}
+      // compress to a small logo so the published catalog stays tiny
+      cover.value="Optimizing…";
+      compressImage(f,512,0.8).then(dataUri=>{
+        if(!dataUri){toast("Couldn't read that image","⚠️");cover.value=d.cover||"";return;}
+        d.cover=dataUri; cover.value="(uploaded logo)"; preview();
+      });
     }});
     const uploadBtn=h("button.btn.btn-sec.btn-sm",{onclick:()=>fileBtn.click()},[icon("camera",15),"Upload logo"]);
     preview();
