@@ -8,9 +8,10 @@
    Configure once, here. Leaving `backendBase` empty keeps the app in demo mode
    so the standalone HTML and hosted preview still work end-to-end. */
 const PAY_CONFIG = {
-  // Blank = call the API on the SAME origin (Vercel hosts app + /api together).
-  // Set an absolute URL only if the API lives on a different domain.
-  backendBase: "",
+  // Absolute API base. Same-origin on web; REQUIRED for the native iOS/Android
+  // (Capacitor) build, whose origin is capacitor://localhost — without this it
+  // would fall back to demo mode. Points at the production backend.
+  backendBase: "https://weddingandco.vercel.app",
   appleProducts: { monthly: "com.zaffa.premium.monthly", annual: "com.zaffa.premium.annual" },
   prices: { monthly: "OMR 0.99", annual: "OMR 9.99" },
 };
@@ -173,7 +174,7 @@ function startCatalogPolling(){
       }
     }catch(e){/* backend asleep/offline — try again next tick */}
   };
-  _pollTimer=setInterval(tick,15000);              // every 15s
+  _pollTimer=setInterval(tick,5000);               // every 5s → near-instant catalog updates
   document.addEventListener("visibilitychange",()=>{ if(!document.hidden) tick(); });
   window.addEventListener("focus",tick);
 }

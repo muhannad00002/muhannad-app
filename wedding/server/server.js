@@ -97,6 +97,21 @@ function ready() {
   return _ready;
 }
 
+/* ---- lightweight in-memory rate limiter (per instance) ---- */
+const _rl = new Map();
+function rateLimit(key, max, windowMs) {
+  const now = Date.now();
+  const rec = _rl.get(key) || { n: 0, reset: now + windowMs };
+  if (now > rec.reset) { rec.n = 0; rec.reset = now + windowMs; }
+  rec.n++; _rl.set(key, rec);
+  if (_rl.size > 5000) { for (const [k, v] of _rl) if (now > v.reset) _rl.delete(k); } // cheap GC
+  return rec.n <= max;
+}
+function clientIp(req) {
+  return (req.headers["x-forwarded-for"] || "").split(",")[0].trim() ||
+    (req.socket && req.socket.remoteAddress) || "unknown";
+}
+
 async function handle(req, res) {
   try {
     await ready();                   // idempotent; makes the handler serverless-safe
@@ -144,17 +159,23 @@ async function handle(req, res) {
       return json(res, r.error ? 400 : 200, r);
     }
     if (p === "/api/auth/login" && req.method === "POST") {
+      if (!rateLimit("login:" + clientIp(req), 10, 15 * 60e3))
+        return json(res, 429, { error: "Too many attempts. Please try again later." });
       const b = parseBody(await body(req), req.headers["content-type"]);
       const r = await auth.login(b);
       return json(res, r.error ? 401 : 200, r);
     }
     /* WhatsApp OTP: request a code, then verify it (registers on first verify) */
     if (p === "/api/auth/otp/start" && req.method === "POST") {
+      if (!rateLimit("otp:" + clientIp(req), 8, 60 * 60e3))
+        return json(res, 429, { error: "Too many code requests. Please try again later." });
       const b = parseBody(await body(req), req.headers["content-type"]);
       const r = await auth.startOtp(b);
       return json(res, r.error ? 400 : 200, r);
     }
     if (p === "/api/auth/otp/verify" && req.method === "POST") {
+      if (!rateLimit("otpv:" + clientIp(req), 20, 60 * 60e3))
+        return json(res, 429, { error: "Too many attempts. Please try again later." });
       const b = parseBody(await body(req), req.headers["content-type"]);
       const r = await auth.verifyOtp(b);
       return json(res, r.error ? 400 : 200, r);
@@ -270,28 +291,6 @@ async function handle(req, res) {
       return json(res, 200, { ok: true, version, published: allowed.filter(k => b[k] !== undefined) });
     }
 
-    /* ---------- SmartPay credential self-test page ---------- */
-    if (p === "/api/payments/smartpay/testpage" && req.method === "GET") {
-      const planId = url.searchParams.get("plan") || "monthly";
-      const orderId = genOrderId("WCT");
-      await db.set("order:" + orderId, { userId: "credential-test", planId, status: "created", createdAt: Date.now() });
-      const s = smartpay.createSession({ planId, orderId,
-        customer: { name: "Credential Test", email: "", userId: "credential-test" } });
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      return res.end(`<!doctype html><meta charset="utf-8"><title>SmartPay credential test</title>
-<body style="font-family:sans-serif;padding:40px;max-width:520px;margin:auto">
-<h2>SmartPay credential test</h2>
-<p>Order <b>${orderId}</b> · plan <b>${planId}</b> · gateway:<br><code>${s.action}</code></p>
-<p>Click to send one initiation request. If the credentials pair with this
-environment you'll see the Bank Muscat payment page — <b>do not enter a card</b>
-unless you intend to pay. An abandoned initiation costs nothing.</p>
-<form method="POST" action="${s.action}">
-  <input type="hidden" name="access_code" value="${s.fields.access_code}">
-  <input type="hidden" name="encRequest" value="${s.fields.encRequest}">
-  <button type="submit" style="padding:12px 22px;font-size:16px">Open Bank Muscat payment page</button>
-</form></body>`);
-    }
-
     /* ---------- SmartPay checkout ---------- */
     if (p === "/api/payments/smartpay/session" && req.method === "POST") {
       const b = parseBody(await body(req), req.headers["content-type"]);
@@ -357,7 +356,9 @@ unless you intend to pay. An abandoned initiation costs nothing.</p>
 
     json(res, 404, { error: "not_found" });
   } catch (e) {
-    json(res, 500, { error: e.message });
+    // Log the real error server-side; never leak internals to the client.
+    console.error("request error:", (e && e.stack) || e);
+    json(res, 500, { error: "server_error" });
   }
 }
 

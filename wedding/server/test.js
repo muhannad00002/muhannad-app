@@ -19,13 +19,13 @@ ok("session posts access_code", s.fields.access_code === "TEST_ACCESS_CODE");
 ok("session posts encRequest (hex)", /^[0-9a-f]+$/.test(s.fields.encRequest));
 ok("encRequest decrypts back to request string", (() => {
   const str = sp.decrypt(s.fields.encRequest);
-  return str.includes("merchant_id=123456") && str.includes("amount=1.150") &&
+  return str.includes("merchant_id=123456") && str.includes("amount=0.990") &&
          str.includes("order_id=ZF-TEST-1") && str.includes("merchant_param1=monthly");
 })());
 
 // 2) simulate the gateway's encrypted Success response, then run our callback
 const respStr = ["order_id=ZF-TEST-1", "tracking_id=99887766", "bank_ref_no=APPROVED123",
-  "order_status=Success", "amount=1.150", "merchant_param1=monthly", "merchant_param2=u1",
+  "order_status=Success", "amount=0.990", "merchant_param1=monthly", "merchant_param2=u1",
   "status_code=0", "status_message=Approved"].join("&");
 const encResponse = sp.encrypt(respStr);
 const r = sp.handleCallback({ encResponse });

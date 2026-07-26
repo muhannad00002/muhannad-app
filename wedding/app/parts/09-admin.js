@@ -546,10 +546,7 @@ route("/admin/payments",()=>{
   kids.push(form);
   kids.push(saveBtn);
   kids.push(h("p.tiny.faint",{style:{margin:"14px 3px"}},
-    "The working key is stored securely on the server and never shown in full. After saving, use the test link below to confirm the credentials with Bank Muscat."));
-  const testBtn=h("button.btn.btn-sec.btn-block",{onclick:()=>openLink(apiBase()+"/api/payments/smartpay/testpage")},
-    [icon("fwd",16),"Open credential test page"]);
-  kids.push(testBtn);
+    "The working key is stored securely on the server and never shown in full."));
 
   function paint(cfg){
     clear(status);

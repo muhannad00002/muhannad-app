@@ -1,2 +1,16 @@
 .DS_Store
 node_modules/
+
+# secrets & local env — never commit
+.env
+.env.*
+!.env.example
+server/.env
+server/.data.json
+
+# native build outputs
+ios/
+android/
+.gradle/
+*.keystore
+*.mobileprovision

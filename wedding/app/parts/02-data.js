@@ -104,104 +104,7 @@ function V(catId,name,city,rating,reviews,priceLevel,short,opts={}){
   };
 }
 
-const SEED_VENDORS = [
-  // Wedding Dresses
-  V("dresses","Maison Blanche","Muscat",4.9,214,4,"Couture bridal gowns handcrafted with imported French lace.",{featured:true,offer:{label:"Free veil with any gown",until:"2026-08-31"},services:["Made-to-measure couture","Imported lace & silk","3 fittings included","Veil & accessories"]}),
-  V("dresses","Rose & Ivory","Salalah",4.7,138,3,"Romantic ready-to-wear gowns with delicate beadwork.",{featured:true}),
-  V("dresses","Atelier Yasmin","Muscat",4.8,176,4,"Modern minimalist silhouettes for the contemporary bride.",{isNew:true}),
-  V("dresses","Pearl Bridal House","Sohar",4.5,92,2,"Affordable elegance with a wide seasonal collection.",{offer:{label:"15% off spring collection",until:"2026-07-30"}}),
-  // Evening Dresses
-  V("evening","Soirée Couture","Muscat",4.8,121,3,"Show-stopping evening gowns for the henna & reception.",{featured:true}),
-  V("evening","Velvet & Gold","Nizwa",4.6,74,2,"Rich colours and flowing fabrics for every celebration."),
-  // Tailors
-  V("tailors","Golden Needle","Muscat",4.7,203,2,"Master tailoring & alterations with same-week turnaround.",{services:["Alterations","Custom stitching","Bustle & hemming","Rush service"]}),
-  V("tailors","Stitch Atelier","Barka",4.4,58,1,"Reliable everyday tailoring for the whole bridal party."),
-  // Bridal Boutiques
-  V("boutiques","The Bridal Room","Muscat",4.9,167,3,"One-stop boutique: gowns, veils, shoes and accessories.",{featured:true}),
-  V("boutiques","Blush Boutique","Salalah",4.6,88,2,"Curated bridal edit with personal styling sessions."),
-  // Wedding Halls
-  V("halls","Al Bustan Ballroom","Muscat",4.9,341,4,"Grand seaside ballroom seating up to 600 guests.",{featured:true,services:["Up to 600 guests","In-house catering","Bridal suite","Valet & security"],price:"OMR 1,500+"}),
-  V("halls","Qasr Al Noor","Salalah",4.7,192,3,"Elegant garden hall wrapped in greenery and light.",{offer:{label:"Weekday 20% off",until:"2026-09-15"}}),
-  V("halls","Pearl Palace Hall","Sohar",4.5,124,3,"Modern hall with flexible layouts for 150–400 guests."),
-  V("halls","Nizwa Heritage Hall","Nizwa",4.6,97,2,"Traditional charm with contemporary comforts.",{isNew:true}),
-  // Hotels
-  V("hotels","Shangri-La Barr Al Jissah","Muscat",4.9,410,4,"Luxury resort weddings across three beachfront hotels.",{featured:true,price:"OMR 2,000+"}),
-  V("hotels","Kempinski Muscat","Muscat",4.8,286,4,"Beachfront elegance with award-winning catering."),
-  V("hotels","Alila Jabal Akhdar","Nizwa",4.9,178,4,"Dramatic mountain-top celebrations above the clouds.",{isNew:true,price:"OMR 2,500+"}),
-  // Decorations
-  V("decor","Lush Events","Muscat",4.8,156,3,"Full-scale wedding styling — stages, aisles & tablescapes.",{featured:true,services:["Stage & backdrop design","Floral installations","Table styling","Lighting concept"]}),
-  V("decor","Petal & Pearl Decor","Salalah",4.6,89,2,"Romantic soft styling with signature blush palettes."),
-  V("decor","Grand Affair","Sohar",4.5,63,3,"Bold, dramatic décor for statement celebrations."),
-  // Flowers
-  V("flowers","Bloom Studio","Muscat",4.9,198,2,"Seasonal florals arranged fresh for every event.",{featured:true}),
-  V("flowers","Jasmine & Co","Salalah",4.7,112,2,"Fragrant local blooms and lush greenery."),
-  // Bridal Bouquets
-  V("bouquets","The Bouquet Bar","Muscat",4.8,134,1,"Hand-tied bridal bouquets in your exact palette.",{price:"OMR 25–90"}),
-  V("bouquets","Wild Rose","Nizwa",4.6,71,1,"Garden-style bouquets with a natural, untamed feel.",{price:"OMR 20–75"}),
-  // Makeup
-  V("makeup","Glow by Reem","Muscat",4.9,321,3,"Signature bridal glam & natural soft-glam looks.",{featured:true,offer:{label:"Free trial with booking",until:"2026-08-15"},services:["Bridal trial","Wedding-day glam","Henna-night look","Touch-up kit"]}),
-  V("makeup","Noor Beauty","Salalah",4.7,187,2,"Flawless long-wear makeup for you and your guests."),
-  V("makeup","Muse Artistry","Sohar",4.6,96,2,"Editorial-inspired looks tailored to your features.",{isNew:true}),
-  V("makeup","Layali Glam","Muscat",4.8,142,3,"Luxury on-location bridal beauty team."),
-  // Hair
-  V("hair","Crown Hair Atelier","Muscat",4.8,163,2,"Bridal updos, waves and veil styling.",{featured:true}),
-  V("hair","Silk & Shine","Salalah",4.6,84,2,"Sleek, elegant styling for the whole bridal party."),
-  // Henna
-  V("henna","Henna by Huda","Muscat",4.9,241,1,"Intricate bridal henna in classic & modern styles.",{featured:true,price:"OMR 30–120"}),
-  V("henna","Naqsh Studio","Nizwa",4.7,109,1,"Fine-line contemporary henna artistry.",{price:"OMR 25–100"}),
-  // Photography
-  V("photo","Lumière Photography","Muscat",4.9,276,3,"Timeless, editorial wedding photography.",{featured:true,services:["Full-day coverage","Two photographers","Online gallery","Pre-wedding shoot"]}),
-  V("photo","Golden Hour Studio","Salalah",4.8,158,3,"Warm, candid storytelling of your day."),
-  V("photo","Frame & Light","Sohar",4.6,92,2,"Bright, natural photography with quick delivery.",{isNew:true}),
-  // Videography
-  V("video","Cinematic Vows","Muscat",4.8,144,3,"Film-style wedding highlights & full features.",{featured:true,services:["Cinematic highlight film","Full ceremony edit","Drone footage","Same-day teaser"]}),
-  V("video","Reel Memories","Salalah",4.6,77,2,"Heartfelt films that capture the real moments."),
-  // Photo Booth
-  V("booth","Snap & Smile","Muscat",4.7,131,1,"360° and classic booths with instant prints.",{price:"OMR 90–250"}),
-  // Catering
-  V("catering","Saffron Kitchen","Muscat",4.8,219,3,"Refined Omani & international wedding menus.",{featured:true,services:["Buffet & plated menus","Live cooking stations","Dietary options","Full service staff"]}),
-  V("catering","Feast & Co","Sohar",4.6,103,2,"Generous, crowd-pleasing spreads for large weddings."),
-  // Desserts
-  V("desserts","Sweet Symphony","Muscat",4.8,127,2,"Dessert tables, mini pastries & live stations."),
-  // Chocolates
-  V("chocolates","Cacao Muscat","Muscat",4.9,168,2,"Personalised luxury chocolates & favour boxes.",{featured:true}),
-  // Hospitality
-  V("hospitality","Karam Hospitality","Muscat",4.7,88,2,"Warm guest reception, ushers & welcome service."),
-  // Coffee Corner
-  V("coffee","Qahwa Corner","Muscat",4.8,142,1,"Traditional Omani coffee & dates stations.",{price:"OMR 60–180"}),
-  // Cake
-  V("cake","The Cake Room","Muscat",4.9,201,2,"Tiered couture wedding cakes, made to order.",{featured:true}),
-  V("cake","Buttercream Bliss","Salalah",4.6,79,1,"Delicious, beautifully simple celebration cakes.",{price:"OMR 40–150"}),
-  // DJ
-  V("dj","DJ Amir","Muscat",4.7,156,2,"High-energy sets blending Khaleeji & global hits."),
-  // Band
-  V("band","The Grand Ensemble","Muscat",4.8,94,3,"Live band & singers for an unforgettable reception."),
-  // Live Music
-  V("music","Oud & Strings","Nizwa",4.7,63,2,"Elegant live oud, violin & piano for ceremonies."),
-  // Lighting
-  V("lighting","Lumina Lighting","Muscat",4.8,118,2,"Ambient, architectural & dance-floor lighting design.",{featured:true}),
-  // Luxury Cars
-  V("cars","Royal Rides","Muscat",4.7,101,3,"Chauffeured luxury & classic bridal cars.",{services:["Rolls-Royce & Bentley","Classic vintage cars","Ribbon & décor","Professional chauffeur"]}),
-  // Wedding Planner
-  V("planner","Ever After Planners","Muscat",4.9,187,4,"Full-service planning from proposal to send-off.",{featured:true,services:["Full planning","Partial planning","Day-of coordination","Vendor management"]}),
-  V("planner","Blissful Beginnings","Salalah",4.7,96,3,"Calm, organised planning with a personal touch."),
-  // Invitations
-  V("invitations","Ink & Foil","Muscat",4.8,134,1,"Bespoke printed & digital wedding invitations.",{price:"OMR 2–8 / card"}),
-  // Printing
-  V("printing","Prestige Print","Muscat",4.6,88,1,"Menus, signage, seating charts & thank-you cards.",{price:"OMR 30–200"}),
-  // Gifts
-  V("gifts","The Gift Atelier","Muscat",4.7,76,2,"Curated luxury gifts for the couple & guests."),
-  // Wedding Favors
-  V("favors","Little Tokens","Salalah",4.6,64,1,"Personalised favours your guests will love.",{price:"OMR 1–5 / favour"}),
-  // Accessories
-  V("accessories","Adorn","Muscat",4.7,91,2,"Veils, belts, gloves & bridal hair pieces."),
-  // Jewelry
-  V("jewelry","Lustre Fine Jewellery","Muscat",4.9,203,4,"Bridal sets, bands & heirloom pieces.",{featured:true,price:"OMR 300+"}),
-  // Perfumes
-  V("perfumes","Attar House","Nizwa",4.8,117,2,"Signature bridal scents & bespoke attar blends."),
-  // Honeymoon
-  V("honeymoon","Voyage Weddings","Muscat",4.8,142,4,"Curated honeymoon escapes worldwide.",{featured:true,services:["Maldives & Zanzibar","Europe city breaks","All-inclusive resorts","Full itinerary planning"],price:"OMR 1,200+"}),
-];
+const SEED_VENDORS = [];
 
 /* ---- Master checklist template with relationships ----
    status: todo | prog | done
@@ -253,32 +156,14 @@ const CHECKLIST_TEMPLATE = [
   {id:"gifts",   title:"Prepare thank-you gifts", catId:"gifts", phase:"After the Day"},
 ];
 
-/* Wedding tips carousel */
-const SEED_TIPS = [
-  {t:"Book early, breathe easy",b:"The best halls and photographers are reserved 8–12 months ahead. Lock your date first, then your top three vendors.",em:"⏳"},
-  {t:"Always do a makeup trial",b:"A trial before the big day means zero surprises. Bring photos of looks you love and your dress neckline.",em:"💄"},
-  {t:"Build a 10% buffer",b:"Set aside a little extra in your budget for the lovely details you'll discover along the way.",em:"💰"},
-  {t:"Delegate the day-of",b:"Assign a trusted person (or planner) to handle vendors on the day so you can simply be present.",em:"🤍"},
-  {t:"Comfort is beauty",b:"Break in your shoes and pack a small kit: pins, plasters, and your favourite scent.",em:"👠"},
-];
+/* Wedding tips — managed by the admin (empty until added) */
+const SEED_TIPS = [];
 
-/* Advertisements / promoted banners */
-const SEED_ADS = [
-  {id:"ad1",title:"Summer Bridal Sale",body:"Up to 25% off gowns at Maison Blanche",vendorId:"v001",active:true,placement:"home"},
-  {id:"ad2",title:"Free Makeup Trial",body:"Book Glow by Reem this month",vendorId:"v025",active:true,placement:"home"},
-];
+/* Advertisements / promoted banners — managed by the admin */
+const SEED_ADS = [];
 
-/* Notification templates seeded on first run (generated dynamically too) */
-const SEED_NOTIFS = [
-  {id:"n1",em:"💄",title:"Don't forget your makeup artist",body:"You still haven't booked makeup — brides book this 4 months ahead.",taskId:"makeup",read:false,when:Date.now()-3600e3*5},
-  {id:"n2",em:"📸",title:"Book photography this week",body:"Your favourite photographers get reserved fast. Secure yours soon.",taskId:"photo",read:false,when:Date.now()-3600e3*26},
-  {id:"n3",em:"🎂",title:"Cake tasting pending",body:"Schedule your cake tasting to lock in the design.",taskId:"cake",read:true,when:Date.now()-3600e3*50},
-];
+/* Notifications — generated for real brides at runtime */
+const SEED_NOTIFS = [];
 
-/* Users for admin */
-const SEED_USERS = [
-  {id:"u1",name:"Sarah Al Balushi",email:"muhannad00002@gmail.com",role:"bride",date:"2026-10-04",joined:"2026-01-12",status:"active"},
-  {id:"u2",name:"Fatma Al Harthy",email:"fatma@example.com",role:"bride",date:"2026-09-20",joined:"2026-02-01",status:"active"},
-  {id:"u3",name:"Reem Al Said",email:"reem@example.com",role:"bride",date:"2026-12-15",joined:"2026-03-18",status:"active"},
-  {id:"u4",name:"Admin",email:"admin@zaffa.app",role:"admin",date:null,joined:"2025-11-01",status:"active"},
-];
+/* Users — real accounts come from the backend; none seeded */
+const SEED_USERS = [];

@@ -1,10 +1,16 @@
 {
-  "appId": "com.zaffa.app",
-  "appName": "Zaffa",
+  "appId": "com.weddingandco.app",
+  "appName": "Wedding & Co",
   "webDir": "app",
-  "server": { "iosScheme": "zaffa" },
+  "server": { "androidScheme": "https", "iosScheme": "https" },
   "ios": { "contentInset": "always" },
+  "android": { "backgroundColor": "#2B2B2F" },
   "plugins": {
-    "SplashScreen": { "backgroundColor": "#FBF6F2", "showSpinner": false }
+    "SplashScreen": {
+      "backgroundColor": "#2B2B2F",
+      "showSpinner": false,
+      "launchAutoHide": true,
+      "launchShowDuration": 900
+    }
   }
 }
