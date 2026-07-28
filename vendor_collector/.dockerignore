@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+data/*.db
+data/*.db-*
+data/output/*
+logs/*
+!data/output/.gitkeep
+!logs/.gitkeep
+.git/
