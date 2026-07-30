@@ -372,7 +372,7 @@ route("/profile",()=>{
   if(isPremium()){
     kids.push(h("div.card.pad",{style:{marginTop:"16px",background:"linear-gradient(135deg,var(--gold-soft),var(--rose-soft))",border:"0",display:"flex",gap:"12px",alignItems:"center"}},[
       h("span",{style:{fontSize:"26px"}},"💗"),
-      h("div.grow",[h("b","Wedding & Co Premium"),h("div.tiny.faint",(S.subscription.tier==="annual"?"Annual":"Monthly")+" plan · all features unlocked")]),
+      h("div.grow",[h("b","Bride & Co Premium"),h("div.tiny.faint",(S.subscription.tier==="annual"?"Annual":"Monthly")+" plan · all features unlocked")]),
       h("button.chip",{onclick:()=>confirmSheet("Cancel Premium?","You'll return to the free plan (3 categories & limited assistant).","Cancel plan",()=>{cancelPremium();toast("Back on free plan");go("/profile");},true)},"Manage"),
     ]));
   }else{
@@ -419,7 +419,7 @@ route("/profile",()=>{
       },true);
     }},[icon("logout",18),"Sign out"]));
   }
-  kids.push(h("p.center.faint.tiny",{style:{padding:"22px 0 6px"}},"Wedding & Co · Version 2.0"));
+  kids.push(h("p.center.faint.tiny",{style:{padding:"22px 0 6px"}},"Bride & Co · Version 2.0"));
 
   return appFrame(h("div.stagger",kids),{tabs:brideTabs("/profile")});
 

@@ -131,13 +131,13 @@ async function handle(req, res) {
       if (p === "/health") return json(res, 200, { ok: true });
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       return res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Wedding &amp; Co backend</title>
+<title>Bride &amp; Co backend</title>
 <body style="font-family:-apple-system,sans-serif;background:#F4F3F1;color:#2B2B2D;display:grid;place-items:center;min-height:100vh;margin:0">
 <div style="text-align:center;padding:40px;max-width:420px">
   <div style="font-size:52px">💍</div>
-  <h1 style="font-family:Georgia,serif;margin:10px 0 6px">Wedding &amp; Co backend</h1>
+  <h1 style="font-family:Georgia,serif;margin:10px 0 6px">Bride &amp; Co backend</h1>
   <p style="color:#7A6A6E">The server is running. This address hosts the API for the
-  <a href="${APP_RETURN}" style="color:#B9932F">Wedding &amp; Co app</a> — there's nothing to browse here.</p>
+  <a href="${APP_RETURN}" style="color:#B9932F">Bride &amp; Co app</a> — there's nothing to browse here.</p>
   <p style="font-size:13px;color:#A9989C">Status: <a href="/api/payments/status" style="color:#B9932F">/api/payments/status</a></p>
 </div></body>`);
     }
@@ -325,9 +325,9 @@ async function handle(req, res) {
         return res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <body style="font-family:system-ui,sans-serif;padding:48px 24px;max-width:460px;margin:auto;text-align:center;color:#2b2b2f">
 <div style="font-size:44px">💍</div>
-<h2 style="margin:12px 0 6px">Wedding &amp; Co payments</h2>
+<h2 style="margin:12px 0 6px">Bride &amp; Co payments</h2>
 <p style="color:#6b6b70">This is the secure payment return page. There's nothing to do here directly — complete a purchase from the app and you'll be brought back automatically.</p>
-<p><a href="${APP_RETURN}" style="display:inline-block;margin-top:8px;padding:12px 22px;background:#b3874f;color:#fff;border-radius:12px;text-decoration:none">Open Wedding &amp; Co</a></p>
+<p><a href="${APP_RETURN}" style="display:inline-block;margin-top:8px;padding:12px 22px;background:#b3874f;color:#fff;border-radius:12px;text-decoration:none">Open Bride &amp; Co</a></p>
 </body>`);
       }
       const r = smartpay.handleCallback(b);
@@ -376,7 +376,7 @@ async function handle(req, res) {
 // required by api/[...path].js and only the exported handler is used.
 if (require.main === module) {
   ready().then(() => http.createServer(handle).listen(PORT, () => {
-    console.log(`Wedding & Co backend on http://localhost:${PORT}`);
+    console.log(`Bride & Co backend on http://localhost:${PORT}`);
     console.log("  storage:            ", db.usePg ? "PostgreSQL" : "local JSON file");
     console.log("  SmartPay configured:", smartpay.isConfigured());
     console.log("  Apple configured:   ", !!process.env.APPLE_SHARED_SECRET);

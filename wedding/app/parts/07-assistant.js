@@ -18,13 +18,13 @@ function openPaywall(reason){
   const reasons={
     category:"You've viewed your 3 free categories. Go Premium to browse them all.",
     assistant:"You've used your free assistant messages. Go Premium for unlimited chat with Aya.",
-    default:"Unlock everything Wedding & Co has to offer.",
+    default:"Unlock everything Bride & Co has to offer.",
   };
   ref=sheet({title:null,maxWidth:"460px",body:(close)=>{
     const b=h("div",{style:{marginTop:"-4px"}});
     b.appendChild(h("div.center",[
       h("div",{style:{fontSize:"40px",marginBottom:"4px"}},"💗"),
-      h("div.eyebrow",{style:{color:"var(--gold)"}},"Wedding & Co Premium"),
+      h("div.eyebrow",{style:{color:"var(--gold)"}},"Bride & Co Premium"),
       h("h2",{style:{fontSize:"27px",margin:"6px 0 6px"}},"Plan without limits"),
       h("p.muted",{style:{maxWidth:"320px",margin:"0 auto 4px"}},reasons[reason]||reasons.default),
     ]));
@@ -114,7 +114,7 @@ function openBookingSheet(vendor,taskId,onConfirm){
       selectVendorForTask(vendor.id,taskId);
       ref.close(); confetti();
       const opts={title:(task?shortTask(task.title):"Wedding appointment")+": "+vendor.name,date:d.date,time:d.time,
-        desc:(d.note?d.note+"\n":"")+"Booked via Wedding & Co. "+(vendor.phone?("Call "+vendor.phone):""),location:vendor.maps};
+        desc:(d.note?d.note+"\n":"")+"Booked via Bride & Co. "+(vendor.phone?("Call "+vendor.phone):""),location:vendor.maps};
       setTimeout(()=>openCalendarSheet(opts,()=>{onConfirm&&onConfirm();}),260);
     }},[icon("check",17),"Confirm & save"]),
   ]});
@@ -392,7 +392,7 @@ route("/appointments",()=>{
           h("div.tiny.faint",[b.task?shortTask(b.task.title):"Appointment",b.time?(" · "+b.time):""]),
           b.note?h("div.tiny.muted",{style:{marginTop:"2px"}},b.note):null,
         ]),
-        h("button.icon-btn.plain",{"aria-label":"Calendar",onclick:()=>openCalendarSheet({title:(b.task?shortTask(b.task.title):"Appointment")+": "+b.vendor.name,date:b.date,time:b.time,desc:b.note||"Booked via Wedding & Co",location:b.vendor.maps})},icon("cal",20)),
+        h("button.icon-btn.plain",{"aria-label":"Calendar",onclick:()=>openCalendarSheet({title:(b.task?shortTask(b.task.title):"Appointment")+": "+b.vendor.name,date:b.date,time:b.time,desc:b.note||"Booked via Bride & Co",location:b.vendor.maps})},icon("cal",20)),
       ]);
     })));
   }

@@ -243,7 +243,7 @@ function openAccountSheet(onDone,opts){
               body:{phone:d.phone,code:d.code,name:d.name,age:d.age,governorate:d.governorate}});
             S.account={id:r.user.id,phone:r.user.phone,email:r.user.email,name:r.user.name,governorate:r.user.governorate,age:r.user.age,role:r.user.role,token:r.token};
             if(r.user.name&&!existing)S.bride.name=r.user.name;
-            save(); ref.close(); toast(existing?"Welcome back 💗":"Welcome to Wedding & Co 💗");
+            save(); ref.close(); toast(existing?"Welcome back 💗":"Welcome to Bride & Co 💗");
             cloudInit(); onDone&&onDone(); render();
           }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Verify & continue";}
         }},"Verify & continue");
