@@ -93,8 +93,8 @@ function parseResponseString(str) {
 
 /* Plans → price (kept under US$3 / month). Amounts are in OMR (NUMERIC 10,3). */
 const PLANS = {
-  monthly: { amount: "0.990", label: "Bride & Co Premium — Monthly" },   // OMR 0.99
-  annual:  { amount: "9.990", label: "Bride & Co Premium — Annual"  },   // OMR 9.99 / yr
+  monthly: { amount: "0.990", label: "Wedding & Co Premium — Monthly" },   // OMR 0.99
+  annual:  { amount: "9.990", label: "Wedding & Co Premium — Annual"  },   // OMR 9.99 / yr
 };
 
 /* ---- Build the auto-submitting redirect form for the Bank-hosted page ---- */

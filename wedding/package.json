@@ -1,8 +1,8 @@
 {
-  "name": "bride-and-co",
+  "name": "wedding-and-co",
   "version": "2.0.0",
   "private": true,
-  "description": "Bride & Co — wedding planner & marketplace (app + serverless API).",
+  "description": "Wedding & Co — wedding planner & marketplace (app + serverless API).",
   "scripts": {
     "build": "node app/build.js",
     "start": "node server/server.js",
