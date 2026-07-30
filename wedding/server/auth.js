@@ -47,10 +47,20 @@ async function register({ name, email, password, role = "bride" }) {
   if (!created) return { error: "An account with this email already exists." };
   return { user: publicUser(user), token: sign(email) };
 }
+function timingSafeEqualHex(a, b) {
+  const ba = Buffer.from(String(a || ""), "hex"), bb = Buffer.from(String(b || ""), "hex");
+  if (ba.length !== bb.length || ba.length === 0) return false;
+  return crypto.timingSafeEqual(ba, bb);
+}
+// A fixed dummy salt so a missing account still runs one scrypt — equalising
+// response time so an attacker can't enumerate valid emails by timing.
+const DUMMY_SALT = "0000000000000000000000000000000000000000000000000000000000000000";
 async function login({ email, password }) {
   email = normEmail(email);
   const user = await db.get("user:" + email);
-  if (!user || user.hash !== hashPassword(password, user.salt))
+  const salt = user ? user.salt : DUMMY_SALT;
+  const computed = hashPassword(password, salt);
+  if (!user || !timingSafeEqualHex(user.hash, computed))
     return { error: "Email or password is incorrect." };
   return { user: publicUser(user), token: sign(email) };
 }

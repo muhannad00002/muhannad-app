@@ -200,6 +200,18 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .app{max-width:460px;margin:0 auto;min-height:100%;position:relative;background:var(--ground);
   box-shadow:0 0 60px rgba(140,90,90,.10)}
 @media(min-width:900px){.app{min-height:100vh}}
+/* ---- Admin on a computer screen: use the full width, multi-column layout ---- */
+@media(min-width:900px){
+  body.admin .app{max-width:1120px;box-shadow:none}
+  body.admin .screen{padding-left:40px;padding-right:40px;padding-bottom:48px}
+  body.admin .topbar{padding-left:40px;padding-right:40px}
+  /* overview KPI + quick-action tiles spread across the width */
+  body.admin .admin-grid{grid-template-columns:repeat(4,1fr)!important}
+  /* the vendor / category management lists become a responsive card grid */
+  body.admin .admin-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;align-items:start}
+  /* keep edit/add sheets comfortable (not full-width) on big screens */
+  body.admin .sheet{max-width:620px}
+}
 .screen{padding:0 20px calc(var(--tab-h) + 28px);animation:fade .4s var(--ease)}
 .screen.no-tab{padding-bottom:36px}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -3218,7 +3230,7 @@ route("/admin",()=>{
   ]));
 
   // KPI grid
-  kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"11px",marginTop:"16px"}},[
+  kids.push(h("div.admin-grid",{style:{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"11px",marginTop:"16px"}},[
     kpiCard(activeVendors,"Active vendors","tag",()=>go("/admin/vendors")),
     kpiCard(CATEGORIES.length,"Categories","grid",()=>go("/admin/categories")),
     kpiCard(brides,"Brides","users",()=>go("/admin/users")),
@@ -3238,7 +3250,7 @@ route("/admin",()=>{
 
   // quick actions
   kids.push(h("h3",{style:{fontSize:"20px",margin:"26px 0 12px"}},"Quick actions"));
-  kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"11px"}},[
+  kids.push(h("div.admin-grid",{style:{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"11px"}},[
     quickAction("plus","Add vendor","var(--rose)",()=>openVendorForm()),
     quickAction("grid","Add category","var(--gold)",()=>openCategoryForm()),
     quickAction("megaphone","New notification","var(--rose)",()=>openBroadcastForm()),
@@ -3268,7 +3280,7 @@ route("/admin/vendors",()=>{
   [["all","All"],["featured","Featured"],["pending","Pending"]].forEach(([k,l])=>seg.appendChild(
     h("button"+(k==="all"?".on":""),{onclick:e=>{tab=k;[...seg.children].forEach(b=>b.classList.remove("on"));e.target.classList.add("on");draw();}},l)));
   kids.push(seg);
-  const list=h("div.col.gap12");
+  const list=h("div.col.gap12.admin-list");
   kids.push(list);
   function draw(){
     clear(list);
@@ -3521,7 +3533,7 @@ function openOfferForm(v,rerender){
 route("/admin/categories",()=>{
   const kids=[adminTop("Categories",h("button.icon-btn",{onclick:()=>openCategoryForm()},icon("plus",22)))];
   kids.push(h("p.small.muted",{style:{margin:"0 3px 14px"}},"Create unlimited categories. Tap to edit or reorder."));
-  const list=h("div.col.gap8");
+  const list=h("div.col.gap8.admin-list");
   kids.push(list);
   function draw(){
     clear(list);
@@ -3879,6 +3891,7 @@ route("/admin/template",()=>{
 load();
 if(window.ZAFFA_ADMIN){
   // dedicated admin page (admin.html) — always lands on the access-controlled panel
+  document.body.classList.add("admin");   // enables the wider desktop layout (see CSS)
   if(!location.hash || location.hash==="#/" || location.hash==="#/welcome") location.hash = "#/admin";
 }else if(!location.hash){
   location.hash = S.onboarded ? (S.role==="admin"?"#/admin":"#/home") : "#/welcome";
