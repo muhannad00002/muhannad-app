@@ -306,7 +306,7 @@ function openVendorForm(v,rerender){
       if(f.size>15000000){toast("Image too large — please pick one under 15MB","⚠️");return;}
       // compress to a small logo so the published catalog stays tiny
       cover.value="Optimizing…";
-      compressImage(f,512,0.8).then(dataUri=>{
+      compressImage(f,1024,0.82).then(dataUri=>{
         if(!dataUri){toast("Couldn't read that image","⚠️");cover.value=d.cover||"";return;}
         d.cover=dataUri; cover.value="(uploaded logo)"; preview();
       });

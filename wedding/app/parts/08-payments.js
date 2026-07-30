@@ -102,11 +102,14 @@ async function cloudInit(opts){
    so the catalog payload stays well under the serverless request-size limit. */
 async function slimCatalogImages(){
   if(typeof compressImage!=="function")return;
-  const big=(s)=>typeof s==="string" && s.startsWith("data:image") && s.length>90000;
+  // Cover is shown as a full-width hero → keep it at 1024px for sharpness, only
+  // re-compressing genuinely huge uploads. Gallery thumbs stay small.
+  const bigCover=(s)=>typeof s==="string" && s.startsWith("data:image") && s.length>360000;
+  const bigThumb=(s)=>typeof s==="string" && s.startsWith("data:image") && s.length>90000;
   for(const v of VENDORS){
-    if(big(v.cover)){ const c=await compressImage(v.cover,512,0.8); if(c)v.cover=c; }
+    if(bigCover(v.cover)){ const c=await compressImage(v.cover,1024,0.82); if(c)v.cover=c; }
     if(Array.isArray(v.gallery)){
-      for(let i=0;i<v.gallery.length;i++){ if(big(v.gallery[i])){ const c=await compressImage(v.gallery[i],512,0.8); if(c)v.gallery[i]=c; } }
+      for(let i=0;i<v.gallery.length;i++){ if(bigThumb(v.gallery[i])){ const c=await compressImage(v.gallery[i],512,0.8); if(c)v.gallery[i]=c; } }
     }
   }
 }
@@ -119,8 +122,8 @@ async function publishCatalog(){
 /* Compress oversized logos in a vendor list (used by the incremental save). */
 async function slimVendorList(list){
   if(typeof compressImage!=="function")return list;
-  const big=(s)=>typeof s==="string"&&s.startsWith("data:image")&&s.length>90000;
-  for(const v of list){ if(big(v.cover)){ const c=await compressImage(v.cover,512,0.8); if(c)v.cover=c; } }
+  const bigCover=(s)=>typeof s==="string"&&s.startsWith("data:image")&&s.length>360000;
+  for(const v of list){ if(bigCover(v.cover)){ const c=await compressImage(v.cover,1024,0.82); if(c)v.cover=c; } }
   return list;
 }
 /* Robust save: send only the changed vendor(s). Tiny request, server merges it
