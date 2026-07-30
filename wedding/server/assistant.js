@@ -16,7 +16,7 @@
    ============================================================================ */
 
 const API_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = process.env.ASSISTANT_MODEL || "claude-opus-5";
+const MODEL = process.env.ASSISTANT_MODEL || "claude-sonnet-4-6";
 const MAX_TOKENS = parseInt(process.env.ASSISTANT_MAX_TOKENS, 10) || 1024;
 
 function isConfigured() { return !!process.env.ANTHROPIC_API_KEY; }
