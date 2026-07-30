@@ -71,8 +71,21 @@ async function getSubscription(userId) {
 const json = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS" }); res.end(JSON.stringify(obj)); };
+// Read the request body with a hard size cap so a malicious client can't
+// exhaust memory. 8 MB comfortably covers image-bearing catalog/vendor saves.
+const MAX_BODY = 8 * 1024 * 1024;
 function body(req) {
-  return new Promise(resolve => { let b = ""; req.on("data", c => b += c); req.on("end", () => resolve(b)); });
+  return new Promise((resolve, reject) => {
+    let b = "", size = 0, aborted = false;
+    req.on("data", c => {
+      if (aborted) return;
+      size += c.length;
+      if (size > MAX_BODY) { aborted = true; req.destroy(); return reject(new Error("payload_too_large")); }
+      b += c;
+    });
+    req.on("end", () => { if (!aborted) resolve(b); });
+    req.on("error", reject);
+  });
 }
 function parseBody(raw, ctype = "") {
   if (ctype.includes("application/json")) { try { return JSON.parse(raw || "{}"); } catch { return {}; } }
@@ -155,6 +168,8 @@ async function handle(req, res) {
 
     /* ---------- accounts ---------- */
     if (p === "/api/auth/register" && req.method === "POST") {
+      if (!rateLimit("reg:" + clientIp(req), 8, 60 * 60e3))
+        return json(res, 429, { error: "Too many attempts. Please try again later." });
       const b = parseBody(await body(req), req.headers["content-type"]);
       const r = await auth.register(b);
       return json(res, r.error ? 400 : 200, r);
@@ -223,6 +238,7 @@ async function handle(req, res) {
     }
     const mView = p.match(/^\/api\/vendors\/([^/]+)\/view$/);
     if (mView && req.method === "POST") {
+      if (!rateLimit("view:" + clientIp(req), 120, 60e3)) return json(res, 429, { error: "slow_down" });
       const id = decodeURIComponent(mView[1]);
       const n = ((await db.get("views:" + id)) || 0) + 1;
       await db.set("views:" + id, n);
@@ -256,6 +272,8 @@ async function handle(req, res) {
       });
     }
     if (p === "/api/redeem" && req.method === "POST") {
+      if (!rateLimit("redeem:" + clientIp(req), 15, 60 * 60e3))
+        return json(res, 429, { error: "Too many attempts. Please try again later." });
       const user = await auth.fromRequest(req);
       if (!user) return json(res, 401, { error: "Please sign in first." });
       const b = parseBody(await body(req), req.headers["content-type"]);
@@ -430,6 +448,7 @@ async function handle(req, res) {
 
     json(res, 404, { error: "not_found" });
   } catch (e) {
+    if (e && e.message === "payload_too_large") return json(res, 413, { error: "payload_too_large" });
     // Log the real error server-side; never leak internals to the client.
     console.error("request error:", (e && e.stack) || e);
     json(res, 500, { error: "server_error" });

@@ -67,7 +67,7 @@ route("/admin",()=>{
   ]));
 
   // KPI grid
-  kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"11px",marginTop:"16px"}},[
+  kids.push(h("div.admin-grid",{style:{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"11px",marginTop:"16px"}},[
     kpiCard(activeVendors,"Active vendors","tag",()=>go("/admin/vendors")),
     kpiCard(CATEGORIES.length,"Categories","grid",()=>go("/admin/categories")),
     kpiCard(brides,"Brides","users",()=>go("/admin/users")),
@@ -87,7 +87,7 @@ route("/admin",()=>{
 
   // quick actions
   kids.push(h("h3",{style:{fontSize:"20px",margin:"26px 0 12px"}},"Quick actions"));
-  kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"11px"}},[
+  kids.push(h("div.admin-grid",{style:{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"11px"}},[
     quickAction("plus","Add vendor","var(--rose)",()=>openVendorForm()),
     quickAction("grid","Add category","var(--gold)",()=>openCategoryForm()),
     quickAction("megaphone","New notification","var(--rose)",()=>openBroadcastForm()),
@@ -117,7 +117,7 @@ route("/admin/vendors",()=>{
   [["all","All"],["featured","Featured"],["pending","Pending"]].forEach(([k,l])=>seg.appendChild(
     h("button"+(k==="all"?".on":""),{onclick:e=>{tab=k;[...seg.children].forEach(b=>b.classList.remove("on"));e.target.classList.add("on");draw();}},l)));
   kids.push(seg);
-  const list=h("div.col.gap12");
+  const list=h("div.col.gap12.admin-list");
   kids.push(list);
   function draw(){
     clear(list);
@@ -370,7 +370,7 @@ function openOfferForm(v,rerender){
 route("/admin/categories",()=>{
   const kids=[adminTop("Categories",h("button.icon-btn",{onclick:()=>openCategoryForm()},icon("plus",22)))];
   kids.push(h("p.small.muted",{style:{margin:"0 3px 14px"}},"Create unlimited categories. Tap to edit or reorder."));
-  const list=h("div.col.gap8");
+  const list=h("div.col.gap8.admin-list");
   kids.push(list);
   function draw(){
     clear(list);
