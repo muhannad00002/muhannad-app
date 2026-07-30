@@ -39,13 +39,13 @@ async function get(key) {
 }
 async function set(key, value) {
   if (usePg) { await pool.query(
-    "INSERT INTO kv(key,value) VALUES($1,$2) ON CONFLICT(key) DO UPDATE SET value=$2, updated_at=now()", [key, value]); return; }
+    "INSERT INTO kv(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO UPDATE SET value=$2::jsonb, updated_at=now()", [key, JSON.stringify(value)]); return; }
   const o = fileRead(); o[key] = value; fileWrite(o);
 }
 /* atomic create — returns false if the key already exists (e.g. duplicate email) */
 async function insertIfAbsent(key, value) {
   if (usePg) { const r = await pool.query(
-    "INSERT INTO kv(key,value) VALUES($1,$2) ON CONFLICT(key) DO NOTHING", [key, value]); return r.rowCount === 1; }
+    "INSERT INTO kv(key,value) VALUES($1,$2::jsonb) ON CONFLICT(key) DO NOTHING", [key, JSON.stringify(value)]); return r.rowCount === 1; }
   const o = fileRead(); if (key in o) return false; o[key] = value; fileWrite(o); return true;
 }
 async function del(key) {
