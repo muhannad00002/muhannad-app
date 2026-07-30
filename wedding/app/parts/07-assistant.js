@@ -273,6 +273,58 @@ const CAT_TIP={
   planner:"A planner pays for itself in saved time and stress. Hire early.",
 };
 
+/* ---------------- LIVE AI (Claude) BRIDGE ----------------
+   Aya's answers come from the backend /api/assistant endpoint, which calls
+   Claude with live web search + vision. We keep the rule-based assistantAnswer()
+   above as an instant offline fallback whenever the backend isn't reachable. */
+
+/* A compact snapshot of the bride's plan + the real marketplace, so Aya can
+   recommend actual vendors and pace advice to her timeline. */
+function assistantContext(){
+  const vends=(typeof VENDORS!=="undefined"?VENDORS:[])
+    .filter(v=>v&&v.approved!==false)
+    .slice(0,60)
+    .map(v=>({name:v.name,category:(catById(v.catId)||{}).name||"",
+      city:v.governorate||v.city||"",featured:!!v.featured}));
+  let next=[];
+  try{ next=suggestedTasks(6).map(x=>x.title); }catch(e){}
+  return {
+    name:S.bride.name||null,
+    governorate:S.bride.governorate||null,
+    weddingDate:S.bride.date||null,
+    daysLeft:(typeof daysLeft==="function"?daysLeft():null),
+    budget:S.bride.budget!=null?S.bride.budget:null,
+    progressPct:(typeof progressPct==="function"?progressPct():null),
+    nextTasks:next,
+    vendors:vends,
+  };
+}
+
+/* Turn the stored chat log into Anthropic-shaped messages (user/assistant with
+   text + optional image blocks). */
+function assistantApiMessages(){
+  return S.assistant.msgs.map(m=>{
+    const content=[];
+    if(m.img)content.push({type:"image",source:{type:"base64",media_type:m.imgType||"image/jpeg",data:m.img.replace(/^data:[^,]+,/,"")}});
+    if(m.text)content.push({type:"text",text:m.text});
+    if(!content.length)content.push({type:"text",text:"(no text)"});
+    return {role:m.role==="user"?"user":"assistant",content};
+  });
+}
+
+/* If Aya names a vendor that's in the app, offer a tap-through chip. */
+function assistantVendorChips(text){
+  const low=(text||"").toLowerCase(); const out=[]; const seen={};
+  for(const v of (typeof VENDORS!=="undefined"?VENDORS:[])){
+    if(!v.name||seen[v.id])continue;
+    if(v.name.length>=3 && low.includes(v.name.toLowerCase())){
+      out.push({label:"View "+v.name,route:"/vendor/"+v.id}); seen[v.id]=1;
+      if(out.length>=2)break;
+    }
+  }
+  return out;
+}
+
 /* ---------------- ASSISTANT SCREEN ---------------- */
 route("/assistant",()=>{
   const app=h("div.app");
@@ -283,7 +335,7 @@ route("/assistant",()=>{
     h("button.icon-btn",{onclick:()=>back()},icon("back",22)),
     h("div.row.gap8.grow",[
       h("span.avatar",{style:{width:"38px",height:"38px",fontSize:"16px",background:"linear-gradient(135deg,var(--rose),var(--gold))"}},"A"),
-      h("div",[h("h2",{style:{fontSize:"18px"}},"Aya"),h("div.tiny",{style:{color:"var(--good)"}},"● AI wedding assistant")]),
+      h("div",[h("h2",{style:{fontSize:"18px"}},"Aya"),h("div.tiny",{style:{color:"var(--good)"}},"● Online · web search + photos")]),
     ]),
     isPremium()?h("span.tag.tag-gold","Premium"):h("span.tag.tag-todo",FREE_AI_MESSAGES-S.assistant.used+" free"),
   ]));
@@ -291,11 +343,12 @@ route("/assistant",()=>{
   const feed=h("div",{style:{flex:"1",overflowY:"auto",padding:"8px 18px 12px",display:"flex",flexDirection:"column",gap:"12px"}});
   screen.appendChild(feed);
 
-  function bubble(role,text,chips){
+  function bubble(role,text,chips,img){
     const isUser=role==="user";
     const wrap=h("div",{style:{display:"flex",justifyContent:isUser?"flex-end":"flex-start",animation:"fadeUp .3s var(--ease)"}});
     const col=h("div",{style:{maxWidth:"84%",display:"flex",flexDirection:"column",gap:"8px",alignItems:isUser?"flex-end":"flex-start"}});
-    col.appendChild(h("div",{style:{padding:"11px 15px",borderRadius:isUser?"var(--r-l) var(--r-l) 4px var(--r-l)":"var(--r-l) var(--r-l) var(--r-l) 4px",
+    if(img)col.appendChild(h("img",{src:img,style:{maxWidth:"200px",maxHeight:"240px",borderRadius:"var(--r-l)",boxShadow:"var(--shadow-1)",objectFit:"cover"}}));
+    if(text)col.appendChild(h("div",{style:{padding:"11px 15px",borderRadius:isUser?"var(--r-l) var(--r-l) 4px var(--r-l)":"var(--r-l) var(--r-l) var(--r-l) 4px",
       background:isUser?"linear-gradient(135deg,var(--rose),var(--rose-deep))":"var(--surface)",color:isUser?"var(--on-rose)":"var(--ink)",
       boxShadow:"var(--shadow-1)",whiteSpace:"pre-wrap",lineHeight:"1.5",fontSize:"14.5px",border:isUser?"0":"1px solid var(--line)"}},text));
     if(chips&&chips.length)col.appendChild(h("div.row.wrap.gap8",chips.map(cp=>
@@ -316,44 +369,91 @@ route("/assistant",()=>{
   function renderFeed(){
     clear(feed);
     if(!S.assistant.msgs.length){
-      feed.appendChild(bubble("bot",`Hi ${S.bride.name||"there"}! 🌸 I'm Aya, your personal wedding assistant. Ask me anything — from budgets to vendors to what to do next.`,
-        [{label:"What should I do next?",q:"what should I do next"},{label:"Plan my budget",q:"plan my budget"},{label:"Find a photographer",q:"find me a photographer"}]));
+      feed.appendChild(bubble("bot",`Hi ${S.bride.name||"there"}! 🌸 I'm Aya, your personal wedding assistant. Ask me anything — I can search the web for the latest ideas and prices, recommend vendors, plan your budget, or look at a photo you send and give you my honest take. 📸`,
+        [{label:"What should I do next?",q:"what should I do next"},{label:"2026 wedding trends",q:"what are the top wedding trends for 2026?"},{label:"Plan my budget",q:"plan my budget"},{label:"Find a photographer",q:"find me a photographer"}]));
     }else{
-      S.assistant.msgs.forEach(m=>feed.appendChild(bubble(m.role,m.text,m.role==="bot"?m.chips:null)));
+      S.assistant.msgs.forEach(m=>feed.appendChild(bubble(m.role,m.text,m.role==="bot"?m.chips:null,m.img)));
     }
     feed.scrollTop=feed.scrollHeight;
     setTimeout(()=>feed.scrollTop=feed.scrollHeight,50);
   }
 
-  function send(text){
-    text=(text||"").trim(); if(!text)return;
+  let pendingImg=null;   // {data, type} — a photo attached to the next message
+
+  async function send(text){
+    text=(text||"").trim();
+    if(!text && !pendingImg)return;
     // gate free users
     if(!isPremium() && S.assistant.used>=FREE_AI_MESSAGES){ openPaywall("assistant"); return; }
-    S.assistant.msgs.push({role:"user",text});
+    const img=pendingImg; pendingImg=null; drawAttachment();
+    S.assistant.msgs.push(img?{role:"user",text,img:img.data,imgType:img.type}:{role:"user",text});
     if(!isPremium())S.assistant.used++;
     save(); renderFeed();
     const tip=typing(); feed.appendChild(tip); feed.scrollTop=feed.scrollHeight;
-    setTimeout(()=>{
-      const ans=assistantAnswer(text);
-      tip.remove();
+
+    let replied=false;
+    try{
+      if(apiBase()){
+        const out=await api("/api/assistant",{method:"POST",
+          body:{messages:assistantApiMessages(),context:assistantContext()}});
+        if(out&&out.text){
+          const chips=assistantVendorChips(out.text);
+          S.assistant.msgs.push({role:"bot",text:out.text,chips:chips.length?chips:undefined});
+          replied=true;
+        }
+      }
+    }catch(e){ /* backend down / not configured → fall back to offline answers */ }
+
+    if(!replied){
+      const ans=assistantAnswer(text||"Tell me about my wedding plan");
       S.assistant.msgs.push({role:"bot",text:ans.text,chips:ans.chips});
-      save(); renderFeed();
-      // update free counter badge
-      const badge=app.querySelector(".topbar .tag");
-      if(badge&&!isPremium())badge.textContent=(FREE_AI_MESSAGES-S.assistant.used)+" free";
-    },520+Math.random()*350);
+    }
+    tip.remove();
+    save(); renderFeed();
+    const badge=app.querySelector(".topbar .tag");
+    if(badge&&!isPremium())badge.textContent=(FREE_AI_MESSAGES-S.assistant.used)+" free";
   }
 
   renderFeed();
 
   // composer
   const input=h("input.field",{placeholder:"Message Aya…",style:{borderRadius:"var(--r-full)"},
-    onkeydown:e=>{if(e.key==="Enter"){send(input.value);input.value="";}}});
+    onkeydown:e=>{if(e.key==="Enter"){const v=input.value;input.value="";send(v);}}});
   const sendBtn=h("button.icon-btn",{style:{width:"46px",height:"46px",background:"linear-gradient(135deg,var(--rose),var(--rose-deep))",color:"var(--on-rose)",border:"0",flex:"none"},
-    onclick:()=>{send(input.value);input.value="";}},icon("send",20));
-  screen.appendChild(h("div",{style:{position:"sticky",bottom:"0",padding:"10px 16px calc(10px + env(safe-area-inset-bottom))",
-    background:"color-mix(in srgb,var(--surface) 92%,transparent)",backdropFilter:"blur(14px)",borderTop:"1px solid var(--line)",
-    display:"flex",gap:"10px",alignItems:"center"}},[input,sendBtn]));
+    onclick:()=>{const v=input.value;input.value="";send(v);}},icon("send",20));
+
+  // photo attach — lets the bride send a picture for Aya to analyse
+  const fileI=h("input",{type:"file",accept:"image/*",style:{display:"none"},onchange:async e=>{
+    const f=e.target.files&&e.target.files[0]; e.target.value="";
+    if(!f)return;
+    const data=await compressImage(f,1024,0.82);
+    if(!data){toast("Couldn't read that image","⚠️");return;}
+    const m=/^data:([^;,]+)[;,]/.exec(data);
+    pendingImg={data,type:(m&&/^image\//.test(m[1]))?m[1]:"image/jpeg"};
+    drawAttachment(); input.focus();
+  }});
+  const attachBtn=h("button.icon-btn",{style:{width:"44px",height:"44px",flex:"none","aria-label":"Attach a photo"},
+    onclick:()=>fileI.click()},icon("camera",20));
+
+  // small preview strip shown above the input while a photo is attached
+  const attachStrip=h("div",{style:{padding:"0 16px"}});
+  function drawAttachment(){
+    clear(attachStrip);
+    if(!pendingImg){attachStrip.style.display="none";return;}
+    attachStrip.style.display="block";
+    attachStrip.appendChild(h("div.row.gap8",{style:{alignItems:"center",padding:"8px 0 2px"}},[
+      h("img",{src:pendingImg.data,style:{width:"46px",height:"46px",borderRadius:"10px",objectFit:"cover",boxShadow:"var(--shadow-1)"}}),
+      h("span.tiny.faint.grow","Photo attached — ask Aya about it"),
+      h("button.icon-btn.plain",{"aria-label":"Remove photo",onclick:()=>{pendingImg=null;drawAttachment();}},icon("close",18)),
+    ]));
+  }
+  drawAttachment();
+
+  screen.appendChild(h("div",{style:{position:"sticky",bottom:"0",paddingBottom:"env(safe-area-inset-bottom)",
+    background:"color-mix(in srgb,var(--surface) 92%,transparent)",backdropFilter:"blur(14px)",borderTop:"1px solid var(--line)"}},[
+    attachStrip,
+    h("div",{style:{padding:"10px 16px",display:"flex",gap:"8px",alignItems:"center"}},[attachBtn,input,sendBtn,fileI]),
+  ]));
   setTimeout(()=>input.focus(),200);
   return app;
 });
