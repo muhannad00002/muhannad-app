@@ -431,6 +431,14 @@ route("/profile",()=>{
         S.account=null; save(); toast("Signed out"); go("/home"); render();
       },true);
     }},[icon("logout",18),"Sign out"]));
+    kids.push(h("button.btn.btn-quiet.btn-block",{style:{marginTop:"8px",color:"var(--crit)"},onclick:()=>{
+      confirmSheet("Delete your account?","This permanently deletes your account and all your data. This can't be undone.","Delete account",async()=>{
+        try{ if(apiBase()&&S.account&&S.account.token) await api("/api/me",{method:"DELETE"}); }catch(e){}
+        try{ localStorage.removeItem(LS_KEY); }catch(e){}
+        load();                                  // reset to a fresh, signed-out state
+        toast("Your account has been deleted"); go("/welcome"); render();
+      },true);
+    }},[icon("trash",17),"Delete my account"]));
   }
   kids.push(h("p.center.faint.tiny",{style:{padding:"22px 0 6px"}},"Wedding & Co · Version 2.0"));
 
