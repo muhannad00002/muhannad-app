@@ -36,6 +36,7 @@ const smartpay = require("./smartpay");
 const apple = require("./apple");
 const db = require("./db");
 const auth = require("./auth");
+const assistant = require("./assistant");
 
 const PORT = process.env.PORT || 8787;
 const APP_RETURN = process.env.APP_RETURN_URL || "http://localhost:8742/index.html";
@@ -396,6 +397,29 @@ async function handle(req, res) {
       if (r.ok) await grantPremium(userId, r.plan, { via: "apple",
         productId: r.productId, expiresAt: r.expiresAt, originalTransactionId: r.originalTransactionId });
       return json(res, r.ok ? 200 : 400, r);
+    }
+
+    /* ---------- AI assistant (Aya, powered by Claude) ---------- */
+    if (p === "/api/assistant" && req.method === "POST") {
+      // Graceful degrade: if no key is configured the client falls back to its
+      // built-in offline answers, so the chat never hard-fails.
+      if (!assistant.isConfigured()) return json(res, 503, { error: "assistant_unavailable" });
+      // Cost + abuse guard: cap messages per client. Signed-in users get more room.
+      const user = await auth.fromRequest(req);
+      const key = "ai:" + (user ? "u:" + user.id : "ip:" + clientIp(req));
+      if (!rateLimit(key, user ? 60 : 20, 60e3))
+        return json(res, 429, { error: "You're chatting fast! Give Aya a moment and try again." });
+      let b;
+      try { b = parseBody(await body(req), req.headers["content-type"]); }
+      catch (e) { return json(res, 400, { error: "invalid_json" }); }
+      try {
+        const out = await assistant.chat({ messages: b.messages, context: b.context });
+        return json(res, 200, out);
+      } catch (e) {
+        console.error("assistant error:", (e && e.message) || e);
+        const code = e && e.status && e.status < 500 ? e.status : 502;
+        return json(res, code, { error: "assistant_failed" });
+      }
     }
 
     /* ---------- entitlement check ---------- */
