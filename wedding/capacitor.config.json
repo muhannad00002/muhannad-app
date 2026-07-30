@@ -1,6 +1,6 @@
 {
-  "appId": "com.brideandco.app",
-  "appName": "Bride & Co",
+  "appId": "com.weddingandco.app",
+  "appName": "Wedding & Co",
   "webDir": "app",
   "server": { "androidScheme": "https", "iosScheme": "https" },
   "ios": { "contentInset": "always" },

@@ -27,7 +27,7 @@ function adminGateView(){
   }
   s.appendChild(h("div.stagger",{style:{textAlign:"center",maxWidth:"360px",margin:"0 auto",width:"100%"}},[
     h("div",{style:{fontSize:"46px",marginBottom:"6px"}},"🔐"),
-    h("div.eyebrow",{style:{color:"var(--gold)",marginBottom:"8px"}},"Bride & Co Admin"),
+    h("div.eyebrow",{style:{color:"var(--gold)",marginBottom:"8px"}},"Wedding & Co Admin"),
     h("h1",{style:{fontSize:"34px",marginBottom:"6px"}},"Control Center"),
     h("p.muted",{style:{marginBottom:"22px"}},"Sign in with your administrator account."),
     h("div.card.pad-l.col.gap12",{style:{textAlign:"left"}},[
@@ -62,7 +62,7 @@ route("/admin",()=>{
   // greeting
   kids.push(h("div.hero",[
     h("div.lbl2","Welcome back"),
-    h("h2",{style:{fontSize:"26px",color:"#fff",margin:"4px 0 6px"}},"Bride & Co Control Center"),
+    h("h2",{style:{fontSize:"26px",color:"#fff",margin:"4px 0 6px"}},"Wedding & Co Control Center"),
     h("p",{style:{color:"rgba(255,255,255,.9)",fontSize:"14px"}},`${activeVendors} vendors live · ${brides} brides planning`),
   ]));
 
@@ -133,8 +133,8 @@ route("/admin/vendors",()=>{
   return appFrame(kids,{tabs:adminTabs("/admin/vendors")});
 });
 
-/* ---- Bulk vendor import (CSV) ---- */
-const CSV_COLUMNS=["name","category","governorate","city","priceLevel","rating","reviews","short","instagram","whatsapp","phone","cover","gallery"];
+/* ---- Bulk vendor import (Excel .xlsx / .xls or CSV) ---- */
+const CSV_COLUMNS=["name","category","governorate","city","tier","short","instagram","whatsapp","phone","logo"];
 function parseCSV(text){
   const rows=[]; let i=0,field="",row=[],inQ=false;
   const pushF=()=>{row.push(field);field="";};
@@ -146,62 +146,94 @@ function parseCSV(text){
     i++;
   }
   if(field.length||row.length)pushR();
-  return rows.filter(r=>r.some(x=>x&&x.trim()));
+  return rows.filter(r=>r.some(x=>x&&String(x).trim()));
 }
-function csvToVendors(text){
-  const rows=parseCSV(text); if(!rows.length)return {vendors:[],errors:["Empty file"]};
-  const header=rows[0].map(h=>h.trim().toLowerCase());
-  const idx=(name)=>header.indexOf(name);
+/* rows = array-of-arrays (row 0 = header). Shared by CSV + Excel. */
+function rowsToVendors(rows){
+  if(!rows||!rows.length)return {vendors:[],errors:["Empty file"]};
+  const header=rows[0].map(h=>String(h||"").trim().toLowerCase());
+  const idx=(...names)=>{ for(const n of names){const j=header.indexOf(n); if(j>=0)return j;} return -1; };
+  const cols={name:idx("name"),category:idx("category","cat"),gov:idx("governorate","gov"),city:idx("city","area"),
+    tier:idx("tier","pricelevel","price","level"),short:idx("short","description","desc"),
+    ig:idx("instagram","ig"),wa:idx("whatsapp","wa"),phone:idx("phone","tel","mobile"),logo:idx("logo","cover","image")};
   const out=[],errors=[];
   for(let r=1;r<rows.length;r++){
-    const row=rows[r]; const get=(n)=>{const j=idx(n);return j>=0?(row[j]||"").trim():"";};
-    const name=get("name"); if(!name)continue;
-    // resolve category by id or name
-    const catRaw=get("category").toLowerCase();
+    const row=rows[r]; const get=(j)=>j>=0?String(row[j]==null?"":row[j]).trim():"";
+    const name=get(cols.name); if(!name)continue;
+    const catRaw=get(cols.category).toLowerCase();
     const cat=CATEGORIES.find(c=>c.id.toLowerCase()===catRaw||c.name.toLowerCase()===catRaw)||CATEGORIES[0];
-    const gov=GOVERNORATES.find(g=>g.toLowerCase()===get("governorate").toLowerCase())||GOVERNORATES[0];
-    const city=get("city")||gov;
-    const pl=Math.min(4,Math.max(1,parseInt(get("pricelevel"),10)||2));
-    const v={id:"v"+String(Date.now()).slice(-6)+r, catId:cat.id, name, governorate:gov, city,
-      priceLevel:pl, priceRange:({1:"OMR 40–120",2:"OMR 120–350",3:"OMR 350–900",4:"OMR 900+"})[pl],
-      rating:Math.min(5,Math.max(1,parseFloat(get("rating"))||4.7)), reviews:parseInt(get("reviews"),10)||0,
-      short:get("short")||name+" — wedding services.", desc:get("short")||"",
-      instagram:get("instagram"), whatsapp:get("whatsapp"), phone:get("phone"),
-      cover:get("cover"), gallery:get("gallery")?get("gallery").split("|").map(s=>s.trim()).filter(Boolean):[],
-      maps:city+", Oman", hours:"Sat–Thu · 10:00 AM – 9:00 PM", services:["Consultation","Bespoke packages"],
-      featured:false, approved:true, isNew:true, offer:null, popularity:90,
-      packages:[{name:"Signature",price:({1:"OMR 40–120",2:"OMR 120–350",3:"OMR 350–900",4:"OMR 900+"})[pl],items:["Full service"],popular:true}],
-      reviewsList:[{by:"Aisha K.",stars:5,text:"Wonderful!",when:"Recently"}]};
-    out.push(v);
+    const gov=GOVERNORATES.find(g=>g.toLowerCase()===get(cols.gov).toLowerCase())||GOVERNORATES[0];
+    const city=get(cols.city)||gov;
+    const tierRaw=get(cols.tier).toLowerCase();
+    const tierMap={budget:1,standard:2,premium:3,luxury:4};
+    const pl=Math.min(4,Math.max(1,parseInt(tierRaw,10)||tierMap[tierRaw]||2));
+    out.push({id:"v"+String(Date.now()).slice(-6)+r, catId:cat.id, name, governorate:gov, city,
+      priceLevel:pl, short:get(cols.short)||"",
+      instagram:get(cols.ig), whatsapp:get(cols.wa)||"+968 ", phone:get(cols.phone)||"+968 ",
+      cover:get(cols.logo), maps:city+", Oman",
+      featured:false, approved:true, isNew:true, offer:null});
   }
   return {vendors:out,errors};
 }
+function csvToVendors(text){ return rowsToVendors(parseCSV(text)); }
+/* lazily load the self-hosted SheetJS parser (admin-only, CSP-safe) */
+function loadXLSX(){
+  return new Promise((res,rej)=>{
+    if(window.XLSX)return res(window.XLSX);
+    const s=document.createElement("script"); s.src="assets/xlsx.min.js";
+    s.onload=()=>window.XLSX?res(window.XLSX):rej(new Error("parser failed to load"));
+    s.onerror=()=>rej(new Error("Could not load the Excel parser"));
+    document.head.appendChild(s);
+  });
+}
+async function excelToVendors(arrayBuffer){
+  const XLSX=await loadXLSX();
+  const wb=XLSX.read(arrayBuffer,{type:"array"});
+  const sheet=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(sheet,{header:1,blankrows:false,defval:""});
+  return rowsToVendors(rows);
+}
 function openBulkImport(onDone){
-  let text="", parsed=null;
+  let parsed=null;
   let ref;
-  const template="name,category,governorate,city,priceLevel,rating,reviews,short,instagram,whatsapp,phone,cover,gallery\n"+
-    "Rose Atelier,dresses,Muscat,Muscat,3,4.8,120,Elegant couture gowns,@rose_atelier,+96890000000,+96824000000,https://example.com/cover.jpg,https://example.com/1.jpg|https://example.com/2.jpg";
+  const template="name,category,governorate,city,tier,short,instagram,whatsapp,phone,logo\n"+
+    "Rose Atelier,dresses,Muscat,Muscat,luxury,Elegant couture gowns,@rose_atelier,+96890000000,+96824000000,https://example.com/logo.jpg";
   ref=sheet({title:"Bulk import vendors",body:(close)=>{
     const b=h("div.col.gap12",{style:{marginTop:"4px"}});
-    b.appendChild(h("p.small.muted","Upload or paste a CSV. Columns: "+CSV_COLUMNS.join(", ")+". Category can be an id or name; gallery is URLs separated by | (pipe)."));
+    b.appendChild(h("p.small.muted","Upload an Excel file (.xlsx) or CSV. Columns: "+CSV_COLUMNS.join(", ")+". Category can be an id or name; tier can be budget / standard / premium / luxury."));
     b.appendChild(h("button.btn.btn-sec.btn-sm",{onclick:()=>{
       const blob=new Blob([template],{type:"text/csv"});const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download="vendors-template.csv";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);
-    }},[icon("share",15),"Download CSV template"]));
-    const file=h("input",{type:"file",accept:".csv,text/csv",style:{display:"none"},onchange:e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{ta.value=rd.result;text=rd.result;recount();};rd.readAsText(f);}});
-    b.appendChild(h("button.btn.btn-sec.btn-block",{onclick:()=>file.click()},[icon("share",16),"Choose CSV file"]));
-    b.appendChild(file);
-    const ta=h("textarea.field",{placeholder:"…or paste CSV here",style:{minHeight:"120px",fontFamily:"var(--font-m)",fontSize:"12px"},oninput:e=>{text=e.target.value;recount();}});
-    b.appendChild(ta);
+    }},[icon("share",15),"Download template"]));
     const count=h("p.small.muted");
+    const setCount=()=>{count.textContent=parsed?(parsed.vendors.length+" vendors ready to import"):"";};
+    const file=h("input",{type:"file",accept:".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",style:{display:"none"},onchange:async e=>{
+      const f=e.target.files[0];if(!f)return; count.textContent="Reading "+f.name+"…";
+      try{
+        if(/\.(xlsx|xls)$/i.test(f.name)){
+          const buf=await f.arrayBuffer(); parsed=await excelToVendors(buf);
+        }else{
+          const txt=await f.text(); ta.value=txt; parsed=csvToVendors(txt);
+        }
+        setCount();
+      }catch(err){ count.textContent=""; toast("Couldn't read file: "+((err&&err.message)||"error"),"⚠️"); }
+    }});
+    b.appendChild(h("button.btn.btn-sec.btn-block",{onclick:()=>file.click()},[icon("share",16),"Choose Excel or CSV file"]));
+    b.appendChild(file);
+    const ta=h("textarea.field",{placeholder:"…or paste CSV here",style:{minHeight:"110px",fontFamily:"var(--font-m)",fontSize:"12px"},oninput:e=>{parsed=e.target.value.trim()?csvToVendors(e.target.value):null;setCount();}});
+    b.appendChild(ta);
     b.appendChild(count);
-    function recount(){ parsed=text.trim()?csvToVendors(text):null; count.textContent=parsed?(parsed.vendors.length+" vendors ready to import"):""; }
     return b;
   },actions:[
     h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
-    h("button.btn.btn-pri.grow",{onclick:()=>{
+    h("button.btn.btn-pri.grow",{onclick:async(e)=>{
       if(!parsed||!parsed.vendors.length){toast("Nothing to import","⚠️");return;}
-      VENDORS.unshift(...parsed.vendors); save(); ref.close();
-      toast(parsed.vendors.length+" vendors imported ✓","🎉"); onDone&&onDone();
+      const list=parsed.vendors;
+      VENDORS.unshift(...list); save();
+      const btn=e.target; btn.disabled=true; btn.textContent="Importing…";
+      if(typeof isAdmin==="function"&&isAdmin()&&typeof saveVendorsRemote==="function"&&apiBase()){
+        try{ await saveVendorsRemote(list); ref.close(); toast(list.length+" vendors imported & live ✓","🎉"); onDone&&onDone(); }
+        catch(err){ btn.disabled=false; btn.textContent="Import vendors"; toast("Import failed to publish: "+((err&&err.message)||"error"),"⚠️"); }
+      }else{ ref.close(); toast(list.length+" vendors imported ✓","🎉"); onDone&&onDone(); }
     }},"Import vendors"),
   ]});
 }
@@ -230,8 +262,12 @@ function openVendorActions(v,rerender){
     actionRow("gift",v.offer?"Remove offer":"Add offer",()=>{close();openOfferForm(v,rerender);}),
     actionRow("fwd","Preview as bride",()=>{close();go("/vendor/"+v.id);}),
     h("div",{style:{height:"1px",background:"var(--line)",margin:"4px 0"}}),
-    actionRow("trash","Delete vendor",()=>{close();confirmSheet("Delete vendor?",`“${v.name}” will be permanently removed.`,"Delete",()=>{
-      const i=VENDORS.indexOf(v);if(i>=0)VENDORS.splice(i,1);save();toast("Vendor deleted");rerender();},true);},true),
+    actionRow("trash","Delete vendor",()=>{close();confirmSheet("Delete vendor?",`“${v.name}” will be permanently removed.`,"Delete",async()=>{
+      const id=v.id; const i=VENDORS.indexOf(v);if(i>=0)VENDORS.splice(i,1);save();
+      if(typeof isAdmin==="function"&&isAdmin()&&typeof deleteVendorRemote==="function"&&apiBase()){
+        try{ await deleteVendorRemote(id); toast("Vendor deleted"); }catch(err){ toast("Delete failed: "+((err&&err.message)||"error"),"⚠️"); }
+      }else toast("Vendor deleted");
+      rerender();},true);},true),
   ])});
   function actionRow(ic,label,fn,danger){return h("button.lrow",{style:{width:"100%",cursor:"pointer",padding:"13px 4px"},onclick:fn},[
     h("span.icon-btn",{style:{width:"38px",height:"38px",background:danger?"var(--crit-soft)":"var(--rose-soft)",color:danger?"var(--crit)":"var(--rose-deep)",border:"0"}},icon(ic,18)),
@@ -304,16 +340,16 @@ function openVendorForm(v,rerender){
         Object.assign(v,d);
       }
       save();
-      // publish immediately and report the real result so failures are never silent
-      if(typeof isAdmin==="function" && isAdmin() && typeof apiBase==="function" && apiBase() && typeof publishCatalog==="function"){
+      // Save just this vendor to the cloud (tiny request → immune to size limits)
+      // and report the real result so a failure is never silent.
+      if(typeof isAdmin==="function" && isAdmin() && typeof apiBase==="function" && apiBase() && typeof saveVendorsRemote==="function"){
         const btn=e.target; btn.disabled=true; const orig=btn.textContent; btn.textContent="Publishing…";
-        try{ await publishCatalog(); toast(isNew?"Vendor added & live ✓":"Vendor updated & live ✓","🎉"); }
-        catch(err){ toast("Saved locally, but publish failed: "+((err&&err.message)||"error"),"⚠️"); }
-        btn.disabled=false; btn.textContent=orig;
+        try{ await saveVendorsRemote([isNew?d:v]); toast(isNew?"Vendor added & live ✓":"Vendor updated & live ✓","🎉"); ref.close(); rerender?rerender():render(); }
+        catch(err){ btn.disabled=false; btn.textContent=orig; toast("Publish failed: "+((err&&err.message)||"error"),"⚠️"); }
       }else{
         toast(isNew?"Vendor added ✓":"Vendor updated ✓","🎉");
+        ref.close(); rerender?rerender():render();
       }
-      ref.close(); rerender?rerender():render();
     }},isNew?"Add vendor":"Save"),
   ]});
 }

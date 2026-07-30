@@ -116,6 +116,26 @@ async function publishCatalog(){
   if(r&&r.version){S._catalogVersion=r.version; save();}
   return r;
 }
+/* Compress oversized logos in a vendor list (used by the incremental save). */
+async function slimVendorList(list){
+  if(typeof compressImage!=="function")return list;
+  const big=(s)=>typeof s==="string"&&s.startsWith("data:image")&&s.length>90000;
+  for(const v of list){ if(big(v.cover)){ const c=await compressImage(v.cover,512,0.8); if(c)v.cover=c; } }
+  return list;
+}
+/* Robust save: send only the changed vendor(s). Tiny request, server merges it
+   into the published catalog. This is the primary admin save path. */
+async function saveVendorsRemote(list){
+  await slimVendorList(list);
+  const r=await api("/api/admin/vendors",{method:"POST",body:{vendors:list,categories:CATEGORIES}});
+  if(r&&r.version){S._catalogVersion=r.version; save();}
+  return r;
+}
+async function deleteVendorRemote(id){
+  const r=await api("/api/admin/vendors/delete",{method:"POST",body:{id}});
+  if(r&&r.version){S._catalogVersion=r.version; save();}
+  return r;
+}
 let _pubTimer=null, _pubPending=false, _pubRetries=0, _lastPubError="";
 function schedulePublish(delay){
   _pubPending=true;
@@ -243,7 +263,7 @@ function openAccountSheet(onDone,opts){
               body:{phone:d.phone,code:d.code,name:d.name,age:d.age,governorate:d.governorate}});
             S.account={id:r.user.id,phone:r.user.phone,email:r.user.email,name:r.user.name,governorate:r.user.governorate,age:r.user.age,role:r.user.role,token:r.token};
             if(r.user.name&&!existing)S.bride.name=r.user.name;
-            save(); ref.close(); toast(existing?"Welcome back 💗":"Welcome to Bride & Co 💗");
+            save(); ref.close(); toast(existing?"Welcome back 💗":"Welcome to Wedding & Co 💗");
             cloudInit(); onDone&&onDone(); render();
           }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Verify & continue";}
         }},"Verify & continue");

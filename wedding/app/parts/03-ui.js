@@ -79,10 +79,10 @@ const ICONS={
   send:'<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/>',
   eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
 };
-/* Bride & Co brand mark — gold ring + cyan diamond (echoes the logo) */
+/* Wedding & Co brand mark — gold ring + cyan diamond (echoes the logo) */
 function logoMark(size=64){
   const s=size;
-  return h("span",{style:{display:"inline-block",lineHeight:0},html:`<svg width="${s}" height="${s}" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Bride & Co">
+  return h("span",{style:{display:"inline-block",lineHeight:0},html:`<svg width="${s}" height="${s}" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Wedding & Co">
     <circle cx="32" cy="40" r="15" stroke="var(--rose)" stroke-width="4.5"/>
     <path d="M32 8 L40 18 L32 24 L24 18 Z" fill="var(--cyan)"/>
     <path d="M32 8 L40 18 L32 24 Z" fill="var(--cyan-deep)" opacity=".55"/>

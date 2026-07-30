@@ -14,7 +14,7 @@
    for local testing).
    ============================================================================ */
 const API_VERSION = "v20.0";
-const BRAND = process.env.OTP_BRAND || "Bride & Co";
+const BRAND = process.env.OTP_BRAND || "Wedding & Co";
 
 function provider() {
   if (process.env.OPENWA_URL) return "openwa";

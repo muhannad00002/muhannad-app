@@ -1,11 +1,11 @@
-# Bride & Co — Native iOS & Android + Store Publishing Guide
+# Wedding & Co — Native iOS & Android + Store Publishing Guide
 
 The app is already wrapped for native with **Capacitor** (`capacitor.config.json`).
 The web app (`app/`) is the single source; Capacitor bundles it into a real
 iOS and Android app that talks to your Vercel backend.
 
-- **App name:** Bride & Co
-- **App ID (bundle id):** `com.brideandco.app`
+- **App name:** Wedding & Co
+- **App ID (bundle id):** `com.weddingandco.app`
 - **Backend:** `https://weddingandco.vercel.app` (already wired in the app)
 
 ---
@@ -66,21 +66,21 @@ npx cap open ios       # opens the project in Xcode
 In Xcode:
 1. Select the **App** target → **Signing & Capabilities** → check
    *Automatically manage signing* → pick your **Team** (your Apple Developer account).
-2. Set **Bundle Identifier** to `com.brideandco.app`.
+2. Set **Bundle Identifier** to `com.weddingandco.app`.
 3. Set the **Version** (e.g. 1.0.0) and **Build** (e.g. 1).
 4. Choose **Any iOS Device (arm64)** as the run target.
 5. Menu **Product → Archive**. When it finishes, the Organizer opens.
 6. **Distribute App → App Store Connect → Upload**.
 
 Then in **App Store Connect** (appstoreconnect.apple.com):
-1. **My Apps → + → New App** → name *Bride & Co*, bundle id `com.brideandco.app`, language, SKU.
+1. **My Apps → + → New App** → name *Wedding & Co*, bundle id `com.weddingandco.app`, language, SKU.
 2. Fill the listing (see §6), attach the build you uploaded.
 3. Add it to **TestFlight** first to test on your phone, then **Submit for Review**.
 
 > 🍎 **IAP rule:** Apple requires **digital subscriptions to use Apple In‑App
 > Purchase**, *not* Bank Muscat. The app already has Apple IAP scaffolding
 > (`server/apple.js`); on iOS the paywall should use it. You'll create the two
-> subscription products (`com.brideandco.premium.monthly`,
+> subscription products (`com.weddingandco.premium.monthly`,
 > `...annual`) in App Store Connect → **In-App Purchases**. Bank Muscat stays
 > for the **web** version. (If premium isn't ready for iOS at launch, ship the
 > app free and add the subscription in an update.)
@@ -98,7 +98,7 @@ In Android Studio:
    never update the app without it), then build the **release** `.aab`.
 
 Then in **Google Play Console** (play.google.com/console):
-1. **Create app** → name *Bride & Co*, default language, app (not game), free.
+1. **Create app** → name *Wedding & Co*, default language, app (not game), free.
 2. Complete **Dashboard** setup tasks (privacy policy, data safety, content
    rating, target audience).
 3. **Production → Create new release** → upload the `.aab` → roll out.
@@ -111,7 +111,7 @@ Then in **Google Play Console** (play.google.com/console):
 
 ## 6. Store listing assets you'll need (both stores)
 
-- **App name:** Bride & Co
+- **App name:** Wedding & Co
 - **Subtitle / short description:** Plan your wedding & find vendors in Oman
 - **Description:** (a paragraph on planning, checklist, vendors, budget, Aya AI)
 - **Keywords:** wedding, planner, Oman, vendors, marriage, checklist

@@ -1,6 +1,6 @@
 {
-  "name": "Bride & Co — Wedding Planner",
-  "short_name": "Bride & Co",
+  "name": "Wedding & Co — Wedding Planner",
+  "short_name": "Wedding & Co",
   "description": "Your personal wedding planner & vendor marketplace for Oman.",
   "start_url": "./index.html#/home",
   "scope": "./",
