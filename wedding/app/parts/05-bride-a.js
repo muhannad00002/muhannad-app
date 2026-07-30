@@ -10,7 +10,7 @@ route("/welcome",()=>{
   s.appendChild(h("div.stagger",{style:{textAlign:"center"}},[
     h("div",{style:{marginBottom:"14px"}},logoMark(76)),
     h("div.eyebrow",{style:{marginBottom:"10px"}},"Wedding Planner"),
-    h("h1",{style:{fontSize:"46px",lineHeight:"1.02",marginBottom:"14px",letterSpacing:".01em"}},"Wedding & Co"),
+    h("h1",{style:{fontSize:"46px",lineHeight:"1.02",marginBottom:"14px",letterSpacing:".01em"}},"Bride & Co"),
     h("p.muted",{style:{maxWidth:"320px",margin:"0 auto 30px",fontSize:"16px"}},
       "Every vendor, every task, every detail of your big day — beautifully in one place."),
     h("button.btn.btn-pri.btn-lg.btn-block",{style:{maxWidth:"300px",margin:"0 auto"},onclick:()=>go("/onboard")},["Start planning ",icon("fwd",18)]),
@@ -28,7 +28,7 @@ route("/onboard",()=>{
   const refreshNext=()=>{ next.disabled=!steps[step].valid(); };
 
   const steps=[
-    {em:"🌸",h:"What's your name?",sub:"So we can make Wedding & Co truly yours.",field:()=>{
+    {em:"🌸",h:"What's your name?",sub:"So we can make Bride & Co truly yours.",field:()=>{
       const i=h("input.field",{placeholder:"e.g. Sarah",value:data.name,style:{fontSize:"18px",textAlign:"center"},
         oninput:e=>{data.name=e.target.value;refreshNext();}}); setTimeout(()=>i.focus(),200); return i;},
       valid:()=>!!data.name.trim()},

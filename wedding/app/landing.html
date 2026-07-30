@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Wedding & Co — Plan your wedding in Oman</title>
-<meta name="description" content="Wedding & Co — your personal wedding planner and vendor marketplace for Oman. Checklist, budget, vendors, and Aya AI in one beautiful app.">
+<title>Bride & Co — Plan your wedding in Oman</title>
+<meta name="description" content="Bride & Co — your personal wedding planner and vendor marketplace for Oman. Checklist, budget, vendors, and Aya AI in one beautiful app.">
 <link rel="icon" href="assets/icon-192.png">
 <style>
   :root{
@@ -15,10 +15,14 @@
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans Arabic",sans-serif;
     --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif;
   }
+  /* Self-hosted Arabic font (Cairo) — identical on every device */
+  @font-face{font-family:"Cairo";font-style:normal;font-weight:100 900;font-display:swap;
+    src:url("assets/cairo-ar.woff2") format("woff2");}
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
   body{font-family:var(--font);color:var(--ink);background:var(--cream);overflow-x:hidden;line-height:1.6}
-  [dir=rtl]{font-family:"Noto Kufi Arabic","Segoe UI",Tahoma,var(--font)}
+  [dir=rtl] body,[dir=rtl]{font-family:"Cairo",var(--font)}
+  [dir=rtl] .serif,[dir=rtl] h1,[dir=rtl] h2,[dir=rtl] .head h2,[dir=rtl] .cta-card h2{font-family:"Cairo",var(--serif)}
   a{color:inherit;text-decoration:none}
   img{max-width:100%}
   .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
@@ -151,7 +155,7 @@
   <div class="wrap nav">
     <div class="brand">
       <span class="mark" aria-hidden="true"><svg viewBox="0 0 64 64" width="34" height="34" fill="none"><circle cx="32" cy="40" r="15" stroke="#C48A93" stroke-width="4.5"/><path d="M32 8 L40 18 L32 24 L24 18 Z" fill="#2AA3BC"/><path d="M32 8 L40 18 L32 24 Z" fill="#1E8296" opacity=".55"/><path d="M26 12 L23 6 M32 11 L32 4 M38 12 L41 6" stroke="#2AA3BC" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg></span>
-      <span>Wedding &amp; Co</span>
+      <span>Bride &amp; Co</span>
     </div>
     <div class="nav-actions">
       <button class="lang" id="langBtn" onclick="toggleLang()">العربية</button>
@@ -216,7 +220,7 @@
 <!-- CTA -->
 <section class="cta"><div class="wrap"><div class="cta-card reveal">
   <h2 data-i="ctah">Your dream wedding starts here</h2>
-  <p data-i="ctap">Download Wedding &amp; Co and plan with confidence — beautifully, in Arabic or English.</p>
+  <p data-i="ctap">Download Bride &amp; Co and plan with confidence — beautifully, in Arabic or English.</p>
   <div class="stores">
     <a class="store" href="index.html"><span class="e"></span><span><small data-i="dl1">Download on the</small>App Store</span></a>
     <a class="store" href="index.html"><span class="e">▶</span><span><small data-i="dl2">Get it on</small>Google Play</span></a>
@@ -225,13 +229,13 @@
 </div></div></section>
 
 <footer><div class="wrap foot">
-  <div class="brand"><span class="mark"><svg viewBox="0 0 64 64" width="30" height="30" fill="none"><circle cx="32" cy="40" r="15" stroke="#C48A93" stroke-width="4.5"/><path d="M32 8 L40 18 L32 24 L24 18 Z" fill="#2AA3BC"/></svg></span><span>Wedding &amp; Co</span></div>
+  <div class="brand"><span class="mark"><svg viewBox="0 0 64 64" width="30" height="30" fill="none"><circle cx="32" cy="40" r="15" stroke="#C48A93" stroke-width="4.5"/><path d="M32 8 L40 18 L32 24 L24 18 Z" fill="#2AA3BC"/></svg></span><span>Bride &amp; Co</span></div>
   <div class="foot-links">
     <a href="privacy.html" data-i="priv">Privacy Policy</a>
     <a href="index.html" data-i="openApp2">Open app</a>
-    <a href="mailto:hello@weddingandco.app" data-i="contact">Contact</a>
+    <a href="mailto:hello@brideandco.app" data-i="contact">Contact</a>
   </div>
-  <div style="color:var(--ink2);font-size:13px" data-i="copy">© 2026 Wedding &amp; Co · Made with 💗 in Oman</div>
+  <div style="color:var(--ink2);font-size:13px" data-i="copy">© 2026 Bride &amp; Co · Made with 💗 in Oman</div>
 </div></footer>
 
 <script>
@@ -248,9 +252,9 @@ const I18N = {
     m2:"Grand Hall — booked", m2b:"Oct 4 · OMR 850", m3:"Makeup artist", m3b:"In progress",
     fh:"Everything for your big day", fp:"Thoughtfully designed for brides in Oman — from the first idea to the final dance.",
     hh:"How it works", hp:"Three simple steps to a stress-free celebration.",
-    ctah:"Your dream wedding starts here", ctap:"Download Wedding & Co and plan with confidence — beautifully, in Arabic or English.",
+    ctah:"Your dream wedding starts here", ctap:"Download Bride & Co and plan with confidence — beautifully, in Arabic or English.",
     ctaWeb:"Open web app", dl1:"Download on the", dl2:"Get it on",
-    priv:"Privacy Policy", contact:"Contact", copy:"© 2026 Wedding & Co · Made with 💗 in Oman",
+    priv:"Privacy Policy", contact:"Contact", copy:"© 2026 Bride & Co · Made with 💗 in Oman",
     chips:["📸 Photography","🏛️ Wedding Halls","💄 Makeup","🌸 Flowers","🎂 Cake","💍 Jewelry","🎥 Videography","🍽️ Catering","👰 Dresses","🎧 DJ","✨ Lighting","🚗 Luxury Cars"],
     feats:[["✅","Smart checklist","A complete wedding timeline that paces itself around your date — nothing forgotten."],
       ["🛍️","Vendor marketplace","Browse trusted vendors across 35+ categories, filtered by your governorate."],
@@ -274,9 +278,9 @@ const I18N = {
     m2:"القاعة الكبرى — محجوزة", m2b:"٤ أكتوبر · ٨٥٠ ر.ع", m3:"خبيرة المكياج", m3b:"قيد التنفيذ",
     fh:"كل ما يلزم ليومكِ الكبير", fp:"مصمّم بعناية للعرائس في عُمان — من الفكرة الأولى حتى الرقصة الأخيرة.",
     hh:"كيف يعمل التطبيق", hp:"ثلاث خطوات بسيطة نحو احتفال بلا توتر.",
-    ctah:"زفاف أحلامكِ يبدأ من هنا", ctap:"حمّلي تطبيق Wedding & Co وخطّطي بثقة — بالعربية أو الإنجليزية.",
+    ctah:"زفاف أحلامكِ يبدأ من هنا", ctap:"حمّلي تطبيق Bride & Co وخطّطي بثقة — بالعربية أو الإنجليزية.",
     ctaWeb:"افتحي نسخة الويب", dl1:"حمّلوه من", dl2:"احصلوا عليه من",
-    priv:"سياسة الخصوصية", contact:"تواصلي معنا", copy:"© ٢٠٢٦ Wedding & Co · صُنع بحب 💗 في عُمان",
+    priv:"سياسة الخصوصية", contact:"تواصلي معنا", copy:"© ٢٠٢٦ Bride & Co · صُنع بحب 💗 في عُمان",
     chips:["📸 تصوير","🏛️ قاعات أفراح","💄 مكياج","🌸 زهور","🎂 كيك","💍 مجوهرات","🎥 فيديو","🍽️ ضيافة","👰 فساتين","🎧 دي جي","✨ إضاءة","🚗 سيارات فخمة"],
     feats:[["✅","قائمة مهام ذكية","جدول زمني متكامل يتناسب مع موعد زفافكِ — دون نسيان أي تفصيل."],
       ["🛍️","سوق المزوّدين","تصفّحي مزوّدين موثوقين في أكثر من ٣٥ فئة، مع تصفية حسب محافظتكِ."],

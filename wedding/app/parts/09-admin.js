@@ -27,7 +27,7 @@ function adminGateView(){
   }
   s.appendChild(h("div.stagger",{style:{textAlign:"center",maxWidth:"360px",margin:"0 auto",width:"100%"}},[
     h("div",{style:{fontSize:"46px",marginBottom:"6px"}},"🔐"),
-    h("div.eyebrow",{style:{color:"var(--gold)",marginBottom:"8px"}},"Wedding & Co Admin"),
+    h("div.eyebrow",{style:{color:"var(--gold)",marginBottom:"8px"}},"Bride & Co Admin"),
     h("h1",{style:{fontSize:"34px",marginBottom:"6px"}},"Control Center"),
     h("p.muted",{style:{marginBottom:"22px"}},"Sign in with your administrator account."),
     h("div.card.pad-l.col.gap12",{style:{textAlign:"left"}},[
@@ -62,7 +62,7 @@ route("/admin",()=>{
   // greeting
   kids.push(h("div.hero",[
     h("div.lbl2","Welcome back"),
-    h("h2",{style:{fontSize:"26px",color:"#fff",margin:"4px 0 6px"}},"Wedding & Co Control Center"),
+    h("h2",{style:{fontSize:"26px",color:"#fff",margin:"4px 0 6px"}},"Bride & Co Control Center"),
     h("p",{style:{color:"rgba(255,255,255,.9)",fontSize:"14px"}},`${activeVendors} vendors live · ${brides} brides planning`),
   ]));
 
