@@ -168,10 +168,10 @@ route("/vendor/:id",(q,p)=>{
   const igHandle=String(v.instagram||"").replace(/^https?:\/\/(www\.)?instagram\.com\//i,"").replace(/^@/,"").replace(/\/$/,"").trim();
   const mapQ=String(v.maps||v.city||v.governorate||"").trim();
   kids.push(h("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"9px",margin:"16px 0 4px"}},[
-    actionBtn("chat","WhatsApp",()=> waNum?openLink("https://wa.me/"+waNum):toast("No WhatsApp number for this vendor","💬")),
-    actionBtn("phone","Call",()=> telNum?openLink("tel:"+telNum):toast("No phone number for this vendor","📞")),
-    actionBtn("ig","Instagram",()=> igHandle?openLink((/^https?:/i.test(v.instagram||"")?v.instagram:"https://instagram.com/"+igHandle)):toast("No Instagram for this vendor","📷")),
-    actionBtn("pin","Map",()=> mapQ?openLink(/^https?:/i.test(mapQ)?mapQ:"https://maps.google.com/?q="+encodeURIComponent(mapQ)):toast("No location for this vendor","📍")),
+    actionBtn("chat","WhatsApp", waNum&&("https://wa.me/"+waNum), ()=>toast("No WhatsApp number for this vendor","💬")),
+    actionBtn("phone","Call", telNum&&("tel:"+telNum), ()=>toast("No phone number for this vendor","📞")),
+    actionBtn("ig","Instagram", igHandle&&(/^https?:/i.test(v.instagram||"")?v.instagram:"https://instagram.com/"+igHandle), ()=>toast("No Instagram for this vendor","📷")),
+    actionBtn("pin","Map", mapQ&&(/^https?:/i.test(mapQ)?mapQ:"https://maps.google.com/?q="+encodeURIComponent(mapQ)), ()=>toast("No location for this vendor","📍")),
   ]));
 
   // gallery (only if the vendor has photos beyond the logo)
@@ -223,9 +223,22 @@ route("/vendor/:id",(q,p)=>{
   }
   return app;
 
-  function actionBtn(ic,label,fn){return h("button",{style:{display:"flex",flexDirection:"column",alignItems:"center",gap:"6px"},onclick:fn},
-    [h("span.icon-btn",{style:{width:"48px",height:"48px",color:"var(--rose-deep)",background:"var(--rose-soft)",border:"0"}},icon(ic,21)),
-     h("span.tiny.muted",{style:{fontWeight:"600"}},label)]);}
+  /* Contact action. When a real destination exists we render a genuine <a> so
+     the user's tap opens tel:/wa.me/instagram/maps natively — mobile browsers
+     (esp. iOS Safari) block a *programmatic* new-tab click, but always honour a
+     direct tap on a real link. Missing fields fall back to a button + toast. */
+  function actionBtn(ic,label,href,onMiss){
+    const style={display:"flex",flexDirection:"column",alignItems:"center",gap:"6px",textDecoration:"none",color:"inherit",cursor:"pointer"};
+    const inner=[h("span.icon-btn",{style:{width:"48px",height:"48px",color:"var(--rose-deep)",background:"var(--rose-soft)",border:"0"}},icon(ic,21)),
+     h("span.tiny.muted",{style:{fontWeight:"600"}},label)];
+    if(href){
+      const ext=/^https?:/i.test(href);
+      const attrs={href,style};
+      if(ext){attrs.target="_blank";attrs.rel="noopener noreferrer";}
+      return h("a",attrs,inner);
+    }
+    return h("button",{style,onclick:onMiss},inner);
+  }
 });
 function sectionTitle(t){return h("h3",{style:{fontSize:"20px",margin:"26px 0 12px"}},t);}
 function shortTask(t){return t.replace(/^(Book|Buy|Order|Choose|Arrange|Send|Set up|Reserve|Select|Consider|Prepare|Confirm|Draft|Print|Add|Plan|Hire) /,"");}
