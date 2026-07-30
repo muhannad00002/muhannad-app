@@ -223,6 +223,7 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .screen{padding:0 20px calc(var(--tab-h) + 28px);animation:fade .4s var(--ease)}
 .screen.no-tab{padding-bottom:36px}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
 .stagger>*{animation:fadeUp .5s var(--ease) both}
@@ -2187,6 +2188,14 @@ route("/profile",()=>{
         S.account=null; save(); toast("Signed out"); go("/home"); render();
       },true);
     }},[icon("logout",18),"Sign out"]));
+    kids.push(h("button.btn.btn-quiet.btn-block",{style:{marginTop:"8px",color:"var(--crit)"},onclick:()=>{
+      confirmSheet("Delete your account?","This permanently deletes your account and all your data. This can't be undone.","Delete account",async()=>{
+        try{ if(apiBase()&&S.account&&S.account.token) await api("/api/me",{method:"DELETE"}); }catch(e){}
+        try{ localStorage.removeItem(LS_KEY); }catch(e){}
+        load();                                  // reset to a fresh, signed-out state
+        toast("Your account has been deleted"); go("/welcome"); render();
+      },true);
+    }},[icon("trash",17),"Delete my account"]));
   }
   kids.push(h("p.center.faint.tiny",{style:{padding:"22px 0 6px"}},"Wedding & Co · Version 2.0"));
 
@@ -3154,23 +3163,65 @@ function currentUserId(){
   return (S.bride && S.bride.name ? S.bride.name : "anon")+"|"+(S.bride.date||"");
 }
 
-/* ---- Return handler: the SmartPay callback bounces here after payment ---- */
+/* ---- Return handler: the SmartPay callback bounces here after payment ----
+   SECURITY: Premium is granted ONLY when the SERVER confirms the subscription.
+   We never unlock based on the redirect's ?status alone — so a cancelled or
+   failed payment (or any stray navigation to this URL) can never yield Premium.
+   The backend grants entitlement only on a decrypted order_status = "Success". */
 route("/premium/return",(q)=>{
-  const success = q.status==="success";
-  if(success){ const plan=q.plan||localStorage.getItem("zaffa.pendingPlan")||"monthly"; goPremium(plan); cloudInit(); }
   try{ localStorage.removeItem("zaffa.pendingPlan"); }catch{}
-  const kids=[h("div",{style:{height:"14px"}}),
-    h("div.card.pad-l.center",{style:{marginTop:"40px"}},[
-      h("div",{style:{fontSize:"52px",marginBottom:"10px"}},success?"🎉":"😔"),
-      h("h2",{style:{fontSize:"26px"}},success?"You're Premium!":"Payment not completed"),
-      h("p.muted",{style:{margin:"8px auto 20px",maxWidth:"300px"}},
-        success?"Everything is unlocked — unlimited categories, unlimited AI assistant and calendar sync. Enjoy planning 💗"
-               :"No charge was made. You can try again whenever you're ready."),
-      h("button.btn.btn-pri.btn-lg",{onclick:()=>go("/home")},success?"Start planning":"Back to app"),
-      !success?h("button.btn.btn-quiet",{style:{marginTop:"8px"},onclick:()=>openPaywall("default")},"Try again"):null,
-    ])];
-  if(success)setTimeout(confetti,200);
-  return appFrame(kids,{noTab:true});
+  const box=h("div");
+  const render_=(node)=>{ clear(box).appendChild(node); };
+
+  render_(h("div.card.pad-l.center",{style:{marginTop:"40px"}},[
+    h("div.spinner",{style:{width:"34px",height:"34px",border:"3px solid var(--line2)",borderTopColor:"var(--rose)",
+      borderRadius:"50%",margin:"6px auto 14px",animation:"spin .8s linear infinite"}}),
+    h("h2",{style:{fontSize:"22px"}},"Confirming your payment…"),
+    h("p.muted",{style:{margin:"8px auto 0",maxWidth:"300px"}},"One moment while we check with the bank."),
+  ]));
+
+  function success(){
+    const name=S.bride.name?(", "+S.bride.name):"";
+    render_(h("div.card.pad-l.center",{style:{marginTop:"40px"}},[
+      h("div",{style:{fontSize:"54px",marginBottom:"8px"}},"🎉"),
+      h("div.eyebrow",{style:{color:"var(--gold)"}},"Wedding & Co Premium"),
+      h("h2",{style:{fontSize:"27px",margin:"6px 0 4px"}},"You're all set"+name+" 💗"),
+      h("p.muted",{style:{margin:"8px auto 20px",maxWidth:"320px"}},
+        "Welcome to Premium! Everything is unlocked — unlimited vendor categories, unlimited chats with Aya, calendar sync and smart reminders. Let's plan your dream wedding."),
+      h("button.btn.btn-pri.btn-lg",{onclick:()=>go("/home")},"Start planning"),
+    ]));
+    setTimeout(confetti,150);
+  }
+  function failed(msg){
+    render_(h("div.card.pad-l.center",{style:{marginTop:"40px"}},[
+      h("div",{style:{fontSize:"52px",marginBottom:"10px"}},"😔"),
+      h("h2",{style:{fontSize:"25px"}},"Payment not completed"),
+      h("p.muted",{style:{margin:"8px auto 20px",maxWidth:"300px"}},msg||"No charge was made. You can try again whenever you're ready."),
+      h("button.btn.btn-pri.btn-lg",{onclick:()=>openPaywall("default")},"Try again"),
+      h("button.btn.btn-quiet",{style:{marginTop:"8px"},onclick:()=>go("/home")},"Back to app"),
+    ]));
+  }
+
+  (async()=>{
+    // Trust the server, not the URL. Poll /api/me briefly in case the callback
+    // is still landing, and reflect whatever the server actually granted.
+    let confirmed=false;
+    if(S.account && S.account.token && apiBase()){
+      for(let i=0;i<5 && !confirmed;i++){
+        try{
+          const me=await api("/api/me");
+          if(me&&me.subscription){ S.subscription={plan:me.subscription.plan,tier:me.subscription.tier||null,since:me.subscription.since||null}; save(); }
+        }catch(e){}
+        confirmed=isPremium();
+        if(!confirmed) await new Promise(r=>setTimeout(r,1400));
+      }
+    }
+    if(confirmed) success();
+    else if(q.status==="success") failed("We couldn't confirm the payment yet. If you were charged, Premium will unlock automatically within a few minutes.");
+    else failed();
+  })();
+
+  return appFrame([h("div",{style:{height:"14px"}}),box],{noTab:true});
 });
 
 </script>

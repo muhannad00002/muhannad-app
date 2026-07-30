@@ -99,10 +99,23 @@ function normPhone(raw) {
 const hashCode = (phone, code) =>
   crypto.createHmac("sha256", SECRET).update(phone + "|" + code).digest("hex");
 
+/* Optional App Review / demo account: a single designated phone whose code is
+   fixed and never sent over WhatsApp, so Apple's reviewer can sign in. Enabled
+   only when both env vars are set. DEMO_PHONE is normalised the same way. */
+const DEMO_PHONE = process.env.DEMO_PHONE ? normPhone(process.env.DEMO_PHONE) : null;
+const DEMO_OTP = process.env.DEMO_OTP || null;
+
 async function startOtp({ phone }) {
   const p = normPhone(phone);
   if (!p) return { error: "Please enter a valid phone number." };
   const now = Date.now();
+
+  // Demo/reviewer number: issue the fixed code without touching WhatsApp.
+  if (DEMO_PHONE && DEMO_OTP && p === DEMO_PHONE) {
+    await db.set("otp:" + p, { hash: hashCode(p, DEMO_OTP), exp: now + OTP_TTL, attempts: 0, sends: [now], lastSentAt: now });
+    return { sent: true, phone: p, existing: !!(await db.get("user:" + p)) };
+  }
+
   const rec = (await db.get("otp:" + p)) || { sends: [] };
   rec.sends = (rec.sends || []).filter(t => now - t < 3600e3);
   if (rec.lastSentAt && now - rec.lastSentAt < 60e3)
@@ -174,5 +187,24 @@ async function seedAdmin() {
     salt, hash: hashPassword(pass, salt), createdAt: existing?.createdAt || Date.now() });
 }
 
-module.exports = { init, register, login, fromRequest, seedAdmin, normEmail,
-  startOtp, verifyOtp, normPhone, OMAN_GOVERNORATES };
+/* Permanently delete the signed-in user's account and their data (App Store
+   Guideline 5.1.1(v) — apps that create accounts must allow deletion in-app). */
+async function deleteAccount(user) {
+  if (!user) return { error: "not_signed_in" };
+  const id = user.id || user.email || user.phone;
+  if (user.email) await db.del("user:" + normEmail(user.email));
+  if (user.phone) { await db.del("user:" + user.phone); await db.del("otp:" + user.phone); }
+  if (id) await db.del("sub:" + id);
+  return { ok: true };
+}
+
+/* Pre-create the demo/reviewer bride so sign-in is one step (enter number → code). */
+async function seedDemo() {
+  if (!DEMO_PHONE) return;
+  if (await db.get("user:" + DEMO_PHONE)) return;
+  await db.set("user:" + DEMO_PHONE, { id: DEMO_PHONE, phone: DEMO_PHONE, name: "App Reviewer",
+    age: 30, governorate: "Muscat", city: "Muscat", role: "bride", createdAt: Date.now() });
+}
+
+module.exports = { init, register, login, fromRequest, seedAdmin, seedDemo, normEmail,
+  startOtp, verifyOtp, normPhone, OMAN_GOVERNORATES, deleteAccount };

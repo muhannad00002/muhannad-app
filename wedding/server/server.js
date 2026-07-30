@@ -99,6 +99,7 @@ function ready() {
     await db.init();
     await auth.init();
     await auth.seedAdmin();
+    await auth.seedDemo();
     const spCfg = await db.get("config:smartpay");
     if (spCfg) smartpay.setConfig(spCfg);
   })().catch((e) => {
@@ -200,6 +201,13 @@ async function handle(req, res) {
       const user = await auth.fromRequest(req);
       if (!user) return json(res, 401, { error: "not_signed_in" });
       return json(res, 200, { user, subscription: await getSubscription(user.id) });
+    }
+    /* Delete the signed-in user's own account + data (in-app account deletion). */
+    if (p === "/api/me" && req.method === "DELETE") {
+      const user = await auth.fromRequest(req);
+      if (!user) return json(res, 401, { error: "not_signed_in" });
+      const r = await auth.deleteAccount(user);
+      return json(res, r.error ? 400 : 200, r);
     }
 
     /* ---------- Bank Muscat / SmartPay config (admin-managed) ---------- */
