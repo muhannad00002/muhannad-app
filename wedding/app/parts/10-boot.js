@@ -1,5 +1,6 @@
 /* ============ ZAFFA — BOOT ============ */
 load();
+showSplash();             // admin-configurable launch splash (bride app only; no-op if none set)
 if(window.ZAFFA_ADMIN){
   // dedicated admin page (admin.html) — always lands on the access-controlled panel
   document.body.classList.add("admin");   // enables the wider desktop layout (see CSS)

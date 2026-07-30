@@ -200,17 +200,25 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .app{max-width:460px;margin:0 auto;min-height:100%;position:relative;background:var(--ground);
   box-shadow:0 0 60px rgba(140,90,90,.10)}
 @media(min-width:900px){.app{min-height:100vh}}
-/* ---- Admin on a computer screen: use the full width, multi-column layout ---- */
+/* ---- Admin on a computer screen: a centered, comfortably-sized console ----
+   (only the admin build gets this; the bride app stays phone-width) */
 @media(min-width:900px){
-  body.admin .app{max-width:1120px;box-shadow:none}
-  body.admin .screen{padding-left:40px;padding-right:40px;padding-bottom:48px}
-  body.admin .topbar{padding-left:40px;padding-right:40px}
-  /* overview KPI + quick-action tiles spread across the width */
+  body.admin .app{max-width:920px;box-shadow:none}
+  body.admin .screen{padding-left:30px;padding-right:30px;padding-bottom:48px}
+  body.admin .topbar{padding-left:30px;padding-right:30px}
+  /* overview KPI + quick-action tiles spread evenly */
   body.admin .admin-grid{grid-template-columns:repeat(4,1fr)!important}
-  /* the vendor / category management lists become a responsive card grid */
-  body.admin .admin-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;align-items:start}
-  /* keep edit/add sheets comfortable (not full-width) on big screens */
+  /* management lists become a tidy 2-column card grid; labels/empty-state
+     (anything that isn't a card) span the full row so cards stay aligned */
+  body.admin .admin-list{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;align-items:stretch}
+  body.admin .admin-list>*{margin:0}
+  body.admin .admin-list>*:not(.card){grid-column:1/-1}
+  /* stop standalone inputs / segmented controls from stretching too wide */
+  body.admin .field{max-width:600px}
+  body.admin .seg{max-width:600px}
+  /* edit/add sheets stay comfortable; their fields fill the sheet */
   body.admin .sheet{max-width:620px}
+  body.admin .sheet .field{max-width:none}
 }
 .screen{padding:0 20px calc(var(--tab-h) + 28px);animation:fade .4s var(--ease)}
 .screen.no-tab{padding-bottom:36px}
@@ -758,26 +766,23 @@ function compressImage(src, maxDim=512, quality=0.8){
   });
 }
 
-/* Splash video — plays once each time the app is launched, then fades to reveal
-   the app. Muted + playsinline so autoplay is allowed; tap to skip. */
-function showSplash(){
+/* Launch splash — shows the admin-configured splash image (SETTINGS.splash) once
+   each time the app opens, then fades to reveal the app. The admin can change it
+   anytime from the panel; no code deploy needed. Tap to skip. Nothing shows if no
+   splash is configured, or on the admin panel. Accepts an explicit src override. */
+function showSplash(src){
   if(window.ZAFFA_ADMIN)return;                 // no splash on the admin panel
+  const img=src||(typeof SETTINGS==="object"&&SETTINGS&&SETTINGS.splash)||"";
+  if(!img)return;                                // nothing configured → straight into the app
   const ov=h("div#splash");
-  const vid=h("video",{muted:true,autoplay:true,preload:"auto",disablePictureInPicture:true});
-  vid.muted=true;                                // property + attribute for iOS autoplay
-  vid.setAttribute("muted","");
-  vid.setAttribute("playsinline","");
-  vid.setAttribute("webkit-playsinline","");
-  vid.src="assets/splash.mp4";
-  ov.appendChild(vid);
+  const pic=h("div",{style:{width:"100%",height:"100%",backgroundImage:`url("${String(img).replace(/"/g,"%22")}")`,
+    backgroundSize:"cover",backgroundPosition:"center"}});
+  ov.appendChild(pic);
   document.body.appendChild(ov);
   let done=false;
   const finish=()=>{ if(done)return; done=true; ov.classList.add("hide"); setTimeout(()=>ov.remove(),600); };
-  vid.addEventListener("ended",finish);
-  vid.addEventListener("error",finish);          // if the video can't load, don't block the app
   ov.addEventListener("click",finish);           // tap to skip
-  setTimeout(finish,8000);                        // safety cap
-  const p=vid.play&&vid.play(); if(p&&p.catch)p.catch(()=>{});
+  setTimeout(finish, 1600);                        // auto-dismiss after a beat
 }
 
 /* ---- Generated cover art (deterministic gradient + soft blobs) ----
@@ -927,7 +932,7 @@ function initials(name){return name.split(/\s+/).slice(0,2).map(w=>w[0]).join(""
 const LS_KEY="zaffa.v1";
 
 /* Live collections (mutable; admin edits these) */
-let CATEGORIES, VENDORS, TIPS, ADS, USERS;
+let CATEGORIES, VENDORS, TIPS, ADS, USERS, SETTINGS={};
 
 /* Persistent app state */
 let S;
@@ -1034,6 +1039,7 @@ function load(){
   TIPS       = raw?._tips       || SEED_TIPS.map(t=>({...t}));
   ADS        = raw?._ads        || SEED_ADS.map(a=>({...a}));
   USERS      = raw?._users      || SEED_USERS.map(u=>({...u}));
+  SETTINGS   = raw?._settings   || {};   // admin-configurable branding (e.g. splash image)
   S = raw?.state ? {...defaultState(), ...raw.state, bride:{...defaultState().bride, ...(raw.state.bride||{})}} : defaultState();
   if(!S.checklist||!Object.keys(S.checklist).length){
     S.checklist={}; CHECKLIST_TEMPLATE.forEach(t=>S.checklist[t.id]="todo");
@@ -1043,7 +1049,7 @@ function load(){
 
 function save(){
   try{localStorage.setItem(LS_KEY,JSON.stringify({
-    state:S,_categories:CATEGORIES,_vendors:VENDORS,_tips:TIPS,_ads:ADS,_users:USERS,
+    state:S,_categories:CATEGORIES,_vendors:VENDORS,_tips:TIPS,_ads:ADS,_users:USERS,_settings:SETTINGS,
   }));}catch(e){}
   // an admin's edits auto-publish to the backend so they go live for customers
   if(typeof autoPublish==="function") autoPublish();
@@ -2802,6 +2808,7 @@ async function cloudInit(opts){
     if(Array.isArray(cat.vendors)&&cat.vendors.length){VENDORS.length=0;VENDORS.push(...cat.vendors);VENDORS.forEach(v=>{if(!v.governorate)v.governorate=govOfCity(v.city);});changed=true;}
     if(Array.isArray(cat.tips)&&cat.tips.length){TIPS.length=0;TIPS.push(...cat.tips);changed=true;}
     if(Array.isArray(cat.ads)){ADS.length=0;ADS.push(...cat.ads);changed=true;}
+    if(cat.settings&&typeof cat.settings==="object"){SETTINGS=cat.settings;changed=true;}
     if(cat.version){S._catalogVersion=cat.version;}
     if(S.account&&S.account.token && !opts.catalogOnly){
       // refresh profile + entitlement; only sign out on an explicit auth
@@ -2861,6 +2868,13 @@ async function saveVendorsRemote(list){
 }
 async function deleteVendorRemote(id){
   const r=await api("/api/admin/vendors/delete",{method:"POST",body:{id}});
+  if(r&&r.version){S._catalogVersion=r.version; save();}
+  return r;
+}
+/* Publish app branding/settings (e.g. the splash image) so it goes live for
+   customers instantly — same real-time path as vendor edits. */
+async function saveSettingsRemote(settings){
+  const r=await api("/api/admin/settings",{method:"POST",body:{settings}});
   if(r&&r.version){S._catalogVersion=r.version; save();}
   return r;
 }
@@ -3630,6 +3644,7 @@ route("/admin/more",()=>{
   }
   items.push(
     ["gift","Vouchers","Create redeem codes for free access",()=>go("/admin/vouchers")],
+    ["camera","App splash screen",SETTINGS&&SETTINGS.splash?"Custom splash set · tap to change":"Not set · tap to add",()=>go("/admin/branding")],
     ["wallet","Bank Muscat payments","Merchant ID, access code & working key",()=>go("/admin/payments")],
     ["megaphone","Send notification","Broadcast to brides",()=>openBroadcastForm()],
     ["tag","Advertisements",ADS.filter(a=>a.active).length+" active",()=>go("/admin/ads")],
@@ -3656,6 +3671,56 @@ function adminSignOut(){
   S.account=null; S.role="bride"; save();
   toast("Signed out"); render();
 }
+
+/* ---------- APP SPLASH SCREEN (admin-configurable, no code deploy) ---------- */
+route("/admin/branding",()=>{
+  const kids=[adminTop("Splash screen")];
+  kids.push(h("p.small.muted",{style:{margin:"0 3px 16px"}},
+    "This image shows for a moment each time a bride opens the app. Upload a tall (portrait) image — recommended 1080 × 1920 px. Changes go live instantly; no update needed."));
+
+  const preview=h("div",{style:{width:"180px",height:"320px",margin:"0 auto 16px",borderRadius:"var(--r-l)",overflow:"hidden",
+    border:"1px solid var(--line2)",background:"var(--surface2)",display:"grid",placeItems:"center"}});
+  function drawPreview(){
+    clear(preview);
+    if(SETTINGS.splash){
+      preview.style.backgroundImage=`url("${String(SETTINGS.splash).replace(/"/g,"%22")}")`;
+      preview.style.backgroundSize="cover"; preview.style.backgroundPosition="center";
+    }else{
+      preview.style.backgroundImage="none";
+      preview.appendChild(h("div.tiny.faint",{style:{textAlign:"center",padding:"0 16px"}},"No splash set — the app opens straight to the home screen."));
+    }
+  }
+  drawPreview();
+  kids.push(preview);
+
+  const fileI=h("input",{type:"file",accept:"image/*",style:{display:"none"},onchange:async e=>{
+    const f=e.target.files&&e.target.files[0]; e.target.value=""; if(!f)return;
+    if(f.size>15000000){toast("Image too large — pick one under 15MB","⚠️");return;}
+    toast("Optimizing…","🖼️");
+    const data=await compressImage(f,1080,0.82);
+    if(!data){toast("Couldn't read that image","⚠️");return;}
+    SETTINGS.splash=data; save(); drawPreview();
+  }});
+  kids.push(fileI);
+  kids.push(h("button.btn.btn-pri.btn-block",{style:{marginTop:"4px"},onclick:()=>fileI.click()},[icon("camera",18),SETTINGS.splash?"Replace image":"Upload splash image"]));
+
+  const publishBtn=h("button.btn.btn-sec.btn-block",{style:{marginTop:"10px"},onclick:async()=>{
+    if(!apiBase()){toast("Saved on this device","💾");return;}
+    publishBtn.disabled=true; const orig=publishBtn.textContent; publishBtn.textContent="Publishing…";
+    try{ await saveSettingsRemote(SETTINGS); toast("Splash is live for brides ✓","🎉"); }
+    catch(e){ toast(e.message||"Could not publish","⚠️"); }
+    finally{ publishBtn.disabled=false; clear(publishBtn); publishBtn.append(icon("share",18),"Publish to all brides"); }
+  }},[icon("share",18),"Publish to all brides"]);
+  kids.push(publishBtn);
+
+  if(SETTINGS.splash) kids.push(h("button.btn.btn-quiet.btn-block",{style:{marginTop:"8px",color:"var(--crit)"},onclick:async()=>{
+    SETTINGS.splash=""; save(); drawPreview();
+    if(apiBase()){ try{ await saveSettingsRemote(SETTINGS); }catch(e){} }
+    toast("Splash removed"); go("/admin/branding");
+  }},[icon("trash",17),"Remove splash"]));
+
+  return appFrame(kids,{tabs:adminTabs("/admin/more")});
+});
 
 /* ---------- VOUCHERS ---------- */
 route("/admin/vouchers",()=>{
@@ -3890,6 +3955,7 @@ route("/admin/template",()=>{
 <script>
 /* ============ ZAFFA — BOOT ============ */
 load();
+showSplash();             // admin-configurable launch splash (bride app only; no-op if none set)
 if(window.ZAFFA_ADMIN){
   // dedicated admin page (admin.html) — always lands on the access-controlled panel
   document.body.classList.add("admin");   // enables the wider desktop layout (see CSS)

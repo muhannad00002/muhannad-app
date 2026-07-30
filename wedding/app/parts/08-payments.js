@@ -77,6 +77,7 @@ async function cloudInit(opts){
     if(Array.isArray(cat.vendors)&&cat.vendors.length){VENDORS.length=0;VENDORS.push(...cat.vendors);VENDORS.forEach(v=>{if(!v.governorate)v.governorate=govOfCity(v.city);});changed=true;}
     if(Array.isArray(cat.tips)&&cat.tips.length){TIPS.length=0;TIPS.push(...cat.tips);changed=true;}
     if(Array.isArray(cat.ads)){ADS.length=0;ADS.push(...cat.ads);changed=true;}
+    if(cat.settings&&typeof cat.settings==="object"){SETTINGS=cat.settings;changed=true;}
     if(cat.version){S._catalogVersion=cat.version;}
     if(S.account&&S.account.token && !opts.catalogOnly){
       // refresh profile + entitlement; only sign out on an explicit auth
@@ -136,6 +137,13 @@ async function saveVendorsRemote(list){
 }
 async function deleteVendorRemote(id){
   const r=await api("/api/admin/vendors/delete",{method:"POST",body:{id}});
+  if(r&&r.version){S._catalogVersion=r.version; save();}
+  return r;
+}
+/* Publish app branding/settings (e.g. the splash image) so it goes live for
+   customers instantly — same real-time path as vendor edits. */
+async function saveSettingsRemote(settings){
+  const r=await api("/api/admin/settings",{method:"POST",body:{settings}});
   if(r&&r.version){S._catalogVersion=r.version; save();}
   return r;
 }

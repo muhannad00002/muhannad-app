@@ -130,26 +130,23 @@ function compressImage(src, maxDim=512, quality=0.8){
   });
 }
 
-/* Splash video — plays once each time the app is launched, then fades to reveal
-   the app. Muted + playsinline so autoplay is allowed; tap to skip. */
-function showSplash(){
+/* Launch splash — shows the admin-configured splash image (SETTINGS.splash) once
+   each time the app opens, then fades to reveal the app. The admin can change it
+   anytime from the panel; no code deploy needed. Tap to skip. Nothing shows if no
+   splash is configured, or on the admin panel. Accepts an explicit src override. */
+function showSplash(src){
   if(window.ZAFFA_ADMIN)return;                 // no splash on the admin panel
+  const img=src||(typeof SETTINGS==="object"&&SETTINGS&&SETTINGS.splash)||"";
+  if(!img)return;                                // nothing configured → straight into the app
   const ov=h("div#splash");
-  const vid=h("video",{muted:true,autoplay:true,preload:"auto",disablePictureInPicture:true});
-  vid.muted=true;                                // property + attribute for iOS autoplay
-  vid.setAttribute("muted","");
-  vid.setAttribute("playsinline","");
-  vid.setAttribute("webkit-playsinline","");
-  vid.src="assets/splash.mp4";
-  ov.appendChild(vid);
+  const pic=h("div",{style:{width:"100%",height:"100%",backgroundImage:`url("${String(img).replace(/"/g,"%22")}")`,
+    backgroundSize:"cover",backgroundPosition:"center"}});
+  ov.appendChild(pic);
   document.body.appendChild(ov);
   let done=false;
   const finish=()=>{ if(done)return; done=true; ov.classList.add("hide"); setTimeout(()=>ov.remove(),600); };
-  vid.addEventListener("ended",finish);
-  vid.addEventListener("error",finish);          // if the video can't load, don't block the app
   ov.addEventListener("click",finish);           // tap to skip
-  setTimeout(finish,8000);                        // safety cap
-  const p=vid.play&&vid.play(); if(p&&p.catch)p.catch(()=>{});
+  setTimeout(finish, 1600);                        // auto-dismiss after a beat
 }
 
 /* ---- Generated cover art (deterministic gradient + soft blobs) ----
