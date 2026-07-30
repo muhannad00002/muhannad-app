@@ -393,6 +393,49 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .field:focus,.field:focus-visible{outline:none;border-color:var(--rose);box-shadow:0 0 0 3px var(--rose-soft)}
 /* headings crispness */
 h1,h2,h3,h4{letter-spacing:-.015em}
+
+/* ============ LUXE LAYER — high-end finish ============ */
+/* Premium layered shadows + a whisper-thin gold hairline on cards */
+:root{
+  --shadow-1:0 1px 2px rgba(43,43,45,.04),0 2px 10px rgba(43,43,45,.05);
+  --shadow-2:0 10px 30px rgba(43,43,45,.08),0 2px 8px rgba(43,43,45,.05);
+  --shadow-3:0 30px 70px rgba(30,30,35,.16),0 10px 24px rgba(30,30,35,.08);
+  --gold-line:linear-gradient(90deg,transparent,rgba(198,164,73,.55),transparent);
+}
+.card{border:1px solid var(--line);border-radius:var(--r-l);position:relative;background:
+  linear-gradient(var(--surface),var(--surface)) padding-box}
+.card.card-2{border-color:color-mix(in srgb,var(--gold) 22%,var(--line))}
+/* refined display type — a touch more air + true small-caps eyebrows */
+h1,h2{letter-spacing:-.02em}
+.eyebrow{letter-spacing:.2em;font-size:10.5px;color:var(--rose-deep)}
+.eyebrow::after{content:"";display:inline-block;width:16px;height:1px;background:var(--gold);
+  vertical-align:middle;margin-inline-start:8px;opacity:.7}
+/* buttons — gold gradient with a soft top sheen + deeper lift */
+.btn-pri{background:linear-gradient(135deg,#D9B85C,var(--rose) 55%,var(--rose-deep));
+  box-shadow:0 8px 22px rgba(179,147,47,.32),inset 0 1px 0 rgba(255,255,255,.28);color:#2A2410}
+.btn-pri:hover{filter:brightness(1.04);box-shadow:0 12px 30px rgba(179,147,47,.42),inset 0 1px 0 rgba(255,255,255,.3)}
+.btn-lg{border-radius:var(--r-full);letter-spacing:.02em}
+/* hero — richer depth + gold vignette + faint grain-free shimmer */
+.hero{background:linear-gradient(140deg,#54555A 0%,#3A3B3E 46%,#26272A 100%)}
+.hero::before{content:"";position:absolute;inset:0;background:
+  linear-gradient(180deg,rgba(255,255,255,.05),transparent 30%);pointer-events:none;border-radius:inherit}
+/* soft gold divider under section headers */
+.sec-h{border-bottom:1px solid transparent}
+.sec-h h3{position:relative;padding-bottom:2px}
+/* inputs — premium inset + gold focus */
+.field{transition:border-color .2s,box-shadow .2s,background .2s;border-radius:var(--r-m)}
+.field:hover{border-color:var(--line2)}
+.field:focus,.field:focus-visible{border-color:var(--gold);box-shadow:0 0 0 3.5px color-mix(in srgb,var(--gold) 20%,transparent)}
+/* chips / tags — refined */
+.tag{letter-spacing:.02em}
+.tag-gold{background:linear-gradient(135deg,var(--gold-soft),color-mix(in srgb,var(--gold) 16%,#fff));color:var(--rose-deep);border:1px solid color-mix(in srgb,var(--gold) 30%,transparent)}
+/* tab bar — frosted glass with a hairline gold top edge */
+.tabbar{background:color-mix(in srgb,var(--surface) 82%,transparent);backdrop-filter:saturate(1.7) blur(24px)}
+.tabbar::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:var(--gold-line);opacity:.5}
+/* avatar / icon-btn accents */
+.icon-btn{transition:transform .14s var(--ease),background .2s,color .2s,box-shadow .2s}
+/* smoother, more graceful default easing everywhere */
+:root{--ease:cubic-bezier(.22,.61,.24,1)}
 </style>
 </head>
 <body>
