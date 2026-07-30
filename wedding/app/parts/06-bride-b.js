@@ -128,7 +128,7 @@ route("/vendor/:id",(q,p)=>{
   const kids=[];
   // cover with floating back / actions
   const cover=coverEl(v,"",1,true); cover.style.height="270px"; cover.style.width="100%"; cover.style.borderRadius="0 0 var(--r-xl) var(--r-xl)";
-  cover.appendChild(h("div",{style:{position:"absolute",inset:"0",background:"linear-gradient(to bottom,rgba(0,0,0,.18),transparent 40%,transparent 70%,rgba(0,0,0,.15))"}}));
+  cover.appendChild(h("div",{style:{position:"absolute",inset:"0",pointerEvents:"none",background:"linear-gradient(to bottom,rgba(0,0,0,.18),transparent 40%,transparent 70%,rgba(0,0,0,.15))"}}));
   const backBtn=h("button.icon-btn",{style:{position:"absolute",top:"calc(14px + env(safe-area-inset-top))",left:"16px",background:"rgba(255,255,255,.85)",backdropFilter:"blur(6px)"},onclick:()=>back()},icon("back",22));
   const favBtn=h("button.icon-btn",{style:{position:"absolute",top:"calc(14px + env(safe-area-inset-top))",right:"64px",background:"rgba(255,255,255,.85)",backdropFilter:"blur(6px)",color:fav?"var(--rose)":"var(--ink2)"},
     onclick:()=>{toggleFav(v.id);const on=S.favorites.includes(v.id);clear(favBtn).appendChild(icon(on?"heartFill":"heart",21));favBtn.style.color=on?"var(--rose)":"var(--ink2)";}},icon(fav?"heartFill":"heart",21));

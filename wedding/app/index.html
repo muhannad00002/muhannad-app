@@ -621,10 +621,18 @@ function h(tag, props, kids){
   if(Array.isArray(props)||typeof props==="string"||typeof props==="number"||(props&&props.nodeType)){kids=props;props={};}
   props=props||{};
   let cls="", id="";
+  // Allow extra space-separated classes in the selector, e.g. h("div.thumb "+cls)
+  // where cls may be "" or "card big". Without this, a trailing/internal space
+  // makes the regex fail and the element is created with NO class at all.
+  tag=String(tag).trim();
+  let extraCls="";
+  const sp=tag.search(/\s/);
+  if(sp>=0){ extraCls=tag.slice(sp+1).replace(/\./g," ").replace(/\s+/g," ").trim(); tag=tag.slice(0,sp); }
   const m=tag.match(/^([a-z0-9]+)?(#[\w-]+)?((?:\.[\w-]+)*)$/i);
   const name=(m&&m[1])||"div";
   if(m&&m[2])id=m[2].slice(1);
   if(m&&m[3])cls=m[3].replace(/\./g," ").trim();
+  if(extraCls)cls=(cls+" "+extraCls).trim();
   const e=document.createElement(name);
   if(id)e.id=id;
   if(cls)e.className=cls;
@@ -1858,7 +1866,7 @@ route("/vendor/:id",(q,p)=>{
   const kids=[];
   // cover with floating back / actions
   const cover=coverEl(v,"",1,true); cover.style.height="270px"; cover.style.width="100%"; cover.style.borderRadius="0 0 var(--r-xl) var(--r-xl)";
-  cover.appendChild(h("div",{style:{position:"absolute",inset:"0",background:"linear-gradient(to bottom,rgba(0,0,0,.18),transparent 40%,transparent 70%,rgba(0,0,0,.15))"}}));
+  cover.appendChild(h("div",{style:{position:"absolute",inset:"0",pointerEvents:"none",background:"linear-gradient(to bottom,rgba(0,0,0,.18),transparent 40%,transparent 70%,rgba(0,0,0,.15))"}}));
   const backBtn=h("button.icon-btn",{style:{position:"absolute",top:"calc(14px + env(safe-area-inset-top))",left:"16px",background:"rgba(255,255,255,.85)",backdropFilter:"blur(6px)"},onclick:()=>back()},icon("back",22));
   const favBtn=h("button.icon-btn",{style:{position:"absolute",top:"calc(14px + env(safe-area-inset-top))",right:"64px",background:"rgba(255,255,255,.85)",backdropFilter:"blur(6px)",color:fav?"var(--rose)":"var(--ink2)"},
     onclick:()=>{toggleFav(v.id);const on=S.favorites.includes(v.id);clear(favBtn).appendChild(icon(on?"heartFill":"heart",21));favBtn.style.color=on?"var(--rose)":"var(--ink2)";}},icon(fav?"heartFill":"heart",21));

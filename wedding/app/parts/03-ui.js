@@ -6,10 +6,18 @@ function h(tag, props, kids){
   if(Array.isArray(props)||typeof props==="string"||typeof props==="number"||(props&&props.nodeType)){kids=props;props={};}
   props=props||{};
   let cls="", id="";
+  // Allow extra space-separated classes in the selector, e.g. h("div.thumb "+cls)
+  // where cls may be "" or "card big". Without this, a trailing/internal space
+  // makes the regex fail and the element is created with NO class at all.
+  tag=String(tag).trim();
+  let extraCls="";
+  const sp=tag.search(/\s/);
+  if(sp>=0){ extraCls=tag.slice(sp+1).replace(/\./g," ").replace(/\s+/g," ").trim(); tag=tag.slice(0,sp); }
   const m=tag.match(/^([a-z0-9]+)?(#[\w-]+)?((?:\.[\w-]+)*)$/i);
   const name=(m&&m[1])||"div";
   if(m&&m[2])id=m[2].slice(1);
   if(m&&m[3])cls=m[3].replace(/\./g," ").trim();
+  if(extraCls)cls=(cls+" "+extraCls).trim();
   const e=document.createElement(name);
   if(id)e.id=id;
   if(cls)e.className=cls;
