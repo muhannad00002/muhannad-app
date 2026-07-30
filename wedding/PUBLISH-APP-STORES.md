@@ -30,33 +30,29 @@ From the `wedding/` folder:
 ```bash
 cd wedding
 npm install
-npm install @capacitor/core @capacitor/cli @capacitor/ios @capacitor/android
-npm install @capacitor/splash-screen @capacitor/status-bar
-
-# create the native projects (creates ios/ and android/ folders)
-npx cap add ios
-npx cap add android
+npm run native:install   # installs Capacitor core/cli/ios/android + assets
+npm run native:add       # creates the native ios/ and android/ projects
 ```
 
-## 2. App icon & splash screen
+## 2. App icon & splash screen — already done ✅
 
-Put a **1024×1024 PNG** icon at `wedding/resources/icon.png` and a
-**2732×2732 PNG** splash at `wedding/resources/splash.png`, then:
+The branded **`resources/icon.png` (1024×1024)** and **`resources/splash.png`
+(2732×2732)** are already committed (gold ring + cyan diamond on charcoal).
+Just generate every platform size from them:
 
 ```bash
-npm install @capacitor/assets --save-dev
-npx capacitor-assets generate --iconBackgroundColor '#2B2B2F' --splashBackgroundColor '#2B2B2F'
+npm run native:assets
 ```
 
-This auto-creates every icon/splash size for both platforms.
+This auto-creates all iOS + Android icon/splash sizes. (Swap the two files in
+`resources/` first if you ever want a different icon.)
 
 ## 3. Build the web app and sync it into native
 
 Run this **every time you change the app**:
 
 ```bash
-npm run build          # regenerates app/index.html + admin.html
-npx cap sync           # copies the web app into ios/ and android/
+npm run cap:sync         # builds the web app + copies it into ios/ and android/
 ```
 
 ---
