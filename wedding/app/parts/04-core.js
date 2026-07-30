@@ -3,7 +3,7 @@
 const LS_KEY="zaffa.v1";
 
 /* Live collections (mutable; admin edits these) */
-let CATEGORIES, VENDORS, TIPS, ADS, USERS;
+let CATEGORIES, VENDORS, TIPS, ADS, USERS, SETTINGS={};
 
 /* Persistent app state */
 let S;
@@ -110,6 +110,7 @@ function load(){
   TIPS       = raw?._tips       || SEED_TIPS.map(t=>({...t}));
   ADS        = raw?._ads        || SEED_ADS.map(a=>({...a}));
   USERS      = raw?._users      || SEED_USERS.map(u=>({...u}));
+  SETTINGS   = raw?._settings   || {};   // admin-configurable branding (e.g. splash image)
   S = raw?.state ? {...defaultState(), ...raw.state, bride:{...defaultState().bride, ...(raw.state.bride||{})}} : defaultState();
   if(!S.checklist||!Object.keys(S.checklist).length){
     S.checklist={}; CHECKLIST_TEMPLATE.forEach(t=>S.checklist[t.id]="todo");
@@ -119,7 +120,7 @@ function load(){
 
 function save(){
   try{localStorage.setItem(LS_KEY,JSON.stringify({
-    state:S,_categories:CATEGORIES,_vendors:VENDORS,_tips:TIPS,_ads:ADS,_users:USERS,
+    state:S,_categories:CATEGORIES,_vendors:VENDORS,_tips:TIPS,_ads:ADS,_users:USERS,_settings:SETTINGS,
   }));}catch(e){}
   // an admin's edits auto-publish to the backend so they go live for customers
   if(typeof autoPublish==="function") autoPublish();

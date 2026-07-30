@@ -346,6 +346,20 @@ async function handle(req, res) {
         return json(res, 500, { error: "upsert_failed: " + ((e && e.message) || "unknown") });
       }
     }
+    /* App branding/settings (splash image, etc.) — admin publishes, customers
+       read it from the catalog. Tiny payload, bumps the version like any edit. */
+    if (p === "/api/admin/settings" && req.method === "POST") {
+      const user = await auth.fromRequest(req);
+      if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
+      let b; try { b = parseBody(await body(req), req.headers["content-type"]); } catch (e) { return json(res, 400, { error: "invalid_json" }); }
+      try {
+        const cur = (await db.get("catalog:settings")) || {};
+        const next = { ...cur, ...(b.settings && typeof b.settings === "object" ? b.settings : {}) };
+        await db.set("catalog:settings", next);
+        const version = Date.now(); await db.set("catalog:version", version);
+        return json(res, 200, { ok: true, version, settings: next });
+      } catch (e) { return json(res, 500, { error: "settings_failed: " + ((e && e.message) || "unknown") }); }
+    }
     /* Delete a vendor from the published catalog by id. */
     if (p === "/api/admin/vendors/delete" && req.method === "POST") {
       const user = await auth.fromRequest(req);

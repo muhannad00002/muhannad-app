@@ -466,6 +466,7 @@ route("/admin/more",()=>{
   }
   items.push(
     ["gift","Vouchers","Create redeem codes for free access",()=>go("/admin/vouchers")],
+    ["camera","App splash screen",SETTINGS&&SETTINGS.splash?"Custom splash set · tap to change":"Not set · tap to add",()=>go("/admin/branding")],
     ["wallet","Bank Muscat payments","Merchant ID, access code & working key",()=>go("/admin/payments")],
     ["megaphone","Send notification","Broadcast to brides",()=>openBroadcastForm()],
     ["tag","Advertisements",ADS.filter(a=>a.active).length+" active",()=>go("/admin/ads")],
@@ -492,6 +493,56 @@ function adminSignOut(){
   S.account=null; S.role="bride"; save();
   toast("Signed out"); render();
 }
+
+/* ---------- APP SPLASH SCREEN (admin-configurable, no code deploy) ---------- */
+route("/admin/branding",()=>{
+  const kids=[adminTop("Splash screen")];
+  kids.push(h("p.small.muted",{style:{margin:"0 3px 16px"}},
+    "This image shows for a moment each time a bride opens the app. Upload a tall (portrait) image — recommended 1080 × 1920 px. Changes go live instantly; no update needed."));
+
+  const preview=h("div",{style:{width:"180px",height:"320px",margin:"0 auto 16px",borderRadius:"var(--r-l)",overflow:"hidden",
+    border:"1px solid var(--line2)",background:"var(--surface2)",display:"grid",placeItems:"center"}});
+  function drawPreview(){
+    clear(preview);
+    if(SETTINGS.splash){
+      preview.style.backgroundImage=`url("${String(SETTINGS.splash).replace(/"/g,"%22")}")`;
+      preview.style.backgroundSize="cover"; preview.style.backgroundPosition="center";
+    }else{
+      preview.style.backgroundImage="none";
+      preview.appendChild(h("div.tiny.faint",{style:{textAlign:"center",padding:"0 16px"}},"No splash set — the app opens straight to the home screen."));
+    }
+  }
+  drawPreview();
+  kids.push(preview);
+
+  const fileI=h("input",{type:"file",accept:"image/*",style:{display:"none"},onchange:async e=>{
+    const f=e.target.files&&e.target.files[0]; e.target.value=""; if(!f)return;
+    if(f.size>15000000){toast("Image too large — pick one under 15MB","⚠️");return;}
+    toast("Optimizing…","🖼️");
+    const data=await compressImage(f,1080,0.82);
+    if(!data){toast("Couldn't read that image","⚠️");return;}
+    SETTINGS.splash=data; save(); drawPreview();
+  }});
+  kids.push(fileI);
+  kids.push(h("button.btn.btn-pri.btn-block",{style:{marginTop:"4px"},onclick:()=>fileI.click()},[icon("camera",18),SETTINGS.splash?"Replace image":"Upload splash image"]));
+
+  const publishBtn=h("button.btn.btn-sec.btn-block",{style:{marginTop:"10px"},onclick:async()=>{
+    if(!apiBase()){toast("Saved on this device","💾");return;}
+    publishBtn.disabled=true; const orig=publishBtn.textContent; publishBtn.textContent="Publishing…";
+    try{ await saveSettingsRemote(SETTINGS); toast("Splash is live for brides ✓","🎉"); }
+    catch(e){ toast(e.message||"Could not publish","⚠️"); }
+    finally{ publishBtn.disabled=false; clear(publishBtn); publishBtn.append(icon("share",18),"Publish to all brides"); }
+  }},[icon("share",18),"Publish to all brides"]);
+  kids.push(publishBtn);
+
+  if(SETTINGS.splash) kids.push(h("button.btn.btn-quiet.btn-block",{style:{marginTop:"8px",color:"var(--crit)"},onclick:async()=>{
+    SETTINGS.splash=""; save(); drawPreview();
+    if(apiBase()){ try{ await saveSettingsRemote(SETTINGS); }catch(e){} }
+    toast("Splash removed"); go("/admin/branding");
+  }},[icon("trash",17),"Remove splash"]));
+
+  return appFrame(kids,{tabs:adminTabs("/admin/more")});
+});
 
 /* ---------- VOUCHERS ---------- */
 route("/admin/vouchers",()=>{
