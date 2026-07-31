@@ -8,10 +8,10 @@
     "start": "node server/server.js",
     "test": "node server/test.js && node server/db.test.js",
     "native:install": "npm i -E @capacitor/core@8.4.2 @capacitor/cli@8.4.2 @capacitor/ios@8.4.2 @capacitor/android@8.4.2 && npm i -D @capacitor/assets@latest",
-    "native:add": "npx cap add ios && npx cap add android",
+    "native:add": "npx cap add ios && node scripts/ios-patch.js && npx cap add android",
     "native:assets": "npx capacitor-assets generate --iconBackgroundColor #2B2B2F --splashBackgroundColor #2B2B2F",
-    "cap:sync": "node app/build.js && npx cap sync",
-    "cap:ios": "node app/build.js && npx cap sync ios && npx cap open ios",
+    "cap:sync": "node app/build.js && npx cap sync && node scripts/ios-patch.js",
+    "cap:ios": "node app/build.js && npx cap sync ios && node scripts/ios-patch.js && npx cap open ios",
     "cap:android": "node app/build.js && npx cap sync android && npx cap open android"
   },
   "engines": { "node": "22.x" },
