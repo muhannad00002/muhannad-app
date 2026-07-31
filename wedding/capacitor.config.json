@@ -4,13 +4,5 @@
   "webDir": "app",
   "server": { "androidScheme": "https", "iosScheme": "https" },
   "ios": { "contentInset": "always" },
-  "android": { "backgroundColor": "#2B2B2F" },
-  "plugins": {
-    "SplashScreen": {
-      "backgroundColor": "#2B2B2F",
-      "showSpinner": false,
-      "launchAutoHide": true,
-      "launchShowDuration": 900
-    }
-  }
+  "android": { "backgroundColor": "#2B2B2F" }
 }

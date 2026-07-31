@@ -7,7 +7,7 @@
     "build": "node app/build.js",
     "start": "node server/server.js",
     "test": "node server/test.js && node server/db.test.js",
-    "native:install": "npm i @capacitor/core @capacitor/cli @capacitor/ios @capacitor/android @capacitor/splash-screen @capacitor/assets",
+    "native:install": "npm i @capacitor/core @capacitor/cli @capacitor/ios @capacitor/android @capacitor/assets",
     "native:add": "npx cap add ios && npx cap add android",
     "native:assets": "npx capacitor-assets generate --iconBackgroundColor #2B2B2F --splashBackgroundColor #2B2B2F",
     "cap:sync": "node app/build.js && npx cap sync",
