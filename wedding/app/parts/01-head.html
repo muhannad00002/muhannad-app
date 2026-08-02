@@ -320,6 +320,17 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
   box-shadow:var(--shadow-1);border:1px solid var(--line);transition:all var(--dur) var(--ease)}
 .check.done{background:var(--surface2)}
 .check.done .ct{text-decoration:line-through;color:var(--ink3)}
+/* swipe-to-delete (WhatsApp-style): the red action sits behind the row and is
+   revealed as the row slides left. touch-action:pan-y keeps vertical scrolling
+   natural while we handle the horizontal drag ourselves. */
+.swipe{position:relative;overflow:hidden;border-radius:var(--r-m)}
+.swipe-del{position:absolute;inset:0 0 0 auto;width:96px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;background:var(--crit);color:#fff;font-weight:700;font-size:12px;letter-spacing:.02em;
+  visibility:hidden}                     /* only visible once a swipe starts, so it never peeks through rounded corners */
+.swipe.swiping .swipe-del{visibility:visible}
+.swipe-del:active{filter:brightness(.94)}
+.swipe-body{position:relative;touch-action:pan-y;will-change:transform}
+.swipe.removing{transition:height .25s var(--ease),opacity .25s,margin .25s;height:0!important;opacity:0;margin:0!important}
 .cbox{width:26px;height:26px;border-radius:9px;border:2px solid var(--line2);display:grid;place-items:center;flex:none;transition:all var(--dur) var(--ease);color:transparent}
 .cbox.prog{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}
 .cbox.done{border-color:var(--good);background:var(--good);color:#fff}
