@@ -3401,6 +3401,21 @@ function currentUserId(){
   return (S.bride && S.bride.name ? S.bride.name : "anon")+"|"+(S.bride.date||"");
 }
 
+/* Popup shown when a payment didn't go through. */
+function paymentFailedPopup(msg){
+  let ref;
+  ref=sheet({title:null,maxWidth:"420px",body:(close)=>h("div.center",{style:{padding:"2px 0 4px"}},[
+    h("div",{style:{fontSize:"46px",marginBottom:"8px"}},"😔"),
+    h("h2",{style:{fontSize:"23px",margin:"0 0 8px"}},"Payment not completed"),
+    h("p.muted",{style:{margin:"0 auto",maxWidth:"300px"}},
+      msg||"No charge was made to your card. You can try again whenever you're ready."),
+  ]),actions:[
+    h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Close"),
+    h("button.btn.btn-pri.grow",{onclick:()=>{ref.close();setTimeout(()=>openPaywall("default"),240);}},"Try again"),
+  ]});
+  return ref;
+}
+
 /* ---- Return handler: the SmartPay callback bounces here after payment ----
    SECURITY: Premium is granted ONLY when the SERVER confirms the subscription.
    We never unlock based on the redirect's ?status alone — so a cancelled or
@@ -3430,19 +3445,19 @@ route("/premium/return",(q)=>{
     ]));
     setTimeout(confetti,150);
   }
+  /* A failed or cancelled payment shouldn't strand her on a status screen:
+     take her back to her profile and explain what happened in a popup. */
   function failed(msg){
-    render_(h("div.card.pad-l.center",{style:{marginTop:"40px"}},[
-      h("div",{style:{fontSize:"52px",marginBottom:"10px"}},"😔"),
-      h("h2",{style:{fontSize:"25px"}},"Payment not completed"),
-      h("p.muted",{style:{margin:"8px auto 20px",maxWidth:"300px"}},msg||"No charge was made. You can try again whenever you're ready."),
-      h("button.btn.btn-pri.btn-lg",{onclick:()=>openPaywall("default")},"Try again"),
-      h("button.btn.btn-quiet",{style:{marginTop:"8px"},onclick:()=>go("/home")},"Back to app"),
-    ]));
+    go("/profile");
+    setTimeout(()=>paymentFailedPopup(msg),260);
   }
 
   (async()=>{
-    // Trust the server, not the URL. Poll /api/me briefly in case the callback
-    // is still landing, and reflect whatever the server actually granted.
+    await new Promise(r=>setTimeout(r,0));   // let this screen mount before we redirect
+    // The gateway already told us it didn't go through — don't make her wait.
+    if(q.status!=="success"){ failed(); return; }
+    // Otherwise trust the server, not the URL: poll /api/me briefly in case the
+    // callback is still landing, and reflect whatever the server actually granted.
     let confirmed=false;
     if(S.account && S.account.token && apiBase()){
       for(let i=0;i<5 && !confirmed;i++){
@@ -3455,8 +3470,7 @@ route("/premium/return",(q)=>{
       }
     }
     if(confirmed) success();
-    else if(q.status==="success") failed("We couldn't confirm the payment yet. If you were charged, Premium will unlock automatically within a few minutes.");
-    else failed();
+    else failed("We couldn't confirm the payment. If you were charged, Premium will unlock automatically within a few minutes.");
   })();
 
   return appFrame([h("div",{style:{height:"14px"}}),box],{noTab:true});
