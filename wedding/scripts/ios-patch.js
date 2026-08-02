@@ -23,6 +23,28 @@ for (const p of [
   } catch (e) { /* platform not added — nothing to strip */ }
 }
 
+/* Capacitor's iOS template ships the placeholder bundle id "com.getcapacitor.App".
+   If it isn't rewritten to the real appId, signing tools can't match a
+   provisioning profile to the target and the archive fails with
+   "App requires a provisioning profile. Select a provisioning profile in the
+   Signing & Capabilities editor." */
+const pbxproj = path.join(__dirname, "..", "ios", "App", "App.xcodeproj", "project.pbxproj");
+try {
+  const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "capacitor.config.json"), "utf8"));
+  const appId = cfg && cfg.appId;
+  let src = fs.readFileSync(pbxproj, "utf8");
+  const placeholder = /PRODUCT_BUNDLE_IDENTIFIER = [^;]+;/g;
+  const current = (src.match(/PRODUCT_BUNDLE_IDENTIFIER = ([^;]+);/) || [])[1];
+  if (appId && current !== appId) {
+    fs.writeFileSync(pbxproj, src.replace(placeholder, `PRODUCT_BUNDLE_IDENTIFIER = ${appId};`));
+    console.log(`ios-patch: bundle identifier ${current} → ${appId}`);
+  } else {
+    console.log("ios-patch: bundle identifier already " + appId);
+  }
+} catch (e) {
+  console.log("ios-patch: skipped project.pbxproj (iOS project not generated yet)");
+}
+
 /* Declare export-compliance up front. The app only uses standard HTTPS/TLS,
    which is exempt, so setting this stops App Store Connect asking the
    "App Encryption Documentation" questions on every single upload. */
