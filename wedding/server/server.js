@@ -401,15 +401,12 @@ async function handle(req, res) {
         ? parseBody(await body(req), req.headers["content-type"])
         : Object.fromEntries(url.searchParams);
       if (!(b.encResponse || b.encResp)) {
-        // Bare hit with no payment payload — show a friendly holding page instead of a 404.
-        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-        return res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<body style="font-family:system-ui,sans-serif;padding:48px 24px;max-width:460px;margin:auto;text-align:center;color:#2b2b2f">
-<div style="font-size:44px">💍</div>
-<h2 style="margin:12px 0 6px">Wedding &amp; Co payments</h2>
-<p style="color:#6b6b70">This is the secure payment return page. There's nothing to do here directly — complete a purchase from the app and you'll be brought back automatically.</p>
-<p><a href="${APP_RETURN}" style="display:inline-block;margin-top:8px;padding:12px 22px;background:#b3874f;color:#fff;border-radius:12px;text-decoration:none">Open Wedding &amp; Co</a></p>
-</body>`);
+        // No payment payload — this is how the gateway returns a cancelled or
+        // failed payment. Never park the customer on a bank-looking page: send
+        // her straight back into the app, which shows the "payment failed"
+        // popup on her profile. (Entitlement is untouched — nothing is granted.)
+        res.writeHead(302, { Location: `${APP_RETURN}#/premium/return?status=failed` });
+        return res.end();
       }
       const r = smartpay.handleCallback(b);
       const order = r.orderId ? await db.get("order:" + r.orderId) : null;
