@@ -23,6 +23,26 @@ for (const p of [
   } catch (e) { /* platform not added — nothing to strip */ }
 }
 
+/* Declare export-compliance up front. The app only uses standard HTTPS/TLS,
+   which is exempt, so setting this stops App Store Connect asking the
+   "App Encryption Documentation" questions on every single upload. */
+const plist = path.join(__dirname, "..", "ios", "App", "App", "Info.plist");
+try {
+  let xml = fs.readFileSync(plist, "utf8");
+  if (xml.includes("ITSAppUsesNonExemptEncryption")) {
+    console.log("ios-patch: encryption key already present");
+  } else {
+    const i = xml.lastIndexOf("</dict>");
+    if (i > -1) {
+      xml = xml.slice(0, i) + "\t<key>ITSAppUsesNonExemptEncryption</key>\n\t<false/>\n" + xml.slice(i);
+      fs.writeFileSync(plist, xml);
+      console.log("ios-patch: declared ITSAppUsesNonExemptEncryption = false");
+    }
+  }
+} catch (e) {
+  console.log("ios-patch: skipped Info.plist (iOS project not generated yet)");
+}
+
 const file = path.join(__dirname, "..", "ios", "App", "App", "AppDelegate.swift");
 try {
   let src = fs.readFileSync(file, "utf8");
