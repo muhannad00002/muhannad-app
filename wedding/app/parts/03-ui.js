@@ -242,12 +242,15 @@ function sheet({title,body,actions,onClose,maxWidth}){
     setTimeout(()=>{scrim.remove();document.body.style.overflow="";},260);onClose&&onClose();}
   return {close,el:s};
 }
-function confirmSheet(title,text,confirmLabel,onOk,danger){
-  let ref;
+/* onCancel fires when she backs out — by the Cancel button, the scrim, or Esc —
+   so callers can undo any preview state (e.g. snap a swiped row back). */
+function confirmSheet(title,text,confirmLabel,onOk,danger,onCancel){
+  let ref, confirmed=false;
   ref=sheet({title,body:h("p.muted",{style:{margin:"4px 3px 6px"}},text),
+    onClose:()=>{ if(!confirmed && onCancel) onCancel(); },
     actions:[
       h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
-      h("button.btn.grow "+(danger?"":"btn-pri"),{style:danger?{background:"var(--crit)",color:"#fff"}:{},onclick:()=>{ref.close();onOk();}},confirmLabel),
+      h("button.btn.grow "+(danger?"":"btn-pri"),{style:danger?{background:"var(--crit)",color:"#fff"}:{},onclick:()=>{confirmed=true;ref.close();onOk();}},confirmLabel),
     ]});
   return ref;
 }
