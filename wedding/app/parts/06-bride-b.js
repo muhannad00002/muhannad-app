@@ -122,7 +122,7 @@ route("/vendor/:id",(q,p)=>{
   const cat=catById(v.catId);
   const fav=S.favorites.includes(v.id);
   // find which checklist task this vendor could complete
-  const linkedTask=CHECKLIST_TEMPLATE.find(t=>t.catId===v.catId);
+  const linkedTask=planTasks().find(t=>t.catId===v.catId);
   const isSelected=linkedTask&&S.selectedVendor[linkedTask.id]===v.id;
 
   const kids=[];
