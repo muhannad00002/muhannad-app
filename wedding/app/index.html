@@ -323,6 +323,17 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
   box-shadow:var(--shadow-1);border:1px solid var(--line);transition:all var(--dur) var(--ease)}
 .check.done{background:var(--surface2)}
 .check.done .ct{text-decoration:line-through;color:var(--ink3)}
+/* swipe-to-delete (WhatsApp-style): the red action sits behind the row and is
+   revealed as the row slides left. touch-action:pan-y keeps vertical scrolling
+   natural while we handle the horizontal drag ourselves. */
+.swipe{position:relative;overflow:hidden;border-radius:var(--r-m)}
+.swipe-del{position:absolute;inset:0 0 0 auto;width:96px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;background:var(--crit);color:#fff;font-weight:700;font-size:12px;letter-spacing:.02em;
+  visibility:hidden}                     /* only visible once a swipe starts, so it never peeks through rounded corners */
+.swipe.swiping .swipe-del{visibility:visible}
+.swipe-del:active{filter:brightness(.94)}
+.swipe-body{position:relative;touch-action:pan-y;will-change:transform}
+.swipe.removing{transition:height .25s var(--ease),opacity .25s,margin .25s;height:0!important;opacity:0;margin:0!important}
 .cbox{width:26px;height:26px;border-radius:9px;border:2px solid var(--line2);display:grid;place-items:center;flex:none;transition:all var(--dur) var(--ease);color:transparent}
 .cbox.prog{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}
 .cbox.done{border-color:var(--good);background:var(--good);color:#fff}
@@ -1666,13 +1677,15 @@ route("/checklist",()=>{
       grp.appendChild(h("div.between",{style:{margin:"2px 3px 10px"}},[
         h("div.eyebrow",phase),h("span.tiny.faint",doneN+"/"+inPhase.length)]));
       const col=h("div.col.gap8");
-      items.forEach(t=>col.appendChild(checkRow(t,drawList)));
+      items.forEach(t=>col.appendChild(
+        swipeable(checkRow(t,drawList),()=>{ removeTask(t.id); toast("Removed from your plan"); drawList(); })));
       grp.appendChild(col);
       listWrap.appendChild(grp);
     });
     if(!listWrap.children.length)listWrap.appendChild(h("div.empty",[h("div.em","🎉"),h("h3","Nothing here"),h("p.muted","No tasks match this filter.")]));
     // add her own task
-    listWrap.appendChild(h("button.btn.btn-sec.btn-block",{style:{marginTop:"18px"},
+    listWrap.appendChild(h("p.center.tiny.faint",{style:{margin:"16px 0 0"}},"Swipe a task left to delete it"));
+    listWrap.appendChild(h("button.btn.btn-sec.btn-block",{style:{marginTop:"10px"},
       onclick:()=>openAddTaskSheet(drawList)},[icon("plus",18),"Add your own task"]));
     if((S.hiddenTasks||[]).length)listWrap.appendChild(h("button.btn.btn-quiet.btn-block",{style:{marginTop:"8px"},
       onclick:()=>{restoreDefaultTasks();toast("Removed tasks restored");drawList();}},
@@ -1788,6 +1801,70 @@ function openBookedSheet(taskId,rerender){
   ]});
   return ref;
 }
+/* Wrap a row so it can be swiped left to reveal a Delete action (like a
+   WhatsApp chat). Dragging past halfway deletes straight away; a shorter swipe
+   parks the row open so she can tap Delete or swipe back. Vertical scrolling is
+   untouched — we only take over once the gesture is clearly horizontal. */
+const OPEN_W=96;                       // width of the revealed Delete action
+let _openSwipe=null;                   // only one row stays open at a time
+function swipeable(row,onDelete){
+  const wrap=h("div.swipe");
+  const del=h("button.swipe-del",{"aria-label":"Delete",onclick:e=>{e.stopPropagation();close();onDelete();}},
+    [icon("trash",19),h("span","Delete")]);
+  const body=h("div.swipe-body",row);
+  wrap.append(del,body);
+
+  let x0=0,y0=0,dx=0,dragging=false,axis=null,open=false,id=null,justDragged=false;
+  const move=(v,anim)=>{ body.style.transition=anim?"transform .22s var(--ease)":"none";
+    body.style.transform="translateX("+v+"px)"; };
+  function close(){ open=false; move(0,true); wrap.classList.remove("swiping");
+    if(_openSwipe===wrap)_openSwipe=null; }
+  wrap._closeSwipe=close;
+
+  body.addEventListener("pointerdown",e=>{
+    if(e.pointerType==="mouse"&&e.button!==0)return;
+    x0=e.clientX; y0=e.clientY; dx=0; axis=null; dragging=true; id=e.pointerId;
+  });
+  body.addEventListener("pointermove",e=>{
+    if(!dragging||e.pointerId!==id)return;
+    const ax=e.clientX-x0, ay=e.clientY-y0;
+    if(!axis){                                   // decide the gesture's direction once
+      if(Math.abs(ax)<6&&Math.abs(ay)<6)return;
+      axis=Math.abs(ax)>Math.abs(ay)?"x":"y";
+      if(axis==="x"){ try{body.setPointerCapture(id);}catch(_){}
+        wrap.classList.add("swiping");
+        if(_openSwipe&&_openSwipe!==wrap)_openSwipe._closeSwipe(); }
+    }
+    if(axis!=="x")return;
+    dx=Math.min(0,(open?-OPEN_W:0)+ax);          // left only, and never past the edge
+    dx=Math.max(dx,-wrap.offsetWidth);
+    move(dx,false);
+  });
+  const end=e=>{
+    if(!dragging||(e.pointerId!=null&&e.pointerId!==id))return;
+    dragging=false;
+    if(axis!=="x"){ return; }
+    justDragged=Math.abs(dx)>4;                  // swallow the click this drag emits
+    if(-dx>wrap.offsetWidth*0.5){                // dragged far → delete
+      move(-wrap.offsetWidth,true);
+      setTimeout(()=>{ wrap.style.height=wrap.offsetHeight+"px"; wrap.offsetHeight;
+        wrap.classList.add("removing"); setTimeout(onDelete,240); },80);
+      return;
+    }
+    if(-dx>OPEN_W*0.45){ open=true; move(-OPEN_W,true); _openSwipe=wrap; }
+    else close();
+  };
+  body.addEventListener("pointerup",end);
+  body.addEventListener("pointercancel",end);
+  // the click a drag emits is swallowed (the row keeps its position); a genuine
+  // tap on an already-open row just closes it instead of opening the task
+  body.addEventListener("click",e=>{
+    if(justDragged){ justDragged=false; e.stopPropagation(); e.preventDefault(); return; }
+    if(open){ e.stopPropagation(); e.preventDefault(); close(); }
+  },true);
+  return wrap;
+}
+
 /* Add one of her own plan items */
 function openAddTaskSheet(rerender){
   const phases=planPhases(); if(!phases.length)phases.push("Foundations");
@@ -1872,12 +1949,6 @@ function openTaskSheet(taskId,rerender){
     if(cat){
       b.appendChild(h("button.btn.btn-pri.btn-block",{onclick:()=>{close();go("/category/"+cat.id);}},["Browse "+cat.name," ",icon("fwd",16)]));
     }
-    // remove this task from her plan
-    b.appendChild(h("button.btn.btn-quiet.btn-block",{style:{color:"var(--crit)"},onclick:()=>{
-      confirmSheet("Remove from your plan?",
-        t.custom?"This task will be deleted.":"This default task will be hidden — you can restore it from the bottom of your plan.",
-        "Remove",()=>{ removeTask(taskId); close(); toast("Removed from your plan"); rerender&&rerender(); },true);
-    }},[icon("trash",17),"Remove from my plan"]));
     // suggestions unlocked
     if(t.suggests&&t.suggests.length){
       const nexts=t.suggests.map(templateById).filter(Boolean);
