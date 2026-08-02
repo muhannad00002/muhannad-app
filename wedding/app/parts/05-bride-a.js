@@ -313,7 +313,8 @@ route("/checklist",()=>{
         h("div.eyebrow",phase),h("span.tiny.faint",doneN+"/"+inPhase.length)]));
       const col=h("div.col.gap8");
       items.forEach(t=>col.appendChild(
-        swipeable(checkRow(t,drawList),()=>{ removeTask(t.id); toast("Removed from your plan"); drawList(); })));
+        swipeable(checkRow(t,drawList),({commit,cancel})=>
+          confirmDeleteTask(t,()=>commit(()=>{ removeTask(t.id); toast("Removed from your plan"); drawList(); }),cancel))));
       grp.appendChild(col);
       listWrap.appendChild(grp);
     });
@@ -442,12 +443,22 @@ function openBookedSheet(taskId,rerender){
    untouched — we only take over once the gesture is clearly horizontal. */
 const OPEN_W=96;                       // width of the revealed Delete action
 let _openSwipe=null;                   // only one row stays open at a time
-function swipeable(row,onDelete){
+function swipeable(row,onRequestDelete){
   const wrap=h("div.swipe");
-  const del=h("button.swipe-del",{"aria-label":"Delete",onclick:e=>{e.stopPropagation();close();onDelete();}},
+  const del=h("button.swipe-del",{"aria-label":"Delete",onclick:e=>{e.stopPropagation();requestDelete();}},
     [icon("trash",19),h("span","Delete")]);
   const body=h("div.swipe-body",row);
   wrap.append(del,body);
+
+  /* Deleting always asks first. The caller decides what to say, then calls
+     commit() to animate the row out, or cancel() to put it back. */
+  function requestDelete(){
+    onRequestDelete({
+      commit(after){ wrap.style.height=wrap.offsetHeight+"px"; wrap.offsetHeight;
+        wrap.classList.add("removing"); setTimeout(()=>after&&after(),240); },
+      cancel(){ close(); },
+    });
+  }
 
   let x0=0,y0=0,dx=0,dragging=false,axis=null,open=false,id=null,justDragged=false;
   const move=(v,anim)=>{ body.style.transition=anim?"transform .22s var(--ease)":"none";
@@ -480,10 +491,9 @@ function swipeable(row,onDelete){
     dragging=false;
     if(axis!=="x"){ return; }
     justDragged=Math.abs(dx)>4;                  // swallow the click this drag emits
-    if(-dx>wrap.offsetWidth*0.5){                // dragged far → delete
-      move(-wrap.offsetWidth,true);
-      setTimeout(()=>{ wrap.style.height=wrap.offsetHeight+"px"; wrap.offsetHeight;
-        wrap.classList.add("removing"); setTimeout(onDelete,240); },80);
+    if(-dx>wrap.offsetWidth*0.5){                // dragged far → confirm, then delete
+      open=true; move(-OPEN_W,true); _openSwipe=wrap;
+      setTimeout(requestDelete,120);
       return;
     }
     if(-dx>OPEN_W*0.45){ open=true; move(-OPEN_W,true); _openSwipe=wrap; }
@@ -498,6 +508,15 @@ function swipeable(row,onDelete){
     if(open){ e.stopPropagation(); e.preventDefault(); close(); }
   },true);
   return wrap;
+}
+
+/* One confirmation used by both delete paths (swipe and the task sheet), so a
+   task is never lost by an accidental gesture. */
+function confirmDeleteTask(t,onOk,onCancel){
+  return confirmSheet("Delete this task?",
+    "“"+(t.title||"This task")+"” will be removed from your plan."+
+      (t.custom?" This can't be undone." : " You can bring it back with Restore at the bottom of your plan."),
+    "Delete",onOk,true,onCancel);
 }
 
 /* Add one of her own plan items */
@@ -584,6 +603,11 @@ function openTaskSheet(taskId,rerender){
     if(cat){
       b.appendChild(h("button.btn.btn-pri.btn-block",{onclick:()=>{close();go("/category/"+cat.id);}},["Browse "+cat.name," ",icon("fwd",16)]));
     }
+    // remove this task from her plan (same confirmation as the swipe gesture)
+    b.appendChild(h("button.btn.btn-quiet.btn-block",{style:{color:"var(--crit)"},onclick:()=>{
+      close();
+      setTimeout(()=>confirmDeleteTask(t,()=>{ removeTask(taskId); toast("Removed from your plan"); rerender&&rerender(); }),240);
+    }},[icon("trash",17),"Remove from my plan"]));
     // suggestions unlocked
     if(t.suggests&&t.suggests.length){
       const nexts=t.suggests.map(templateById).filter(Boolean);
