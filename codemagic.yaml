@@ -1,0 +1,81 @@
+# ============================================================================
+# Wedding & Co — cloud iOS build & App Store upload (Codemagic)
+#
+# Builds the app on a Mac in the cloud and uploads it straight to App Store
+# Connect / TestFlight. No local Mac, Xcode, certificates or provisioning
+# profiles needed — Codemagic fetches signing assets from your App Store
+# Connect API key.
+#
+# One-time setup (see PUBLISH-APP-STORES guide):
+#   1. App Store Connect → Users and Access → Integrations → App Store Connect
+#      API → generate a key with "App Manager" access. Note the Issuer ID and
+#      Key ID, and download the .p8 file (you can only download it once).
+#   2. Codemagic → Teams → Integrations → App Store Connect → Add key, and name
+#      it exactly:  WeddingAndCo_ASC_Key
+#   3. Make sure the app exists in App Store Connect with bundle id
+#      com.weddingandco.app, then run this workflow.
+# ============================================================================
+workflows:
+  ios-release:
+    name: Wedding & Co — iOS App Store
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    working_directory: wedding          # the app lives in this folder of the repo
+
+    integrations:
+      # must match the key name you added in Codemagic's App Store Connect integration
+      app_store_connect: WeddingAndCo_ASC_Key
+
+    environment:
+      ios_signing:
+        distribution_type: app_store    # Codemagic creates/fetches the distribution cert + profile
+        bundle_identifier: com.weddingandco.app
+      vars:
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+      node: 22                          # matches engines.node in package.json
+      xcode: latest                     # latest Xcode → builds against the required iOS SDK
+
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install
+          npm run native:install
+
+      - name: Generate the native iOS project
+        script: |
+          # ios/ is intentionally not committed — always generate it fresh.
+          npx cap add ios || true
+          # builds the web app, copies it into iOS, and applies scripts/ios-patch.js
+          npm run cap:sync
+
+      - name: Set the build number
+        script: |
+          cd ios/App
+          agvtool new-version -all "$BUILD_NUMBER"
+
+      - name: Fetch signing profiles
+        script: xcode-project use-profiles
+
+      - name: Build the IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true      # lands in TestFlight so you can test on your phone
+        # Flip to true only when you want each build sent for App Store review:
+        # submit_to_app_store: false
+      email:
+        recipients:
+          - muhannad00002@gmail.com
+        notify:
+          success: true
+          failure: true
