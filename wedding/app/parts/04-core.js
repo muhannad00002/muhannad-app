@@ -24,6 +24,8 @@ function defaultState(){
     account:null,                 // {email,name,role,token} when signed in to the cloud backend
     viewedCats:[],                // distinct category ids opened on free tier
     bookings:{},                  // taskId -> {vendorId,date,time,note}
+    customTasks:[],               // her own plan items {id,title,phase,custom:true}
+    hiddenTasks:[],               // default task ids she removed from her plan
     assistant:{msgs:[],used:0},   // chat history + free-message counter
     _catSeed:null,_vendorSeed:null,
     _catalogVersion:0,            // last catalog version pulled from the backend
@@ -146,18 +148,63 @@ function save(){
 function catById(id){return CATEGORIES.find(c=>c.id===id);}
 function vendorById(id){return VENDORS.find(v=>v.id===id);}
 function vendorsInCat(id){return VENDORS.filter(v=>v.catId===id && v.approved);}
-function templateById(id){return CHECKLIST_TEMPLATE.find(t=>t.id===id);}
+/* ---- the bride's own plan ----
+   Her effective plan is the default checklist minus anything she removed, plus
+   the tasks she added herself. Everything downstream (progress, counts,
+   suggestions, the plan screen) works off planTasks() so custom items behave
+   exactly like built-in ones. */
+function planTasks(){
+  const hidden=new Set(S.hiddenTasks||[]);
+  const base=CHECKLIST_TEMPLATE.filter(t=>!hidden.has(t.id));
+  const mine=(S.customTasks||[]);
+  if(!mine.length)return base;
+  // keep her items grouped with the phase they belong to
+  const out=[];
+  const phases=[...new Set([...base.map(t=>t.phase),...mine.map(t=>t.phase)])];
+  phases.forEach(p=>{
+    base.filter(t=>t.phase===p).forEach(t=>out.push(t));
+    mine.filter(t=>t.phase===p).forEach(t=>out.push(t));
+  });
+  return out;
+}
+function planPhases(){ return [...new Set(planTasks().map(t=>t.phase))]; }
+function templateById(id){
+  return CHECKLIST_TEMPLATE.find(t=>t.id===id) || (S.customTasks||[]).find(t=>t.id===id);
+}
+/* add one of her own tasks */
+function addCustomTask(title,phase){
+  const t={id:"my_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    title:String(title||"").trim(),phase:phase||planPhases()[0]||"Foundations",custom:true};
+  if(!t.title)return null;
+  S.customTasks=[...(S.customTasks||[]),t];
+  S.checklist[t.id]="todo";
+  save(); return t;
+}
+/* remove a task from her plan: her own are deleted, defaults are hidden */
+function removeTask(id){
+  const custom=(S.customTasks||[]).some(t=>t.id===id);
+  if(custom) S.customTasks=(S.customTasks||[]).filter(t=>t.id!==id);
+  else S.hiddenTasks=[...new Set([...(S.hiddenTasks||[]),id])];
+  delete S.checklist[id]; delete S.selectedVendor[id]; delete S.bookings[id];
+  save();
+}
+function restoreDefaultTasks(){
+  (S.hiddenTasks||[]).forEach(id=>{ if(!S.checklist[id])S.checklist[id]="todo"; });
+  S.hiddenTasks=[]; save();
+}
 
 function progressPct(){
-  const ids=CHECKLIST_TEMPLATE.map(t=>t.id);
+  const ids=planTasks().map(t=>t.id);
+  if(!ids.length)return 0;
   const done=ids.filter(id=>S.checklist[id]==="done").length;
   const prog=ids.filter(id=>S.checklist[id]==="prog").length;
   return Math.round((done + prog*0.4)/ids.length*100);
 }
 function counts(){
-  const v=Object.values(S.checklist);
-  return {done:v.filter(x=>x==="done").length,prog:v.filter(x=>x==="prog").length,
-    todo:v.filter(x=>x==="todo").length,total:CHECKLIST_TEMPLATE.length};
+  const ids=planTasks().map(t=>t.id);
+  const st=id=>S.checklist[id]||"todo";
+  return {done:ids.filter(id=>st(id)==="done").length,prog:ids.filter(id=>st(id)==="prog").length,
+    todo:ids.filter(id=>st(id)==="todo").length,total:ids.length};
 }
 function daysLeft(){
   if(!S.bride.date)return null;
@@ -170,7 +217,7 @@ function daysLeft(){
 function suggestedTasks(limit=3){
   const out=[]; const seen=new Set();
   // 1. relationship-driven: tasks suggested by completed tasks, still not done
-  CHECKLIST_TEMPLATE.forEach(t=>{
+  planTasks().forEach(t=>{
     if(S.checklist[t.id]==="done" && t.suggests){
       t.suggests.forEach(sid=>{
         if(S.checklist[sid] && S.checklist[sid]!=="done" && !seen.has(sid)){seen.add(sid);out.push(sid);}
@@ -178,7 +225,7 @@ function suggestedTasks(limit=3){
     }
   });
   // 2. fill with earliest incomplete tasks
-  for(const t of CHECKLIST_TEMPLATE){
+  for(const t of planTasks()){
     if(out.length>=limit*2)break;
     if(S.checklist[t.id]!=="done" && !seen.has(t.id)){seen.add(t.id);out.push(t.id);}
   }

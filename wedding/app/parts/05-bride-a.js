@@ -301,22 +301,28 @@ route("/checklist",()=>{
     // (only once it's mounted — the first call happens before appFrame renders)
     if(expCard.isConnected){const nc=expenseCard(); expCard.replaceWith(nc); expCard=nc;}
     clear(listWrap);
-    // group by phase
-    const phases=[...new Set(CHECKLIST_TEMPLATE.map(t=>t.phase))];
-    phases.forEach(phase=>{
-      const items=CHECKLIST_TEMPLATE.filter(t=>t.phase===phase && (filter==="all"||S.checklist[t.id]===filter));
+    // group by phase — her plan: defaults she kept + tasks she added
+    const all=planTasks();
+    planPhases().forEach(phase=>{
+      const items=all.filter(t=>t.phase===phase && (filter==="all"||(S.checklist[t.id]||"todo")===filter));
       if(!items.length)return;
-      const doneN=CHECKLIST_TEMPLATE.filter(t=>t.phase===phase&&S.checklist[t.id]==="done").length;
-      const totN=CHECKLIST_TEMPLATE.filter(t=>t.phase===phase).length;
+      const inPhase=all.filter(t=>t.phase===phase);
+      const doneN=inPhase.filter(t=>S.checklist[t.id]==="done").length;
       const grp=h("div");
       grp.appendChild(h("div.between",{style:{margin:"2px 3px 10px"}},[
-        h("div.eyebrow",phase),h("span.tiny.faint",doneN+"/"+totN)]));
+        h("div.eyebrow",phase),h("span.tiny.faint",doneN+"/"+inPhase.length)]));
       const col=h("div.col.gap8");
       items.forEach(t=>col.appendChild(checkRow(t,drawList)));
       grp.appendChild(col);
       listWrap.appendChild(grp);
     });
     if(!listWrap.children.length)listWrap.appendChild(h("div.empty",[h("div.em","🎉"),h("h3","Nothing here"),h("p.muted","No tasks match this filter.")]));
+    // add her own task
+    listWrap.appendChild(h("button.btn.btn-sec.btn-block",{style:{marginTop:"18px"},
+      onclick:()=>openAddTaskSheet(drawList)},[icon("plus",18),"Add your own task"]));
+    if((S.hiddenTasks||[]).length)listWrap.appendChild(h("button.btn.btn-quiet.btn-block",{style:{marginTop:"8px"},
+      onclick:()=>{restoreDefaultTasks();toast("Removed tasks restored");drawList();}},
+      "Restore "+S.hiddenTasks.length+" removed task"+(S.hiddenTasks.length>1?"s":"")));
   }
   drawList();
   return appFrame(kids,{tabs:brideTabs("/checklist")});
@@ -428,6 +434,37 @@ function openBookedSheet(taskId,rerender){
   ]});
   return ref;
 }
+/* Add one of her own plan items */
+function openAddTaskSheet(rerender){
+  const phases=planPhases(); if(!phases.length)phases.push("Foundations");
+  const d={title:"",phase:phases[0]};
+  let ref;
+  ref=sheet({title:"Add a task",body:(close)=>{
+    const b=h("div.col.gap16",{style:{marginTop:"4px"}});
+    const titleI=h("input.field",{value:d.title,placeholder:"e.g. Book the honeymoon flights",
+      oninput:e=>d.title=e.target.value,
+      onkeydown:e=>{if(e.key==="Enter")saveIt();}});
+    const phaseSel=h("select.field",phases.map(p=>h("option",{value:p,selected:p===d.phase},p)));
+    phaseSel.onchange=e=>d.phase=e.target.value;
+    b.append(
+      h("div",[h("label.lbl","Task"),titleI]),
+      h("div",[h("label.lbl","Section"),phaseSel]),
+      h("p.tiny.faint",{style:{margin:"0 2px"}},"It joins your plan like any other task — you can mark it in progress or booked."),
+    );
+    setTimeout(()=>titleI.focus(),200);
+    return b;
+  },actions:[
+    h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
+    h("button.btn.btn-pri.grow",{onclick:()=>saveIt()},[icon("plus",17),"Add task"]),
+  ]});
+  function saveIt(){
+    if(!d.title.trim()){toast("Give your task a name","✍️");return;}
+    addCustomTask(d.title,d.phase);
+    ref.close(); toast("Added to your plan ✓"); rerender&&rerender();
+  }
+  return ref;
+}
+
 const statusLabel=s=>({todo:"Not started",prog:"In progress",done:"Booked"})[s]||s;
 const statusTag=s=>({todo:"tag-todo",prog:"tag-prog",done:"tag-done"})[s]||"tag-todo";
 
@@ -481,6 +518,12 @@ function openTaskSheet(taskId,rerender){
     if(cat){
       b.appendChild(h("button.btn.btn-pri.btn-block",{onclick:()=>{close();go("/category/"+cat.id);}},["Browse "+cat.name," ",icon("fwd",16)]));
     }
+    // remove this task from her plan
+    b.appendChild(h("button.btn.btn-quiet.btn-block",{style:{color:"var(--crit)"},onclick:()=>{
+      confirmSheet("Remove from your plan?",
+        t.custom?"This task will be deleted.":"This default task will be hidden — you can restore it from the bottom of your plan.",
+        "Remove",()=>{ removeTask(taskId); close(); toast("Removed from your plan"); rerender&&rerender(); },true);
+    }},[icon("trash",17),"Remove from my plan"]));
     // suggestions unlocked
     if(t.suggests&&t.suggests.length){
       const nexts=t.suggests.map(templateById).filter(Boolean);
