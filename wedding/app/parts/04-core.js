@@ -34,6 +34,11 @@ function defaultState(){
 const FREE_CATEGORY_VIEWS = 3;   // distinct categories a free user may open
 const FREE_AI_MESSAGES    = 3;   // assistant messages before paywall
 function isPremium(){ return S.subscription && S.subscription.plan==="premium"; }
+/* true inside the native iOS/Android shell (Capacitor), false on the web */
+function isNativeApp(){
+  const c=window.Capacitor;
+  return !!(c && c.isNativePlatform && c.isNativePlatform());
+}
 function categoryViewable(id){
   if(isPremium())return true;
   if(S.viewedCats.includes(id))return true;         // already opened → stays open
@@ -51,8 +56,19 @@ function goPremium(tier){
 function cancelPremium(){ S.subscription={plan:"free",tier:null,since:null}; save(); }
 
 /* ---- Bookings / appointments ---- */
-function saveBooking(taskId,vendorId,date,time,note,price){
-  S.bookings[taskId]={vendorId,date,time:time||"",note:note||"",price:price!=null?+price:null}; save();
+function saveBooking(taskId,vendorId,date,time,note,price,vendorName){
+  // vendorName lets a bride record a vendor that isn't in the marketplace yet;
+  // when she booked through the app we fall back to the linked vendor's name.
+  const linked=vendorId?vendorById(vendorId):null;
+  S.bookings[taskId]={vendorId,date,time:time||"",note:note||"",price:price!=null?+price:null,
+    vendorName:(vendorName||"").trim()||(linked?linked.name:"")}; save();
+}
+/* the vendor shown for a booking: the typed name, else the linked vendor */
+function bookingVendorName(b){
+  if(!b)return "";
+  if(b.vendorName)return b.vendorName;
+  const v=b.vendorId?vendorById(b.vendorId):null;
+  return v?v.name:"";
 }
 /* total the bride has committed across all booked vendors */
 function totalSpent(){

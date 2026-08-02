@@ -172,6 +172,17 @@ a{color:var(--rose-deep);text-decoration:none}
   border-radius:var(--r-m);font-size:15px;transition:border var(--dur),box-shadow var(--dur);color:var(--ink)}
 .field:focus{outline:none;border-color:var(--rose);box-shadow:0 0 0 4px var(--rose-tint)}
 .field::placeholder{color:var(--ink3)}
+/* Fields must never outgrow their container. iOS/Safari give date & time inputs
+   an intrinsic width from their format text, which overflows a width:100% box
+   (the date field used to sit wider than the name field above it). Flex/grid
+   children also refuse to shrink below content width without min-width:0. */
+.field{min-width:0;max-width:100%}
+input.field[type="date"],input.field[type="time"],input.field[type="datetime-local"],input.field[type="month"]{
+  -webkit-appearance:none;appearance:none;text-align:left}
+input.field[type="number"]{-moz-appearance:textfield;appearance:textfield}
+input.field[type="number"]::-webkit-outer-spin-button,
+input.field[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.row>*,.col>*,.between>*{min-width:0}
 textarea.field{resize:vertical;min-height:88px;line-height:1.5}
 .lbl{display:block;font-size:12.5px;font-weight:700;color:var(--ink2);margin:0 0 7px 3px;letter-spacing:.02em}
 select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23A9989C' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:40px}
@@ -964,6 +975,11 @@ function defaultState(){
 const FREE_CATEGORY_VIEWS = 3;   // distinct categories a free user may open
 const FREE_AI_MESSAGES    = 3;   // assistant messages before paywall
 function isPremium(){ return S.subscription && S.subscription.plan==="premium"; }
+/* true inside the native iOS/Android shell (Capacitor), false on the web */
+function isNativeApp(){
+  const c=window.Capacitor;
+  return !!(c && c.isNativePlatform && c.isNativePlatform());
+}
 function categoryViewable(id){
   if(isPremium())return true;
   if(S.viewedCats.includes(id))return true;         // already opened → stays open
@@ -981,8 +997,19 @@ function goPremium(tier){
 function cancelPremium(){ S.subscription={plan:"free",tier:null,since:null}; save(); }
 
 /* ---- Bookings / appointments ---- */
-function saveBooking(taskId,vendorId,date,time,note,price){
-  S.bookings[taskId]={vendorId,date,time:time||"",note:note||"",price:price!=null?+price:null}; save();
+function saveBooking(taskId,vendorId,date,time,note,price,vendorName){
+  // vendorName lets a bride record a vendor that isn't in the marketplace yet;
+  // when she booked through the app we fall back to the linked vendor's name.
+  const linked=vendorId?vendorById(vendorId):null;
+  S.bookings[taskId]={vendorId,date,time:time||"",note:note||"",price:price!=null?+price:null,
+    vendorName:(vendorName||"").trim()||(linked?linked.name:"")}; save();
+}
+/* the vendor shown for a booking: the typed name, else the linked vendor */
+function bookingVendorName(b){
+  if(!b)return "";
+  if(b.vendorName)return b.vendorName;
+  const v=b.vendorId?vendorById(b.vendorId):null;
+  return v?v.name:"";
 }
 /* total the bride has committed across all booked vendors */
 function totalSpent(){
@@ -1629,8 +1656,8 @@ function expenseCard(){
     const list=h("div.col.gap8",{style:{marginTop:"12px"}});
     items.forEach(({taskId,b,vendor,task})=>list.appendChild(
       h("button.lrow",{style:{cursor:"pointer",width:"100%",textAlign:"left"},onclick:()=>openBookedSheet(taskId,()=>go("/checklist"))},[
-        h("div.grow",{style:{minWidth:0}},[h("b.small",vendor?vendor.name:(task?shortTask(task.title):"Booking")),
-          h("div.tiny.faint",[vendor&&task?shortTask(task.title):"Booked",b.date?(" · "+new Date(b.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"})):""])]),
+        h("div.grow",{style:{minWidth:0}},[h("b.small",bookingVendorName(b)||(task?shortTask(task.title):"Booking")),
+          h("div.tiny.faint",[task?shortTask(task.title):"Booked",b.date?(" · "+new Date(b.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"})):""])]),
         h("b.small",{style:{flex:"none",color:"var(--rose-deep)"}},money(+b.price)),
       ])));
     card.append(list);
@@ -1664,9 +1691,10 @@ function checkRow(t,rerender){
 }
 /* row subtitle: prefer booked date + price, then vendor, then a hint */
 function bookingSubtitle(bk,sv,cat,st){
-  if(bk&&(bk.date||bk.price)){
+  const vn=bookingVendorName(bk)||(sv?sv.name:"");
+  if(bk&&(bk.date||bk.price||vn)){
     const parts=[];
-    if(sv)parts.push("✓ "+sv.name); else parts.push("✓ Booked");
+    parts.push(vn?("✓ "+vn):"✓ Booked");
     if(bk.date)parts.push(new Date(bk.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"}));
     if(bk.price)parts.push(money(+bk.price));
     return parts.join(" · ");
@@ -1680,31 +1708,35 @@ function openBookedSheet(taskId,rerender){
   const t=templateById(taskId);
   const ex=S.bookings[taskId]||{};
   const sv=S.selectedVendor[taskId]?vendorById(S.selectedVendor[taskId]):null;
-  const d={date:ex.date||"",price:ex.price!=null?ex.price:""};
+  const d={date:ex.date||"",price:ex.price!=null?ex.price:"",
+    vendorName:bookingVendorName(ex)||(sv?sv.name:"")};
   let ref;
-  ref=sheet({title:"Mark as booked",body:(close)=>{
+  ref=sheet({title:"Booked",body:(close)=>{
     const b=h("div.col.gap16",{style:{marginTop:"4px"}});
     b.appendChild(h("div.row.gap8",[h("span",{style:{fontSize:"24px"}},"✅"),
-      h("div",[h("b",t?shortTask(t.title):"Task"),sv?h("div.tiny.faint",[icon("check",12),sv.name]):h("div.tiny.faint","Add your booking details")])]));
+      h("div",[h("b",t?shortTask(t.title):"Task"),h("div.tiny.faint","Add your booking details")])]));
+    const vendorI=h("input.field",{value:d.vendorName,placeholder:"e.g. Rose & Ivory",oninput:e=>d.vendorName=e.target.value});
     const dateI=h("input.field",{type:"date",value:d.date,max:S.bride.date||undefined,oninput:e=>d.date=e.target.value});
     const priceI=h("input.field",{type:"number",min:"0",inputmode:"decimal",value:d.price,placeholder:"e.g. 350",oninput:e=>d.price=e.target.value});
     b.append(
+      h("div",[h("label.lbl","Vendor name"),vendorI]),
       h("div",[h("label.lbl","Booking date"),dateI]),
-      h("div",[h("label.lbl","Price (OMR)"),priceI]),
-      h("p.tiny.faint",{style:{margin:"0 2px"}},"Both are optional — add them to track your bookings and expenses on this screen."),
+      h("div",[h("label.lbl","Amount (OMR)"),priceI]),
+      h("p.tiny.faint",{style:{margin:"0 2px"}},"These show on your plan and add to your expense tracker."),
     );
     return b;
   },actions:[
     h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
     h("button.btn.btn-pri.grow",{onclick:()=>{
-      saveBooking(taskId,(sv&&sv.id)||(S.bookings[taskId]&&S.bookings[taskId].vendorId)||null,d.date,ex.time||"",ex.note||"",d.price===""?null:d.price);
+      saveBooking(taskId,(sv&&sv.id)||(S.bookings[taskId]&&S.bookings[taskId].vendorId)||null,
+        d.date,ex.time||"",ex.note||"",d.price===""?null:d.price,d.vendorName);
       setTask(taskId,"done"); confetti();
       ref.close(); rerender&&rerender();
-    }},[icon("check",17),"Mark booked"]),
+    }},[icon("check",17),"Save booking"]),
   ]});
   return ref;
 }
-const statusLabel=s=>({todo:"Not started",prog:"In progress",done:"Done"})[s]||s;
+const statusLabel=s=>({todo:"Not started",prog:"In progress",done:"Booked"})[s]||s;
 const statusTag=s=>({todo:"tag-todo",prog:"tag-prog",done:"tag-done"})[s]||"tag-todo";
 
 /* task detail sheet: change status, jump to vendors, see suggestions */
@@ -1717,19 +1749,36 @@ function openTaskSheet(taskId,rerender){
     const b=h("div.col.gap16");
     b.appendChild(h("div.row.gap8",[cat?h("span",{style:{fontSize:"26px"}},cat.icon):h("span",{style:{fontSize:"26px"}},"📝"),
       h("div",[h("div.eyebrow",t.phase),h("div.small.muted",cat?("Category · "+cat.name):"Personal task")])]));
-    // status control
+    // status control — two choices only: In progress, or Booked
     const cur=S.checklist[taskId];
     const stat=h("div.stat3");
-    [["todo","Not started","on-todo"],["prog","In progress","on-prog"],["done","Done","on-done"]].forEach(([k,l,onc])=>{
+    const OPTS=[["prog","In progress","on-prog"],["done","Booked","on-done"]];
+    OPTS.forEach(([k,l,onc])=>{
       stat.appendChild(h("button"+(cur===k?"."+onc:""),{onclick:()=>{
-        // marking Done captures the booking date + price so expenses are tracked
+        // "Booked" captures the vendor, date and amount so the plan + expenses update
         if(k==="done"){ close(); openBookedSheet(taskId,rerender); return; }
         setTask(taskId,k);
-        [...stat.children].forEach((x,i)=>{x.className=(["todo","prog","done"][i]===k)?onc:"";});
+        [...stat.children].forEach((x,i)=>{x.className=(OPTS[i][0]===k)?onc:"";});
         rerender&&rerender();
       }},l));
     });
     b.appendChild(h("div",[h("div.lbl","Status"),stat]));
+    // booked details, shown once she's booked it
+    if(cur==="done"){
+      const bk=S.bookings[taskId]||{};
+      const vn=bookingVendorName(bk);
+      const rows=[];
+      if(vn)rows.push(["Vendor",vn]);
+      if(bk.date)rows.push(["Date",new Date(bk.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"long",year:"numeric"})]);
+      if(bk.price)rows.push(["Amount",money(+bk.price)]);
+      b.appendChild(h("div.card.pad-s",{style:{background:"var(--good-soft)"}},[
+        h("div.between",[h("b.small","Booking details"),
+          h("button.chip",{onclick:()=>{close();setTimeout(()=>openBookedSheet(taskId,rerender),260);}},"Edit")]),
+        rows.length?h("div.col.gap6",{style:{marginTop:"8px"}},rows.map(([k,v])=>
+          h("div.between.small",[h("span.faint",k),h("b",v)]))):
+          h("div.tiny.faint",{style:{marginTop:"6px"}},"No details yet — tap Edit to add them."),
+      ]));
+    }
     if(sv){
       b.appendChild(h("div.card.pad-s",{style:{display:"flex",gap:"12px",alignItems:"center",background:"var(--good-soft)"},onclick:()=>{close();go("/vendor/"+sv.id);}},[
         (()=>{const cv=coverEl(sv,""); cv.style.width="52px";cv.style.height="52px"; return cv;})(),
@@ -1745,7 +1794,7 @@ function openTaskSheet(taskId,rerender){
       const nexts=t.suggests.map(templateById).filter(Boolean);
       b.appendChild(h("div",[h("div.lbl","💡 What comes next"),
         h("div.col.gap8",nexts.map(n=>h("button.lrow",{style:{cursor:"pointer",width:"100%",textAlign:"left"},onclick:()=>{close();setTimeout(()=>openTaskSheet(n.id,rerender),260);}},[
-          h("span",{style:{fontSize:"18px"}},n.catId?catById(n.catId).icon:"📝"),
+          h("span",{style:{fontSize:"18px"}},(n.catId&&catById(n.catId)?catById(n.catId).icon:"📝")),
           h("span.grow.small",{style:{fontWeight:"600"}},n.title),
           h("span.tag "+statusTag(S.checklist[n.id]),statusLabel(S.checklist[n.id])),
         ])))]));
@@ -2347,7 +2396,7 @@ function openBookingSheet(vendor,taskId,onConfirm){
     h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
     h("button.btn.btn-pri.grow",{onclick:()=>{
       if(!d.date){toast("Please pick a date","📅");return;}
-      saveBooking(taskId,vendor.id,d.date,d.time,d.note,d.price===""?null:d.price);
+      saveBooking(taskId,vendor.id,d.date,d.time,d.note,d.price===""?null:d.price,vendor.name);
       selectVendorForTask(vendor.id,taskId);
       ref.close(); confetti();
       const opts={title:(task?shortTask(task.title):"Wedding appointment")+": "+vendor.name,date:d.date,time:d.time,
@@ -2449,7 +2498,7 @@ function assistantAnswer(raw){
     if(!s.length)return {text:"You've completed everything — congratulations! 🎉 Time to relax and enjoy your day.",chips:[chip("Open my plan",null,"/checklist")]};
     const lines=s.map(x=>`• ${x.title}`).join("\n");
     return {text:`Here's what I'd focus on next, ${name}:\n\n${lines}\n\nTackle them one at a time — I'll suggest the following steps as you go. 💪`,
-      chips:s.filter(x=>x.catId).slice(0,2).map(x=>chip("Browse "+catById(x.catId).name,null,"/category/"+x.catId)).concat([chip("Open my plan",null,"/checklist")])};
+      chips:s.filter(x=>x.catId&&catById(x.catId)).slice(0,2).map(x=>chip("Browse "+catById(x.catId).name,null,"/category/"+x.catId)).concat([chip("Open my plan",null,"/checklist")])};
   }
 
   // favourites
@@ -2483,7 +2532,7 @@ function assistantAnswer(raw){
   // general recommend / best
   if(has(/recommend|suggest|best|top rated|find.*vendor|who.*(good|best)/)){
     const feats=VENDORS.filter(v=>v.featured&&v.approved).sort((a,b)=>vpop(b)-vpop(a)).slice(0,3);
-    const lines=feats.map(v=>`• ${v.name} — ${catById(v.catId).name}, ${(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en")} views`).join("\n");
+    const lines=feats.map(v=>`• ${v.name} — ${(catById(v.catId)||{}).name||"Vendor"}, ${(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en")} views`).join("\n");
     return {text:`Some of our most-viewed vendors right now:\n\n${lines}\n\nTell me which service you need and I'll find the perfect match.`,
       chips:feats.slice(0,2).map(v=>chip("View "+v.name,null,"/vendor/"+v.id)).concat([chip("Browse all",null,"/categories")])};
   }
@@ -4006,6 +4055,19 @@ route("/admin/template",()=>{
 <script>
 /* ============ ZAFFA — BOOT ============ */
 load();
+
+/* The admin panel is web-only: it must never run inside the native iOS/Android
+   app (the store build ships the bride app alone). The native bundle also has
+   admin.html stripped at sync time — this is the belt-and-braces guard. */
+if(window.ZAFFA_ADMIN && isNativeApp()){
+  document.body.innerHTML='<div style="font-family:-apple-system,system-ui,sans-serif;display:grid;'+
+    'place-items:center;min-height:100vh;padding:32px;text-align:center;color:#2B2B2F;background:#F4F3F1">'+
+    '<div><div style="font-size:44px">🔒</div><h2 style="margin:12px 0 6px">Admin is web-only</h2>'+
+    '<p style="color:#7A6A6E;max-width:300px;margin:0 auto">Manage vendors from a browser at '+
+    'weddingandco.vercel.app/admin.html</p></div></div>';
+  throw new Error("admin_web_only");
+}
+
 showSplash();             // admin-configurable launch splash (bride app only; no-op if none set)
 if(window.ZAFFA_ADMIN){
   // dedicated admin page (admin.html) — always lands on the access-controlled panel

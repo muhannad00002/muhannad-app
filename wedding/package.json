@@ -12,7 +12,7 @@
     "native:assets": "npx capacitor-assets generate --iconBackgroundColor #2B2B2F --splashBackgroundColor #2B2B2F",
     "cap:sync": "node app/build.js && npx cap sync && node scripts/ios-patch.js",
     "cap:ios": "node app/build.js && npx cap sync ios && node scripts/ios-patch.js && npx cap open ios",
-    "cap:android": "node app/build.js && npx cap sync android && npx cap open android"
+    "cap:android": "node app/build.js && npx cap sync android && node scripts/ios-patch.js && npx cap open android"
   },
   "engines": { "node": "22.x" },
   "dependencies": {

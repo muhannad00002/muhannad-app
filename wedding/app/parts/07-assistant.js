@@ -110,7 +110,7 @@ function openBookingSheet(vendor,taskId,onConfirm){
     h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
     h("button.btn.btn-pri.grow",{onclick:()=>{
       if(!d.date){toast("Please pick a date","📅");return;}
-      saveBooking(taskId,vendor.id,d.date,d.time,d.note,d.price===""?null:d.price);
+      saveBooking(taskId,vendor.id,d.date,d.time,d.note,d.price===""?null:d.price,vendor.name);
       selectVendorForTask(vendor.id,taskId);
       ref.close(); confetti();
       const opts={title:(task?shortTask(task.title):"Wedding appointment")+": "+vendor.name,date:d.date,time:d.time,
@@ -212,7 +212,7 @@ function assistantAnswer(raw){
     if(!s.length)return {text:"You've completed everything — congratulations! 🎉 Time to relax and enjoy your day.",chips:[chip("Open my plan",null,"/checklist")]};
     const lines=s.map(x=>`• ${x.title}`).join("\n");
     return {text:`Here's what I'd focus on next, ${name}:\n\n${lines}\n\nTackle them one at a time — I'll suggest the following steps as you go. 💪`,
-      chips:s.filter(x=>x.catId).slice(0,2).map(x=>chip("Browse "+catById(x.catId).name,null,"/category/"+x.catId)).concat([chip("Open my plan",null,"/checklist")])};
+      chips:s.filter(x=>x.catId&&catById(x.catId)).slice(0,2).map(x=>chip("Browse "+catById(x.catId).name,null,"/category/"+x.catId)).concat([chip("Open my plan",null,"/checklist")])};
   }
 
   // favourites
@@ -246,7 +246,7 @@ function assistantAnswer(raw){
   // general recommend / best
   if(has(/recommend|suggest|best|top rated|find.*vendor|who.*(good|best)/)){
     const feats=VENDORS.filter(v=>v.featured&&v.approved).sort((a,b)=>vpop(b)-vpop(a)).slice(0,3);
-    const lines=feats.map(v=>`• ${v.name} — ${catById(v.catId).name}, ${(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en")} views`).join("\n");
+    const lines=feats.map(v=>`• ${v.name} — ${(catById(v.catId)||{}).name||"Vendor"}, ${(typeof viewCount==="function"?viewCount(v):0).toLocaleString("en")} views`).join("\n");
     return {text:`Some of our most-viewed vendors right now:\n\n${lines}\n\nTell me which service you need and I'll find the perfect match.`,
       chips:feats.slice(0,2).map(v=>chip("View "+v.name,null,"/vendor/"+v.id)).concat([chip("Browse all",null,"/categories")])};
   }
