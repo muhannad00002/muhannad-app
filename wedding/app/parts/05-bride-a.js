@@ -348,8 +348,8 @@ function expenseCard(){
     const list=h("div.col.gap8",{style:{marginTop:"12px"}});
     items.forEach(({taskId,b,vendor,task})=>list.appendChild(
       h("button.lrow",{style:{cursor:"pointer",width:"100%",textAlign:"left"},onclick:()=>openBookedSheet(taskId,()=>go("/checklist"))},[
-        h("div.grow",{style:{minWidth:0}},[h("b.small",vendor?vendor.name:(task?shortTask(task.title):"Booking")),
-          h("div.tiny.faint",[vendor&&task?shortTask(task.title):"Booked",b.date?(" · "+new Date(b.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"})):""])]),
+        h("div.grow",{style:{minWidth:0}},[h("b.small",bookingVendorName(b)||(task?shortTask(task.title):"Booking")),
+          h("div.tiny.faint",[task?shortTask(task.title):"Booked",b.date?(" · "+new Date(b.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"})):""])]),
         h("b.small",{style:{flex:"none",color:"var(--rose-deep)"}},money(+b.price)),
       ])));
     card.append(list);
@@ -383,9 +383,10 @@ function checkRow(t,rerender){
 }
 /* row subtitle: prefer booked date + price, then vendor, then a hint */
 function bookingSubtitle(bk,sv,cat,st){
-  if(bk&&(bk.date||bk.price)){
+  const vn=bookingVendorName(bk)||(sv?sv.name:"");
+  if(bk&&(bk.date||bk.price||vn)){
     const parts=[];
-    if(sv)parts.push("✓ "+sv.name); else parts.push("✓ Booked");
+    parts.push(vn?("✓ "+vn):"✓ Booked");
     if(bk.date)parts.push(new Date(bk.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"}));
     if(bk.price)parts.push(money(+bk.price));
     return parts.join(" · ");
@@ -399,31 +400,35 @@ function openBookedSheet(taskId,rerender){
   const t=templateById(taskId);
   const ex=S.bookings[taskId]||{};
   const sv=S.selectedVendor[taskId]?vendorById(S.selectedVendor[taskId]):null;
-  const d={date:ex.date||"",price:ex.price!=null?ex.price:""};
+  const d={date:ex.date||"",price:ex.price!=null?ex.price:"",
+    vendorName:bookingVendorName(ex)||(sv?sv.name:"")};
   let ref;
-  ref=sheet({title:"Mark as booked",body:(close)=>{
+  ref=sheet({title:"Booked",body:(close)=>{
     const b=h("div.col.gap16",{style:{marginTop:"4px"}});
     b.appendChild(h("div.row.gap8",[h("span",{style:{fontSize:"24px"}},"✅"),
-      h("div",[h("b",t?shortTask(t.title):"Task"),sv?h("div.tiny.faint",[icon("check",12),sv.name]):h("div.tiny.faint","Add your booking details")])]));
+      h("div",[h("b",t?shortTask(t.title):"Task"),h("div.tiny.faint","Add your booking details")])]));
+    const vendorI=h("input.field",{value:d.vendorName,placeholder:"e.g. Rose & Ivory",oninput:e=>d.vendorName=e.target.value});
     const dateI=h("input.field",{type:"date",value:d.date,max:S.bride.date||undefined,oninput:e=>d.date=e.target.value});
     const priceI=h("input.field",{type:"number",min:"0",inputmode:"decimal",value:d.price,placeholder:"e.g. 350",oninput:e=>d.price=e.target.value});
     b.append(
+      h("div",[h("label.lbl","Vendor name"),vendorI]),
       h("div",[h("label.lbl","Booking date"),dateI]),
-      h("div",[h("label.lbl","Price (OMR)"),priceI]),
-      h("p.tiny.faint",{style:{margin:"0 2px"}},"Both are optional — add them to track your bookings and expenses on this screen."),
+      h("div",[h("label.lbl","Amount (OMR)"),priceI]),
+      h("p.tiny.faint",{style:{margin:"0 2px"}},"These show on your plan and add to your expense tracker."),
     );
     return b;
   },actions:[
     h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
     h("button.btn.btn-pri.grow",{onclick:()=>{
-      saveBooking(taskId,(sv&&sv.id)||(S.bookings[taskId]&&S.bookings[taskId].vendorId)||null,d.date,ex.time||"",ex.note||"",d.price===""?null:d.price);
+      saveBooking(taskId,(sv&&sv.id)||(S.bookings[taskId]&&S.bookings[taskId].vendorId)||null,
+        d.date,ex.time||"",ex.note||"",d.price===""?null:d.price,d.vendorName);
       setTask(taskId,"done"); confetti();
       ref.close(); rerender&&rerender();
-    }},[icon("check",17),"Mark booked"]),
+    }},[icon("check",17),"Save booking"]),
   ]});
   return ref;
 }
-const statusLabel=s=>({todo:"Not started",prog:"In progress",done:"Done"})[s]||s;
+const statusLabel=s=>({todo:"Not started",prog:"In progress",done:"Booked"})[s]||s;
 const statusTag=s=>({todo:"tag-todo",prog:"tag-prog",done:"tag-done"})[s]||"tag-todo";
 
 /* task detail sheet: change status, jump to vendors, see suggestions */
@@ -436,19 +441,36 @@ function openTaskSheet(taskId,rerender){
     const b=h("div.col.gap16");
     b.appendChild(h("div.row.gap8",[cat?h("span",{style:{fontSize:"26px"}},cat.icon):h("span",{style:{fontSize:"26px"}},"📝"),
       h("div",[h("div.eyebrow",t.phase),h("div.small.muted",cat?("Category · "+cat.name):"Personal task")])]));
-    // status control
+    // status control — two choices only: In progress, or Booked
     const cur=S.checklist[taskId];
     const stat=h("div.stat3");
-    [["todo","Not started","on-todo"],["prog","In progress","on-prog"],["done","Done","on-done"]].forEach(([k,l,onc])=>{
+    const OPTS=[["prog","In progress","on-prog"],["done","Booked","on-done"]];
+    OPTS.forEach(([k,l,onc])=>{
       stat.appendChild(h("button"+(cur===k?"."+onc:""),{onclick:()=>{
-        // marking Done captures the booking date + price so expenses are tracked
+        // "Booked" captures the vendor, date and amount so the plan + expenses update
         if(k==="done"){ close(); openBookedSheet(taskId,rerender); return; }
         setTask(taskId,k);
-        [...stat.children].forEach((x,i)=>{x.className=(["todo","prog","done"][i]===k)?onc:"";});
+        [...stat.children].forEach((x,i)=>{x.className=(OPTS[i][0]===k)?onc:"";});
         rerender&&rerender();
       }},l));
     });
     b.appendChild(h("div",[h("div.lbl","Status"),stat]));
+    // booked details, shown once she's booked it
+    if(cur==="done"){
+      const bk=S.bookings[taskId]||{};
+      const vn=bookingVendorName(bk);
+      const rows=[];
+      if(vn)rows.push(["Vendor",vn]);
+      if(bk.date)rows.push(["Date",new Date(bk.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"long",year:"numeric"})]);
+      if(bk.price)rows.push(["Amount",money(+bk.price)]);
+      b.appendChild(h("div.card.pad-s",{style:{background:"var(--good-soft)"}},[
+        h("div.between",[h("b.small","Booking details"),
+          h("button.chip",{onclick:()=>{close();setTimeout(()=>openBookedSheet(taskId,rerender),260);}},"Edit")]),
+        rows.length?h("div.col.gap6",{style:{marginTop:"8px"}},rows.map(([k,v])=>
+          h("div.between.small",[h("span.faint",k),h("b",v)]))):
+          h("div.tiny.faint",{style:{marginTop:"6px"}},"No details yet — tap Edit to add them."),
+      ]));
+    }
     if(sv){
       b.appendChild(h("div.card.pad-s",{style:{display:"flex",gap:"12px",alignItems:"center",background:"var(--good-soft)"},onclick:()=>{close();go("/vendor/"+sv.id);}},[
         (()=>{const cv=coverEl(sv,""); cv.style.width="52px";cv.style.height="52px"; return cv;})(),
@@ -464,7 +486,7 @@ function openTaskSheet(taskId,rerender){
       const nexts=t.suggests.map(templateById).filter(Boolean);
       b.appendChild(h("div",[h("div.lbl","💡 What comes next"),
         h("div.col.gap8",nexts.map(n=>h("button.lrow",{style:{cursor:"pointer",width:"100%",textAlign:"left"},onclick:()=>{close();setTimeout(()=>openTaskSheet(n.id,rerender),260);}},[
-          h("span",{style:{fontSize:"18px"}},n.catId?catById(n.catId).icon:"📝"),
+          h("span",{style:{fontSize:"18px"}},(n.catId&&catById(n.catId)?catById(n.catId).icon:"📝")),
           h("span.grow.small",{style:{fontWeight:"600"}},n.title),
           h("span.tag "+statusTag(S.checklist[n.id]),statusLabel(S.checklist[n.id])),
         ])))]));

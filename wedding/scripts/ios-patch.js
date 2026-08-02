@@ -12,6 +12,17 @@
 const fs = require("fs");
 const path = require("path");
 
+/* The admin panel is web-only — never ship it inside the store build. Capacitor
+   copies the whole web folder, so remove admin.html from the native bundles. */
+for (const p of [
+  path.join(__dirname, "..", "ios", "App", "App", "public", "admin.html"),
+  path.join(__dirname, "..", "android", "app", "src", "main", "assets", "public", "admin.html"),
+]) {
+  try {
+    if (fs.existsSync(p)) { fs.unlinkSync(p); console.log("native-patch: removed admin.html from the native bundle"); }
+  } catch (e) { /* platform not added — nothing to strip */ }
+}
+
 const file = path.join(__dirname, "..", "ios", "App", "App", "AppDelegate.swift");
 try {
   let src = fs.readFileSync(file, "utf8");
