@@ -82,11 +82,15 @@ class Collector:
         return f"{category} {city} {settings.country}".strip()
 
     # -- details processing ------------------------------------------------
-    def _process_place(self, place_id: str, category: str) -> Optional[str]:
-        """Fetch details, resolve governorate and upsert a single place.
+    def _fetch_vendor(self, place_id: str, category: str) -> Optional[Vendor]:
+        """Fetch details and build a :class:`Vendor` (network only, thread-safe).
+
+        This runs inside worker threads, so it must **not** touch the SQLite
+        connection — a connection may only be used from the thread that created
+        it. Database writes are performed by the caller on the main thread.
 
         Returns:
-            ``"inserted"``, ``"updated"`` or ``None`` when skipped/failed.
+            A validated :class:`Vendor`, or ``None`` when skipped/failed.
         """
         try:
             details = self.places.get_place_details(place_id)
@@ -108,11 +112,7 @@ class Collector:
         vendor = Vendor.from_details(details, category, governorate)
         if not self.validator.is_valid_vendor(vendor):
             return None
-
-        result = self.db.upsert_vendor(vendor)
-        self.stats.record_category(category)
-        self.stats.record_governorate(governorate)
-        return result
+        return vendor
 
     # -- category collection ----------------------------------------------
     def collect_category(
@@ -136,11 +136,13 @@ class Collector:
             logger.error("Search failed for %r: %s", category, exc)
             self.stats.errors += 1
 
-        # 2. Fetch details concurrently, respecting the worker limit.
+        # 2. Fetch details concurrently (network I/O only in the workers), then
+        #    persist on this thread — SQLite connections are not shareable
+        #    across threads.
         if place_ids:
             with ThreadPoolExecutor(max_workers=settings.max_workers) as executor:
                 futures = {
-                    executor.submit(self._process_place, pid, category): pid
+                    executor.submit(self._fetch_vendor, pid, category): pid
                     for pid in place_ids
                 }
                 for future in tqdm(
@@ -150,7 +152,12 @@ class Collector:
                     unit="biz",
                     leave=False,
                 ):
-                    result = future.result()
+                    vendor = future.result()
+                    if vendor is None:
+                        continue
+                    result = self.db.upsert_vendor(vendor)
+                    self.stats.record_category(vendor.category)
+                    self.stats.record_governorate(vendor.governorate or "Unknown")
                     if result == "inserted":
                         self.stats.collected += 1
                     elif result == "updated":
