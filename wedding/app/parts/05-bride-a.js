@@ -23,7 +23,9 @@ route("/welcome",()=>{
 route("/onboard",()=>{
   let step=0; const data={name:S.bride.name||"",age:S.bride.age||"",governorate:S.bride.governorate||(S.account&&S.account.governorate)||GOVERNORATES[0],date:S.bride.date||"",budget:S.bride.budget||6000};
   const app=h("div.app");
-  const s=h("div.screen.no-tab",{style:{minHeight:"100vh",display:"flex",flexDirection:"column"}});
+  // shrink the screen by however much the keyboard covers, so the Continue
+  // button rides just above it instead of hiding behind it
+  const s=h("div.screen.no-tab",{style:{minHeight:"calc(100vh - var(--kb, 0px))",display:"flex",flexDirection:"column"}});
   app.appendChild(s);
   const refreshNext=()=>{ next.disabled=!steps[step].valid(); };
 

@@ -97,6 +97,11 @@
 }
 
 *{box-sizing:border-box;margin:0}
+/* --kb is the height the on-screen keyboard currently covers (see 03-ui.js).
+   Bottom-anchored actions use it so they never end up behind the keyboard. */
+:root{--kb:0px}
+/* while a sheet is open the page behind must not scroll */
+body.no-scroll{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 html{height:100%;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 body{height:100%;background:var(--ground);color:var(--ink);font-family:var(--font-b);
   font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;overscroll-behavior-y:none}
@@ -289,10 +294,11 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 
 /* modal / sheet */
 .scrim{position:fixed;inset:0;z-index:100;background:rgba(50,30,35,.42);backdrop-filter:blur(3px);
-  display:flex;align-items:flex-end;justify-content:center;animation:fade .3s}
+  display:flex;align-items:flex-end;justify-content:center;animation:fade .3s;
+  padding-bottom:var(--kb,0px)}          /* lift the sheet clear of the keyboard */
 @media(min-width:560px){.scrim{align-items:center}}
 .sheet{background:var(--surface);width:100%;max-width:460px;border-radius:var(--r-xl) var(--r-xl) 0 0;
-  max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-3);animation:sheetUp .4s var(--ease);padding-bottom:env(safe-area-inset-bottom)}
+  max-height:92vh;overflow-y:auto;overscroll-behavior:contain;box-shadow:var(--shadow-3);animation:sheetUp .4s var(--ease);padding-bottom:env(safe-area-inset-bottom)}
 @media(min-width:560px){.sheet{border-radius:var(--r-xl);max-height:88vh}}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
 .sheet-grab{width:38px;height:5px;border-radius:9px;background:var(--line2);margin:10px auto 2px}
@@ -884,6 +890,42 @@ function toast(msg, em="✨"){
 }
 
 /* ---- Modal / bottom sheet ---- */
+/* ---- keyboard awareness ----
+   iOS shrinks the *visual* viewport when the keyboard opens but leaves the
+   layout viewport alone, so anything anchored to the bottom (a Continue button,
+   a sheet's actions) ends up hidden behind the keyboard. Publish how much the
+   keyboard covers as --kb so those elements can lift themselves. */
+(function trackKeyboard(){
+  const vv=window.visualViewport; if(!vv)return;
+  const apply=()=>{
+    const covered=Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    document.documentElement.style.setProperty("--kb", Math.round(covered)+"px");
+    document.body.classList.toggle("kb-open", covered>80);
+  };
+  vv.addEventListener("resize",apply);
+  vv.addEventListener("scroll",apply);
+  apply();
+})();
+
+/* ---- scroll lock ----
+   body{overflow:hidden} alone doesn't stop iOS Safari scrolling, so we pin the
+   body and restore the exact scroll position afterwards. Counted, because
+   sheets can stack (a task sheet opening a confirmation). */
+let _lockDepth=0,_lockY=0;
+function lockScroll(){
+  if(_lockDepth++>0)return;
+  _lockY=window.scrollY||document.documentElement.scrollTop||0;
+  document.body.style.top=(-_lockY)+"px";
+  document.body.classList.add("no-scroll");
+}
+function unlockScroll(){
+  if(_lockDepth>0)_lockDepth--;
+  if(_lockDepth>0)return;
+  document.body.classList.remove("no-scroll");
+  document.body.style.top="";
+  window.scrollTo(0,_lockY);
+}
+
 function sheet({title,body,actions,onClose,maxWidth}){
   const scrim=h("div.scrim",{onclick:e=>{if(e.target===scrim)close();}});
   const s=h("div.sheet",maxWidth?{style:{maxWidth}}:{});
@@ -895,9 +937,14 @@ function sheet({title,body,actions,onClose,maxWidth}){
   if(actions)s.appendChild(h("div",{style:{padding:"0 20px 22px",display:"flex",gap:"10px"}},actions));
   scrim.appendChild(s);
   document.body.appendChild(scrim);
-  document.body.style.overflow="hidden";
-  function close(){s.style.animation="sheetUp .3s var(--ease) reverse";scrim.style.animation="fade .3s reverse";
-    setTimeout(()=>{scrim.remove();document.body.style.overflow="";},260);onClose&&onClose();}
+  lockScroll();
+  let closed=false;
+  function close(){
+    if(closed)return; closed=true;                 // never unlock twice
+    s.style.animation="sheetUp .3s var(--ease) reverse";scrim.style.animation="fade .3s reverse";
+    setTimeout(()=>{scrim.remove();unlockScroll();},260);
+    onClose&&onClose();
+  }
   return {close,el:s};
 }
 /* onCancel fires when she backs out — by the Cancel button, the scrim, or Esc —
@@ -1391,7 +1438,9 @@ route("/welcome",()=>{
 route("/onboard",()=>{
   let step=0; const data={name:S.bride.name||"",age:S.bride.age||"",governorate:S.bride.governorate||(S.account&&S.account.governorate)||GOVERNORATES[0],date:S.bride.date||"",budget:S.bride.budget||6000};
   const app=h("div.app");
-  const s=h("div.screen.no-tab",{style:{minHeight:"100vh",display:"flex",flexDirection:"column"}});
+  // shrink the screen by however much the keyboard covers, so the Continue
+  // button rides just above it instead of hiding behind it
+  const s=h("div.screen.no-tab",{style:{minHeight:"calc(100vh - var(--kb, 0px))",display:"flex",flexDirection:"column"}});
   app.appendChild(s);
   const refreshNext=()=>{ next.disabled=!steps[step].valid(); };
 
@@ -2210,7 +2259,7 @@ route("/vendor/:id",(q,p)=>{
         openBookingSheet(v,linkedTask.id,()=>go("/vendor/"+v.id));
       }
     }},isSelected?[icon("check",18),booking&&booking.date?("Booked "+new Date(booking.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"})+" — tap to undo"):"Selected — tap to undo"]:[icon("cal",18),"Select & pick a date"]);
-    const bar=h("div",{style:{position:"fixed",bottom:"0",left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"460px",zIndex:"48",
+    const bar=h("div",{style:{position:"fixed",bottom:"var(--kb, 0px)",left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"460px",zIndex:"48",
       padding:"12px 20px calc(14px + env(safe-area-inset-bottom))",background:"color-mix(in srgb,var(--surface) 90%,transparent)",
       backdropFilter:"blur(14px)",borderTop:"1px solid var(--line)"}},selBtn);
     app.appendChild(bar);
@@ -2922,7 +2971,8 @@ route("/assistant",()=>{
   }
   drawAttachment();
 
-  screen.appendChild(h("div",{style:{position:"sticky",bottom:"0",paddingBottom:"env(safe-area-inset-bottom)",
+  // sits above the keyboard while she's typing (see --kb in 03-ui.js)
+  screen.appendChild(h("div",{style:{position:"sticky",bottom:"var(--kb, 0px)",paddingBottom:"env(safe-area-inset-bottom)",
     background:"color-mix(in srgb,var(--surface) 92%,transparent)",backdropFilter:"blur(14px)",borderTop:"1px solid var(--line)"}},[
     attachStrip,
     h("div",{style:{padding:"10px 16px",display:"flex",gap:"8px",alignItems:"center"}},[attachBtn,input,sendBtn,fileI]),

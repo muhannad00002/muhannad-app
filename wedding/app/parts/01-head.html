@@ -94,6 +94,11 @@
 }
 
 *{box-sizing:border-box;margin:0}
+/* --kb is the height the on-screen keyboard currently covers (see 03-ui.js).
+   Bottom-anchored actions use it so they never end up behind the keyboard. */
+:root{--kb:0px}
+/* while a sheet is open the page behind must not scroll */
+body.no-scroll{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 html{height:100%;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 body{height:100%;background:var(--ground);color:var(--ink);font-family:var(--font-b);
   font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;overscroll-behavior-y:none}
@@ -286,10 +291,11 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 
 /* modal / sheet */
 .scrim{position:fixed;inset:0;z-index:100;background:rgba(50,30,35,.42);backdrop-filter:blur(3px);
-  display:flex;align-items:flex-end;justify-content:center;animation:fade .3s}
+  display:flex;align-items:flex-end;justify-content:center;animation:fade .3s;
+  padding-bottom:var(--kb,0px)}          /* lift the sheet clear of the keyboard */
 @media(min-width:560px){.scrim{align-items:center}}
 .sheet{background:var(--surface);width:100%;max-width:460px;border-radius:var(--r-xl) var(--r-xl) 0 0;
-  max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-3);animation:sheetUp .4s var(--ease);padding-bottom:env(safe-area-inset-bottom)}
+  max-height:92vh;overflow-y:auto;overscroll-behavior:contain;box-shadow:var(--shadow-3);animation:sheetUp .4s var(--ease);padding-bottom:env(safe-area-inset-bottom)}
 @media(min-width:560px){.sheet{border-radius:var(--r-xl);max-height:88vh}}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
 .sheet-grab{width:38px;height:5px;border-radius:9px;background:var(--line2);margin:10px auto 2px}
