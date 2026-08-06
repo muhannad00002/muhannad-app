@@ -449,7 +449,8 @@ route("/assistant",()=>{
   }
   drawAttachment();
 
-  screen.appendChild(h("div",{style:{position:"sticky",bottom:"0",paddingBottom:"env(safe-area-inset-bottom)",
+  // sits above the keyboard while she's typing (see --kb in 03-ui.js)
+  screen.appendChild(h("div",{style:{position:"sticky",bottom:"var(--kb, 0px)",paddingBottom:"env(safe-area-inset-bottom)",
     background:"color-mix(in srgb,var(--surface) 92%,transparent)",backdropFilter:"blur(14px)",borderTop:"1px solid var(--line)"}},[
     attachStrip,
     h("div",{style:{padding:"10px 16px",display:"flex",gap:"8px",alignItems:"center"}},[attachBtn,input,sendBtn,fileI]),

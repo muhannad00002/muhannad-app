@@ -226,6 +226,42 @@ function toast(msg, em="✨"){
 }
 
 /* ---- Modal / bottom sheet ---- */
+/* ---- keyboard awareness ----
+   iOS shrinks the *visual* viewport when the keyboard opens but leaves the
+   layout viewport alone, so anything anchored to the bottom (a Continue button,
+   a sheet's actions) ends up hidden behind the keyboard. Publish how much the
+   keyboard covers as --kb so those elements can lift themselves. */
+(function trackKeyboard(){
+  const vv=window.visualViewport; if(!vv)return;
+  const apply=()=>{
+    const covered=Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    document.documentElement.style.setProperty("--kb", Math.round(covered)+"px");
+    document.body.classList.toggle("kb-open", covered>80);
+  };
+  vv.addEventListener("resize",apply);
+  vv.addEventListener("scroll",apply);
+  apply();
+})();
+
+/* ---- scroll lock ----
+   body{overflow:hidden} alone doesn't stop iOS Safari scrolling, so we pin the
+   body and restore the exact scroll position afterwards. Counted, because
+   sheets can stack (a task sheet opening a confirmation). */
+let _lockDepth=0,_lockY=0;
+function lockScroll(){
+  if(_lockDepth++>0)return;
+  _lockY=window.scrollY||document.documentElement.scrollTop||0;
+  document.body.style.top=(-_lockY)+"px";
+  document.body.classList.add("no-scroll");
+}
+function unlockScroll(){
+  if(_lockDepth>0)_lockDepth--;
+  if(_lockDepth>0)return;
+  document.body.classList.remove("no-scroll");
+  document.body.style.top="";
+  window.scrollTo(0,_lockY);
+}
+
 function sheet({title,body,actions,onClose,maxWidth}){
   const scrim=h("div.scrim",{onclick:e=>{if(e.target===scrim)close();}});
   const s=h("div.sheet",maxWidth?{style:{maxWidth}}:{});
@@ -237,9 +273,14 @@ function sheet({title,body,actions,onClose,maxWidth}){
   if(actions)s.appendChild(h("div",{style:{padding:"0 20px 22px",display:"flex",gap:"10px"}},actions));
   scrim.appendChild(s);
   document.body.appendChild(scrim);
-  document.body.style.overflow="hidden";
-  function close(){s.style.animation="sheetUp .3s var(--ease) reverse";scrim.style.animation="fade .3s reverse";
-    setTimeout(()=>{scrim.remove();document.body.style.overflow="";},260);onClose&&onClose();}
+  lockScroll();
+  let closed=false;
+  function close(){
+    if(closed)return; closed=true;                 // never unlock twice
+    s.style.animation="sheetUp .3s var(--ease) reverse";scrim.style.animation="fade .3s reverse";
+    setTimeout(()=>{scrim.remove();unlockScroll();},260);
+    onClose&&onClose();
+  }
   return {close,el:s};
 }
 /* onCancel fires when she backs out — by the Cancel button, the scrim, or Esc —

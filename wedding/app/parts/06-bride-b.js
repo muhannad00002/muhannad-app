@@ -216,7 +216,7 @@ route("/vendor/:id",(q,p)=>{
         openBookingSheet(v,linkedTask.id,()=>go("/vendor/"+v.id));
       }
     }},isSelected?[icon("check",18),booking&&booking.date?("Booked "+new Date(booking.date+"T00:00:00").toLocaleDateString("en",{day:"numeric",month:"short"})+" — tap to undo"):"Selected — tap to undo"]:[icon("cal",18),"Select & pick a date"]);
-    const bar=h("div",{style:{position:"fixed",bottom:"0",left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"460px",zIndex:"48",
+    const bar=h("div",{style:{position:"fixed",bottom:"var(--kb, 0px)",left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"460px",zIndex:"48",
       padding:"12px 20px calc(14px + env(safe-area-inset-bottom))",background:"color-mix(in srgb,var(--surface) 90%,transparent)",
       backdropFilter:"blur(14px)",borderTop:"1px solid var(--line)"}},selBtn);
     app.appendChild(bar);
