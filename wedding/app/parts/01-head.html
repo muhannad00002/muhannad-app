@@ -21,6 +21,7 @@
   --surface:#FFFFFF;     /* card */
   --surface2:#F7F5F2;    /* subtle fill */
   --surface3:#EDEAE4;    /* pressed / track */
+  --sk-hi:rgba(255,255,255,.62);  /* skeleton / image-placeholder sweep */
   /* ink — charcoal (logo grey family) */
   --ink:#2B2B2D;
   --ink2:#67676B;
@@ -66,6 +67,7 @@
   --rose:#E0B451; --rose-deep:#ECC169; --rose-soft:#3E3620; --rose-tint:#362F1C; --on-rose:#2A2410;
   --gold:#E3C069; --gold-soft:#3C331C; --cyan:#4FC3D9; --cyan-soft:#22383D; --cyan-deep:#8AD8E7; --champagne:#4A4234; --blush:#3A3B3E;
   --good:#74BE9C; --good-soft:#22332B; --warn:#D9AA5E; --warn-soft:#352C18; --crit:#E0837C; --crit-soft:#3A2422;
+  --sk-hi:rgba(255,255,255,.10);
   --s-todo:#908F92; --s-todo-soft:#3A3B3F; --s-prog:#E3C069; --s-prog-soft:#3C331C; --s-done:#74BE9C; --s-done-soft:#22332B;
   --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 6px 20px rgba(0,0,0,.5); --shadow-3:0 18px 46px rgba(0,0,0,.6);
   --shadow-rose:0 10px 26px rgba(0,0,0,.5);
@@ -76,6 +78,7 @@
   --rose:#B9932F; --rose-deep:#8C6E1F; --rose-soft:#F6EFD9; --rose-tint:#FBF7EA; --on-rose:#2A2410;
   --gold:#C6A449; --gold-soft:#F3ECD8; --cyan:#2AA3BC; --cyan-soft:#E1F2F5; --cyan-deep:#1E7E92; --champagne:#E7D8BE; --blush:#EFEAE2;
   --good:#3E9E7E; --good-soft:#E4F1EB; --warn:#BE8F2E; --warn-soft:#F7EEDA; --crit:#C4574F; --crit-soft:#F8E7E5;
+  --sk-hi:rgba(255,255,255,.62);
   --s-todo:#9B9B9F; --s-todo-soft:#EEECE8; --s-prog:#C6A449; --s-prog-soft:#F3ECD8; --s-done:#3E9E7E; --s-done-soft:#E4F1EB;
   --shadow-1:0 1px 2px rgba(40,40,45,.05),0 2px 8px rgba(40,40,45,.05);
   --shadow-2:0 6px 20px rgba(40,40,45,.09),0 2px 6px rgba(40,40,45,.05);
@@ -88,6 +91,7 @@
   --rose:#E0B451; --rose-deep:#ECC169; --rose-soft:#3E3620; --rose-tint:#362F1C; --on-rose:#2A2410;
   --gold:#E3C069; --gold-soft:#3C331C; --cyan:#4FC3D9; --cyan-soft:#22383D; --cyan-deep:#8AD8E7; --champagne:#4A4234; --blush:#3A3B3E;
   --good:#74BE9C; --good-soft:#22332B; --warn:#D9AA5E; --warn-soft:#352C18; --crit:#E0837C; --crit-soft:#3A2422;
+  --sk-hi:rgba(255,255,255,.10);
   --s-todo:#908F92; --s-todo-soft:#3A3B3F; --s-prog:#E3C069; --s-prog-soft:#3C331C; --s-done:#74BE9C; --s-done-soft:#22332B;
   --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 6px 20px rgba(0,0,0,.5); --shadow-3:0 18px 46px rgba(0,0,0,.6);
   --shadow-rose:0 10px 26px rgba(0,0,0,.5); color-scheme:dark;
@@ -136,7 +140,6 @@ svg{display:block;flex:none}
 img{display:block;max-width:100%}
 ::selection{background:var(--rose-soft);color:var(--rose-deep)}
 :focus-visible{outline:2px solid var(--rose);outline-offset:2px;border-radius:6px}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 .num{font-variant-numeric:tabular-nums}
 .serif{font-family:var(--font-d)}
 .muted{color:var(--ink2)} .faint{color:var(--ink3)} .small{font-size:13px} .tiny{font-size:11.5px}
@@ -217,6 +220,33 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 
 /* avatar / thumb */
 .thumb{background-size:cover;background-position:center;border-radius:var(--r-m);position:relative;overflow:hidden;flex:none}
+/* Real photos load asynchronously. Without a placeholder the card renders as a
+   blank hole and the photo snaps in — that pop is a large part of what read as
+   "flashing". Hold a quiet shimmer, then cross-fade the photo in. */
+.thumb.loading{background:var(--surface3)}
+.thumb.loading::before{content:"";position:absolute;inset:0;
+  background:linear-gradient(100deg,transparent 32%,var(--sk-hi) 50%,transparent 68%);
+  transform:translateX(-100%);animation:shine 1.5s infinite}
+.thumb-img{position:absolute;inset:0;background-size:cover;background-position:center;
+  opacity:0;transition:opacity var(--t-slow) var(--ease-out)}
+.thumb-img.in{opacity:1}
+
+/* skeletons — placeholders that match the shape of what is coming, so the
+   first paint has the same layout as the loaded screen and nothing jumps. */
+.sk{background:var(--surface3);border-radius:var(--r-s);position:relative;overflow:hidden}
+.sk::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(100deg,transparent 32%,var(--sk-hi) 50%,transparent 68%);
+  transform:translateX(-100%);animation:shine 1.5s infinite}
+.sk-line{height:12px;margin:0 0 9px}
+.sk-line:last-child{margin-bottom:0}
+@media(prefers-reduced-motion:reduce){.sk::after,.thumb.loading::before{animation:none}}
+
+/* async buttons — the label is swapped for a spinner in place. The button keeps
+   its measured width so the row never reflows mid-action. */
+.btn.is-busy{pointer-events:none;opacity:.85}
+.btn-spin{width:15px;height:15px;border-radius:50%;display:inline-block;
+  border:2px solid currentColor;border-top-color:transparent;opacity:.9;
+  animation:spin .65s linear infinite;flex:none}
 .avatar{border-radius:var(--r-full);background-size:cover;background-position:center;flex:none;display:grid;place-items:center;
   font-family:var(--font-d);font-weight:600;color:var(--on-rose)}
 
@@ -243,19 +273,13 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .screen.no-tab{padding-bottom:36px}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
-.stagger>*{animation:fadeUp .5s var(--ease) both}
-.stagger>*:nth-child(2){animation-delay:.05s}
-.stagger>*:nth-child(3){animation-delay:.10s}
-.stagger>*:nth-child(4){animation-delay:.15s}
-.stagger>*:nth-child(5){animation-delay:.20s}
-.stagger>*:nth-child(6){animation-delay:.25s}
+/* .stagger is defined once, further down — see @keyframes rise. */
 
 /* top bar */
 .topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:14px 20px 12px;
   background:linear-gradient(var(--ground) 72%,transparent);backdrop-filter:saturate(1.4) blur(8px)}
-.topbar h2{font-size:21px;flex:1}
+.topbar h1{font-size:21px;flex:1;font-weight:600}
 .icon-btn{width:42px;height:42px;border-radius:var(--r-full);display:grid;place-items:center;background:var(--surface);
   box-shadow:var(--shadow-1);color:var(--ink);transition:transform var(--dur) var(--ease),background var(--dur);border:1px solid var(--line)}
 .icon-btn:active{transform:scale(.9)}
@@ -304,6 +328,14 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
   max-height:92vh;overflow-y:auto;overscroll-behavior:contain;box-shadow:var(--shadow-3);animation:sheetUp .4s var(--ease);padding-bottom:env(safe-area-inset-bottom)}
 @media(min-width:560px){.sheet{border-radius:var(--r-xl);max-height:88vh}}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+/* Closing used to re-declare the same animation with `reverse`, which browsers
+   are inconsistent about restarting — the sheet sometimes vanished instantly.
+   A dedicated forward animation on a .closing class is deterministic. */
+.scrim.closing{animation:fadeOut var(--t-base) var(--ease-in-out) forwards}
+.scrim.closing .sheet{animation:sheetDown var(--t-base) var(--ease-in-out) forwards}
+@keyframes fadeOut{to{opacity:0}}
+@keyframes sheetDown{to{transform:translateY(100%)}}
+@media(min-width:560px){@keyframes sheetDown{to{transform:translateY(14px);opacity:0}}}
 .sheet-grab{width:38px;height:5px;border-radius:9px;background:var(--line2);margin:10px auto 2px}
 .sheet-h{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 6px}
 .sheet-h h3{font-size:21px}
@@ -421,6 +453,18 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .icon-btn:active{transform:scale(.9)}
 .chip{transition:transform .14s var(--ease),background .18s,color .18s,box-shadow .2s}
 .chip:active{transform:scale(.95)}
+/* Touch targets. Chips (35px tall), small buttons and segment tabs are compact
+   by design and land under the 44px comfortable-tap minimum, so a thumb misses
+   them. Extend the hit area with a pseudo-element instead of padding them out —
+   the target grows, the design does not change. */
+button.chip,.btn-sm,.seg button,.icon-btn{position:relative}
+button.chip::after,.btn-sm::after,.seg button::after,.icon-btn::after{
+  content:"";position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+  height:44px;min-height:100%}
+/* …but only where a finger is actually the input device. */
+@media (pointer:fine){
+  button.chip::after,.btn-sm::after,.seg button::after,.icon-btn::after{display:none}
+}
 /* section headers: refined weight + optical alignment */
 .sec-h h3{font-weight:650;letter-spacing:-.01em}
 .sec-h .link{display:inline-flex;align-items:center;gap:3px;opacity:.9;transition:opacity .18s}
@@ -506,8 +550,8 @@ h1,h2{letter-spacing:-.02em}
 
 @media(min-width:1024px){
   body{background:var(--ground2)}
-  .app{max-width:none;width:100%;min-height:100vh;display:grid;
-    grid-template-columns:264px minmax(0,1fr);box-shadow:none;background:var(--ground)}
+  .app{max-width:none;width:100%;min-height:100vh;box-shadow:none;background:var(--ground)}
+  .app.has-nav{display:grid;grid-template-columns:264px minmax(0,1fr)}
   /* the tab bar becomes the sidebar */
   .tabbar{order:-1;position:sticky;top:0;bottom:auto;left:auto;transform:none;
     width:264px;max-width:none;height:100vh;z-index:40;
@@ -542,7 +586,7 @@ h1,h2{letter-spacing:-.02em}
   .screen>div>.thumb{border-radius:var(--r-l)}
 }
 @media(min-width:1600px){
-  .app{grid-template-columns:288px minmax(0,1fr)}
+  .app.has-nav{grid-template-columns:288px minmax(0,1fr)}
   .screen{max-width:1180px;padding-left:56px;padding-right:56px}
   .tabbar{width:288px}
   .fab-btn{right:36px}

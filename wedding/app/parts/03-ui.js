@@ -100,7 +100,29 @@ function logoMark(size=64){
 }
 
 function icon(name,size=22,extra=""){
-  return h("span",{class:"ic "+extra,html:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||""}</svg>`});
+  // The icon name is stamped on the element so labelIconButtons() can give
+  // icon-only buttons an accessible name without every call site remembering to.
+  return h("span",{class:"ic "+extra,dataset:{icon:name},"aria-hidden":"true",
+    html:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||""}</svg>`});
+}
+/* A button whose only content is an icon has no accessible name — a screen
+   reader announces it as just "button". Rather than hand-label 25 call sites
+   (and every future one), derive the name from the icon it contains. An explicit
+   aria-label always wins. */
+const ICON_LABELS={home:"Home",heart:"Save",heartFill:"Saved",check:"Done",list:"List",search:"Search",
+  user:"Profile",bell:"Notifications",back:"Back",fwd:"Next",close:"Close",plus:"Add",filter:"Filters",
+  star:"Rating",pin:"Open in maps",phone:"Call",chat:"Message",clock:"Time",cal:"Calendar",
+  ig:"Instagram",share:"Share",edit:"Edit",trash:"Delete",grid:"Categories",spark:"Assistant",
+  chevD:"Expand",settings:"Settings",logout:"Sign out",wallet:"Payments",gift:"Voucher",
+  megaphone:"Announcements",chart:"Statistics",users:"Customers",tag:"Tag",camera:"Choose a photo",
+  sun:"Light theme",moon:"Dark theme",sliders:"Options",info:"Details",send:"Send",eye:"Views"};
+function labelIconButtons(scope){
+  (scope||document).querySelectorAll("button:not([aria-label])").forEach(b=>{
+    if(b.textContent.trim())return;                       // has a visible name already
+    const ic=b.querySelector(".ic[data-icon]");
+    const label=ic&&ICON_LABELS[ic.dataset.icon];
+    if(label)b.setAttribute("aria-label",label);
+  });
 }
 
 /* Downscale + re-encode an image (File/Blob or data-URI) to a small JPEG data
@@ -178,12 +200,25 @@ function vendorImages(v){
   if(Array.isArray(v.gallery))v.gallery.forEach(u=>{if(u)imgs.push(u);});
   return imgs;
 }
-/* returns a thumb element with a real photo (when present) or generated art */
+/* returns a thumb element with a real photo (when present) or generated art.
+   A real photo decodes asynchronously, so painting it straight onto the element
+   leaves a blank hole that the photo then snaps into. Hold a shimmer instead and
+   cross-fade the photo in once it has actually decoded — the card never pops. */
 function coverEl(vendor, cls="", idx=0, showEmoji=true){
   const imgs=vendorImages(vendor);
   if(imgs.length){
     const url=imgs[idx % imgs.length];
-    const el=h("div.thumb "+cls,{style:{backgroundImage:`url("${String(url).replace(/"/g,'%22')}")`}});
+    const el=h("div.thumb "+cls);
+    const layer=h("div.thumb-img",{style:{backgroundImage:`url("${String(url).replace(/"/g,'%22')}")`}});
+    el.appendChild(layer);
+    const reveal=()=>{ el.classList.remove("loading"); layer.classList.add("in"); };
+    // Data URIs are already in memory — no shimmer, no fade, they are instant.
+    if(url.startsWith("data:")){ layer.classList.add("in"); return el; }
+    el.classList.add("loading");
+    const pre=new Image();
+    pre.onload=reveal; pre.onerror=reveal;
+    pre.src=url;
+    if(pre.complete)reveal();
     return el;
   }
   const c=coverFor(vendor,idx);
@@ -216,12 +251,76 @@ function ringEl(pct, size=120, label="Complete"){
   return wrap;
 }
 
+/* ---- async buttons ----
+   Every screen used to hand-roll this as `btn.disabled=true; btn.textContent="Saving…"`.
+   That drops any icon inside the button and, because the new label is a different
+   width, the whole row reflows the moment you tap — the button jumps under your
+   finger. busy() locks the measured width, swaps in a spinner, and restores the
+   exact original contents afterwards. */
+function busy(btn, label){
+  if(!btn||btn._busy)return ()=>{};
+  const kids=Array.from(btn.childNodes);
+  const w=btn.getBoundingClientRect().width;
+  btn._busy=true;
+  if(w)btn.style.minWidth=Math.ceil(w)+"px";
+  btn.disabled=true;
+  btn.classList.add("is-busy");
+  btn.setAttribute("aria-busy","true");
+  clear(btn);
+  btn.appendChild(h("span",{style:{display:"inline-flex",alignItems:"center",gap:"8px",justifyContent:"center"}},
+    [h("span.btn-spin"), label?h("span",label):null]));
+  return ()=>{
+    if(!btn._busy)return;
+    btn._busy=false;
+    clear(btn); kids.forEach(k=>btn.appendChild(k));
+    btn.disabled=false; btn.style.minWidth="";
+    btn.classList.remove("is-busy");
+    btn.removeAttribute("aria-busy");
+  };
+}
+/* Wrap an async click handler so the button always shows progress and always
+   recovers — including when the work throws. */
+function onAsync(getBtn, label, fn){
+  return async function(ev){
+    const btn=typeof getBtn==="function"?getBtn():getBtn;
+    const done=busy(btn,label);
+    try{ await fn(ev); }
+    catch(e){ toast((e&&e.message)||"Something went wrong","⚠️"); }
+    finally{ done(); }
+  };
+}
+
+/* ---- skeletons ----
+   Shown while first-load data is still in flight. They mirror the real layout,
+   so when the content arrives it lands in the same place instead of pushing the
+   page around. */
+const skLine=(w="100%",hgt=12)=>h("div.sk.sk-line",{style:{width:w,height:hgt+"px"}});
+function skVendorCard(){
+  return h("div.card",{style:{padding:"0",overflow:"hidden"}},[
+    h("div.sk",{style:{height:"150px",borderRadius:"0"}}),
+    h("div",{style:{padding:"14px 15px 16px"}},[skLine("62%",15),skLine("40%"),skLine("78%")]),
+  ]);
+}
+const skList=(n=3,make=skVendorCard)=>h("div.col.gap16",Array.from({length:n},make));
+
 /* ---- Toast ---- */
 let _toastWrap;
+function toastRegion(){
+  if(!_toastWrap||!_toastWrap.isConnected){
+    _toastWrap=h("div#toast-wrap",{role:"status","aria-live":"polite","aria-atomic":"false"});
+    document.body.appendChild(_toastWrap);
+  }
+  return _toastWrap;
+}
 function toast(msg, em="✨"){
-  if(!_toastWrap){_toastWrap=h("div#toast-wrap");document.body.appendChild(_toastWrap);}
-  const t=h("div.toast",[em?h("span.em",em):null,h("span",msg)]);
-  _toastWrap.appendChild(t);
+  // role=status + aria-live means confirmations and errors are announced. Without
+  // it a screen-reader user taps Save and gets no feedback at all. The region has
+  // to already be in the document when the message lands — a live region created
+  // and filled in the same tick is not reliably announced — so it is created up
+  // front and the toast is appended on the next frame.
+  const wrap=toastRegion();
+  const t=h("div.toast",[em?h("span.em",{"aria-hidden":"true"},em):null,h("span",msg)]);
+  requestAnimationFrame(()=>wrap.appendChild(t));
   setTimeout(()=>{t.classList.add("out");setTimeout(()=>t.remove(),320);},2400);
 }
 
@@ -333,9 +432,11 @@ function unlockScroll(){
   window.scrollTo(0,_lockY);
 }
 
+const FOCUSABLE="a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])";
 function sheet({title,body,actions,onClose,maxWidth}){
   const scrim=h("div.scrim",{onclick:e=>{if(e.target===scrim)close();}});
-  const s=h("div.sheet",maxWidth?{style:{maxWidth}}:{});
+  const s=h("div.sheet",{role:"dialog","aria-modal":"true",...(maxWidth?{style:{maxWidth}}:{})});
+  if(title)s.setAttribute("aria-label",title);
   s.appendChild(h("div.sheet-grab"));
   if(title)s.appendChild(h("div.sheet-h",[h("h3",title),h("button.icon-btn.plain",{onclick:()=>close(),"aria-label":"Close"},icon("close",22))]));
   const content=h("div",{style:{padding:"6px 20px 22px"}});
@@ -344,12 +445,35 @@ function sheet({title,body,actions,onClose,maxWidth}){
   if(actions)s.appendChild(h("div",{style:{padding:"0 20px 22px",display:"flex",gap:"10px"}},actions));
   scrim.appendChild(s);
   document.body.appendChild(scrim);
+  labelIconButtons(s);
   lockScroll();
+
+  // Keyboard: Escape closes, and Tab stays inside the sheet. Without the trap,
+  // tabbing walks out into the page behind the scrim — invisible focus, and on
+  // desktop (where the app is now a full window) that is very easy to hit.
+  const opener=document.activeElement;
+  function onKey(e){
+    if(e.key==="Escape"){ e.preventDefault(); close(); return; }
+    if(e.key!=="Tab")return;
+    const items=Array.from(s.querySelectorAll(FOCUSABLE)).filter(el=>el.offsetParent!==null);
+    if(!items.length)return;
+    const first=items[0], last=items[items.length-1];
+    if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+    else if(!s.contains(document.activeElement)){ e.preventDefault(); first.focus(); }
+  }
+  document.addEventListener("keydown",onKey);
+
   let closed=false;
   function close(){
     if(closed)return; closed=true;                 // never unlock twice
-    s.style.animation="sheetUp .3s var(--ease) reverse";scrim.style.animation="fade .3s reverse";
-    setTimeout(()=>{scrim.remove();unlockScroll();},260);
+    document.removeEventListener("keydown",onKey);
+    scrim.classList.add("closing");
+    setTimeout(()=>{scrim.remove();unlockScroll();
+      // Hand focus back to whatever opened the sheet, so keyboard users don't
+      // get dumped at the top of the document.
+      try{ if(opener&&opener.isConnected&&opener.focus)opener.focus({preventScroll:true}); }catch(e){}
+    },220);
     onClose&&onClose();
   }
   return {close,el:s};

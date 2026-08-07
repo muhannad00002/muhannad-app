@@ -21,8 +21,9 @@ if(window.ZAFFA_ADMIN){
 }else if(!location.hash){
   location.hash = S.onboarded ? (S.role==="admin"?"#/admin":"#/home") : "#/welcome";
 }
+toastRegion();            // live region must exist before the first announcement
 render();
-cloudInit();              // pulls the live catalog + account entitlement when a backend is configured
+cloudInit();            // pulls the live catalog + account entitlement when a backend is configured
 startCatalogPolling();    // keeps open apps in sync with admin changes in near real-time
 
 // keep theme in sync with system when in auto mode

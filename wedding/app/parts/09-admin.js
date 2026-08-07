@@ -5,16 +5,17 @@
    access-controlled area with no entry point from the customer app. */
 function adminGateView(){
   const d={email:"",password:""};
-  const app=h("div.app");
-  const s=h("div.screen.no-tab",{style:{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",
-    background:"linear-gradient(160deg,var(--gold-soft),var(--ground) 55%,var(--rose-tint))"}});
+  // the gradient goes on the frame, not the screen — the screen is capped at a
+  // readable width, so painting it there leaves bare rails down both edges
+  const app=h("div.app",{style:{background:"linear-gradient(160deg,var(--gold-soft),var(--ground) 55%,var(--rose-tint))"}});
+  const s=h("div.screen.no-tab",{style:{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center"}});
   const emailI=h("input.field",{type:"email",placeholder:"admin@…",value:d.email,oninput:e=>d.email=e.target.value});
   const passI=h("input.field",{type:"password",placeholder:"Password",oninput:e=>d.password=e.target.value,
     onkeydown:e=>{if(e.key==="Enter")submit();}});
   const btn=h("button.btn.btn-pri.btn-lg.btn-block",{style:{marginTop:"4px"},onclick:()=>submit()},"Sign in");
   async function submit(){
     if(!(typeof apiBase==="function" && apiBase())){toast("Backend not configured","⚠️");return;}
-    btn.disabled=true;btn.textContent="Signing in…";
+    const done=busy(btn,"Signing in…");
     try{
       // fail fast with a clear message if the API can't be reached at all
       const health=await fetch(apiBase()+"/api/payments/status").then(r=>r.ok).catch(()=>false);
@@ -23,7 +24,7 @@ function adminGateView(){
       if(r.user.role!=="admin"){throw new Error("This account is not an administrator.");}
       S.account={id:r.user.id||r.user.email,email:r.user.email,name:r.user.name,role:r.user.role,token:r.token};
       S.role="admin"; save(); toast("Welcome back ✨"); go("/admin"); render();
-    }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Sign in";}
+    }catch(e){toast(e.message,"⚠️");done();}
   }
   s.appendChild(h("div.stagger",{style:{textAlign:"center",maxWidth:"360px",margin:"0 auto",width:"100%"}},[
     h("div",{style:{fontSize:"46px",marginBottom:"6px"}},"🔐"),
@@ -44,7 +45,7 @@ function adminGateView(){
 
 function adminTop(title,right){
   return h("div.topbar",[
-    h("div.grow",[h("div.eyebrow",{style:{color:"var(--gold)"}},"Admin"),h("h2",{style:{fontSize:"22px"}},title)]),
+    h("div.grow",[h("div.eyebrow",{style:{color:"var(--gold)"}},"Admin"),h("h1",{style:{fontSize:"22px",fontWeight:"600"}},title)]),
     right||null,
   ]);
 }
@@ -229,10 +230,10 @@ function openBulkImport(onDone){
       if(!parsed||!parsed.vendors.length){toast("Nothing to import","⚠️");return;}
       const list=parsed.vendors;
       VENDORS.unshift(...list); save();
-      const btn=e.target; btn.disabled=true; btn.textContent="Importing…";
+      const done=busy(e.currentTarget,"Importing…");
       if(typeof isAdmin==="function"&&isAdmin()&&typeof saveVendorsRemote==="function"&&apiBase()){
         try{ await saveVendorsRemote(list); ref.close(); toast(list.length+" vendors imported & live ✓","🎉"); onDone&&onDone(); }
-        catch(err){ btn.disabled=false; btn.textContent="Import vendors"; toast("Import failed to publish: "+((err&&err.message)||"error"),"⚠️"); }
+        catch(err){ done(); toast("Import failed to publish: "+((err&&err.message)||"error"),"⚠️"); }
       }else{ ref.close(); toast(list.length+" vendors imported ✓","🎉"); onDone&&onDone(); }
     }},"Import vendors"),
   ]});
@@ -343,9 +344,9 @@ function openVendorForm(v,rerender){
       // Save just this vendor to the cloud (tiny request → immune to size limits)
       // and report the real result so a failure is never silent.
       if(typeof isAdmin==="function" && isAdmin() && typeof apiBase==="function" && apiBase() && typeof saveVendorsRemote==="function"){
-        const btn=e.target; btn.disabled=true; const orig=btn.textContent; btn.textContent="Publishing…";
+        const done=busy(e.currentTarget,"Publishing…");
         try{ await saveVendorsRemote([isNew?d:v]); toast(isNew?"Vendor added & live ✓":"Vendor updated & live ✓","🎉"); ref.close(); rerender?rerender():render(); }
-        catch(err){ btn.disabled=false; btn.textContent=orig; toast("Publish failed: "+((err&&err.message)||"error"),"⚠️"); }
+        catch(err){ done(); toast("Publish failed: "+((err&&err.message)||"error"),"⚠️"); }
       }else{
         toast(isNew?"Vendor added ✓":"Vendor updated ✓","🎉");
         ref.close(); rerender?rerender():render();
@@ -528,10 +529,10 @@ route("/admin/branding",()=>{
 
   const publishBtn=h("button.btn.btn-sec.btn-block",{style:{marginTop:"10px"},onclick:async()=>{
     if(!apiBase()){toast("Saved on this device","💾");return;}
-    publishBtn.disabled=true; const orig=publishBtn.textContent; publishBtn.textContent="Publishing…";
+    const done=busy(publishBtn,"Publishing…");
     try{ await saveSettingsRemote(SETTINGS); toast("Splash is live for brides ✓","🎉"); }
     catch(e){ toast(e.message||"Could not publish","⚠️"); }
-    finally{ publishBtn.disabled=false; clear(publishBtn); publishBtn.append(icon("share",18),"Publish to all brides"); }
+    finally{ done(); }
   }},[icon("share",18),"Publish to all brides"]);
   kids.push(publishBtn);
 
@@ -549,20 +550,23 @@ route("/admin/vouchers",()=>{
   const kids=[adminTop("Vouchers")];
   let count=10;
   const created=h("div"); // holds the just-created batch
-  const stat=h("div.card.pad-s",{style:{marginBottom:"14px"}},h("div.small.muted","Loading…"));
+  const stat=h("div.card.pad-s",{style:{marginBottom:"14px"}},
+    h("div.row.gap12",Array.from({length:3},()=>h("div.kpi.grow.center",
+      [h("div.sk",{style:{height:"22px",width:"46px",margin:"2px auto 8px"}}),
+       h("div.sk",{style:{height:"10px",width:"58px",margin:"0 auto"}})]))));
   kids.push(stat);
   // create panel
   kids.push(h("div.card.pad.col.gap12",[
     h("div",[h("label.lbl","How many vouchers?"),
       h("input.field",{type:"number",min:1,max:2000,value:count,oninput:e=>count=Math.min(2000,Math.max(1,+e.target.value||1))})]),
     (()=>{const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
-      btn.disabled=true;btn.textContent="Creating…";
+      const done=busy(btn,"Creating…");
       try{
         const r=await api("/api/admin/vouchers",{method:"POST",body:{count}});
         toast(r.created+" vouchers created ✓","🎉");
         showBatch(r.codes); load();
       }catch(e){toast(e.message,"⚠️");}
-      btn.disabled=false;btn.textContent="Create vouchers";
+      done();
     }},"Create vouchers");return btn;})(),
     h("p.tiny.faint","Each code unlocks full access once. Give codes to customers who don't pay online."),
   ]));
@@ -570,7 +574,10 @@ route("/admin/vouchers",()=>{
   // list
   kids.push(h("div.between",{style:{margin:"22px 3px 10px"}},[h("h3",{style:{fontSize:"18px"}},"All vouchers"),
     h("button.chip",{onclick:()=>downloadAll()},[icon("share",14),"Download CSV"])]));
-  const list=h("div.col.gap8"); kids.push(list);
+  const list=h("div.col.gap8",Array.from({length:4},()=>
+    h("div.card.pad-s.between",[h("div.sk",{style:{height:"14px",width:"120px"}}),
+                                h("div.sk",{style:{height:"11px",width:"72px"}})])));
+  kids.push(list);
   let all=[];
   function showBatch(codes){
     clear(created);
@@ -605,7 +612,9 @@ route("/admin/vouchers",()=>{
         h("div.kpi.grow.center",[h("div.v",{style:{color:"var(--ink2)"}},r.redeemed),h("div.k","Used")]),
       ]));
       draw();
-    }catch(e){clear(stat);stat.appendChild(h("div.small.muted","Couldn't load: "+e.message));}
+    }catch(e){clear(stat);stat.appendChild(h("div.small.muted","Couldn't load: "+e.message));
+      draw();   // clear the skeletons — they must never be left shimmering forever
+    }
   }
   load();
   return appFrame(kids,{tabs:adminTabs("/admin/more")});
@@ -614,7 +623,12 @@ route("/admin/vouchers",()=>{
 /* ---------- BANK MUSCAT / SMARTPAY SETTINGS ---------- */
 route("/admin/payments",()=>{
   const kids=[adminTop("Bank Muscat")];
-  const status=h("div.card.pad-s",{style:{marginBottom:"14px"}},h("div.small.muted","Loading current settings…"));
+  const status=h("div.card.pad-s",{style:{marginBottom:"14px"}},
+    h("div.row.gap10",{style:{alignItems:"center"}},[
+      h("div.sk",{style:{width:"38px",height:"38px",borderRadius:"50%",flex:"none"}}),
+      h("div.grow",[h("div.sk",{style:{height:"13px",width:"58%",marginBottom:"7px"}}),
+                    h("div.sk",{style:{height:"10px",width:"38%"}})]),
+    ]));
   kids.push(status);
   const form=h("div.card.pad.col.gap12");
   const d={merchantId:"",accessCode:"",workingKey:"",txnUrl:"",currency:"OMR"};
@@ -632,13 +646,13 @@ route("/admin/payments",()=>{
   );
   const saveBtn=h("button.btn.btn-pri.btn-lg.btn-block",{style:{marginTop:"14px"},onclick:async()=>{
     if(!d.merchantId.trim()||!d.accessCode.trim()){toast("Enter MID and access code","⚠️");return;}
-    saveBtn.disabled=true;saveBtn.textContent="Saving…";
+    const done=busy(saveBtn,"Saving…");
     try{
       const r=await api("/api/admin/config/smartpay",{method:"PUT",body:d});
       toast("Bank Muscat settings saved ✓","🏦"); paint(r);
       d.workingKey=""; wkI.value="";
     }catch(e){toast(e.message,"⚠️");}
-    saveBtn.disabled=false;saveBtn.textContent="Save settings";
+    done();
   }},"Save settings");
   kids.push(form);
   kids.push(saveBtn);

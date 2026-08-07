@@ -55,11 +55,11 @@ function openPaywall(reason){
     const prov=paymentProvider();
     const payLabel=prov==="apple"?"Subscribe with Apple":prov==="smartpay"?"Pay with Bank Muscat":"Start Premium";
     const payBtn=h("button.btn.btn-pri.btn-lg.btn-block",{style:{marginTop:"10px"},onclick:async()=>{
-      payBtn.disabled=true; clear(payBtn).appendChild(h("span","Processing…"));
+      const done=busy(payBtn,"Processing…");
       try{
         await payCheckout(chosen);          // demo resolves instantly; smartpay redirects; apple awaits StoreKit
         ref.close(); confetti(); toast("Welcome to Premium 💗","✨"); setTimeout(render,120);
-      }catch(e){ payBtn.disabled=false; clear(payBtn).appendChild(h("span",payLabel)); }
+      }catch(e){ done(); }
     }},payLabel);
     b.appendChild(payBtn);
     b.appendChild(h("p.center.tiny.faint",{style:{margin:"12px 0 2px"}},
@@ -335,12 +335,14 @@ route("/assistant",()=>{
     h("button.icon-btn",{onclick:()=>back()},icon("back",22)),
     h("div.row.gap8.grow",[
       h("span.avatar",{style:{width:"38px",height:"38px",fontSize:"16px",background:"linear-gradient(135deg,var(--rose),var(--gold))"}},"A"),
-      h("div",[h("h2",{style:{fontSize:"18px"}},"Aya"),h("div.tiny",{style:{color:"var(--good)"}},"● Online · web search + photos")]),
+      h("div",[h("h1",{style:{fontSize:"18px",fontWeight:"600"}},"Aya"),
+        h("div.tiny",{style:{color:"var(--good)"}},[h("span",{"aria-hidden":"true"},"● "),"Online · web search + photos"])]),
     ]),
     isPremium()?h("span.tag.tag-gold","Premium"):h("span.tag.tag-todo",FREE_AI_MESSAGES-S.assistant.used+" free"),
   ]));
   // messages
-  const feed=h("div",{style:{flex:"1",overflowY:"auto",padding:"8px 18px 12px",display:"flex",flexDirection:"column",gap:"12px"}});
+  const feed=h("div",{role:"log","aria-live":"polite","aria-label":"Conversation with Aya",
+    style:{flex:"1",overflowY:"auto",padding:"8px 18px 12px",display:"flex",flexDirection:"column",gap:"12px"}});
   screen.appendChild(feed);
 
   function bubble(role,text,chips,img){
@@ -366,16 +368,25 @@ route("/assistant",()=>{
       animation:"blink 1.2s "+delay+"s infinite"}});}
   }
 
+  // Rebuilding the whole transcript on every turn threw away and re-created every
+  // bubble in the conversation — the history visibly re-animated, attached photos
+  // were re-decoded, and the cost grew with the chat. renderFeed() is now only for
+  // the first paint; each new message is appended on its own.
+  function bubbleFor(m){ return bubble(m.role,m.text,m.role==="bot"?m.chips:null,m.img); }
+  function scrollFeed(smooth){
+    const go=()=>feed.scrollTo({top:feed.scrollHeight,behavior:smooth?"smooth":"auto"});
+    go(); requestAnimationFrame(go);
+  }
+  function appendMsg(m){ feed.appendChild(bubbleFor(m)); scrollFeed(true); }
   function renderFeed(){
     clear(feed);
     if(!S.assistant.msgs.length){
       feed.appendChild(bubble("bot",`Hi ${S.bride.name||"there"}! 🌸 I'm Aya, your personal wedding assistant. Ask me anything — I can search the web for the latest ideas and prices, recommend vendors, plan your budget, or look at a photo you send and give you my honest take. 📸`,
         [{label:"What should I do next?",q:"what should I do next"},{label:"2026 wedding trends",q:"what are the top wedding trends for 2026?"},{label:"Plan my budget",q:"plan my budget"},{label:"Find a photographer",q:"find me a photographer"}]));
     }else{
-      S.assistant.msgs.forEach(m=>feed.appendChild(bubble(m.role,m.text,m.role==="bot"?m.chips:null,m.img)));
+      S.assistant.msgs.forEach(m=>feed.appendChild(bubbleFor(m)));
     }
-    feed.scrollTop=feed.scrollHeight;
-    setTimeout(()=>feed.scrollTop=feed.scrollHeight,50);
+    scrollFeed(false);
   }
 
   let pendingImg=null;   // {data, type} — a photo attached to the next message
@@ -386,10 +397,14 @@ route("/assistant",()=>{
     // gate free users
     if(!isPremium() && S.assistant.used>=FREE_AI_MESSAGES){ openPaywall("assistant"); return; }
     const img=pendingImg; pendingImg=null; drawAttachment();
-    S.assistant.msgs.push(img?{role:"user",text,img:img.data,imgType:img.type}:{role:"user",text});
+    const mine=img?{role:"user",text,img:img.data,imgType:img.type}:{role:"user",text};
+    S.assistant.msgs.push(mine);
     if(!isPremium())S.assistant.used++;
-    save(); renderFeed();
-    const tip=typing(); feed.appendChild(tip); feed.scrollTop=feed.scrollHeight;
+    save();
+    // the greeting bubble is not a real message — clear it on the first send
+    if(S.assistant.msgs.length===1)clear(feed);
+    appendMsg(mine);
+    const tip=typing(); feed.appendChild(tip); scrollFeed(true);
 
     let replied=false;
     try{
@@ -409,7 +424,7 @@ route("/assistant",()=>{
       S.assistant.msgs.push({role:"bot",text:ans.text,chips:ans.chips});
     }
     tip.remove();
-    save(); renderFeed();
+    save(); appendMsg(S.assistant.msgs[S.assistant.msgs.length-1]);
     const badge=app.querySelector(".topbar .tag");
     if(badge&&!isPremium())badge.textContent=(FREE_AI_MESSAGES-S.assistant.used)+" free";
   }

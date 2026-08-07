@@ -24,6 +24,7 @@
   --surface:#FFFFFF;     /* card */
   --surface2:#F7F5F2;    /* subtle fill */
   --surface3:#EDEAE4;    /* pressed / track */
+  --sk-hi:rgba(255,255,255,.62);  /* skeleton / image-placeholder sweep */
   /* ink — charcoal (logo grey family) */
   --ink:#2B2B2D;
   --ink2:#67676B;
@@ -69,6 +70,7 @@
   --rose:#E0B451; --rose-deep:#ECC169; --rose-soft:#3E3620; --rose-tint:#362F1C; --on-rose:#2A2410;
   --gold:#E3C069; --gold-soft:#3C331C; --cyan:#4FC3D9; --cyan-soft:#22383D; --cyan-deep:#8AD8E7; --champagne:#4A4234; --blush:#3A3B3E;
   --good:#74BE9C; --good-soft:#22332B; --warn:#D9AA5E; --warn-soft:#352C18; --crit:#E0837C; --crit-soft:#3A2422;
+  --sk-hi:rgba(255,255,255,.10);
   --s-todo:#908F92; --s-todo-soft:#3A3B3F; --s-prog:#E3C069; --s-prog-soft:#3C331C; --s-done:#74BE9C; --s-done-soft:#22332B;
   --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 6px 20px rgba(0,0,0,.5); --shadow-3:0 18px 46px rgba(0,0,0,.6);
   --shadow-rose:0 10px 26px rgba(0,0,0,.5);
@@ -79,6 +81,7 @@
   --rose:#B9932F; --rose-deep:#8C6E1F; --rose-soft:#F6EFD9; --rose-tint:#FBF7EA; --on-rose:#2A2410;
   --gold:#C6A449; --gold-soft:#F3ECD8; --cyan:#2AA3BC; --cyan-soft:#E1F2F5; --cyan-deep:#1E7E92; --champagne:#E7D8BE; --blush:#EFEAE2;
   --good:#3E9E7E; --good-soft:#E4F1EB; --warn:#BE8F2E; --warn-soft:#F7EEDA; --crit:#C4574F; --crit-soft:#F8E7E5;
+  --sk-hi:rgba(255,255,255,.62);
   --s-todo:#9B9B9F; --s-todo-soft:#EEECE8; --s-prog:#C6A449; --s-prog-soft:#F3ECD8; --s-done:#3E9E7E; --s-done-soft:#E4F1EB;
   --shadow-1:0 1px 2px rgba(40,40,45,.05),0 2px 8px rgba(40,40,45,.05);
   --shadow-2:0 6px 20px rgba(40,40,45,.09),0 2px 6px rgba(40,40,45,.05);
@@ -91,6 +94,7 @@
   --rose:#E0B451; --rose-deep:#ECC169; --rose-soft:#3E3620; --rose-tint:#362F1C; --on-rose:#2A2410;
   --gold:#E3C069; --gold-soft:#3C331C; --cyan:#4FC3D9; --cyan-soft:#22383D; --cyan-deep:#8AD8E7; --champagne:#4A4234; --blush:#3A3B3E;
   --good:#74BE9C; --good-soft:#22332B; --warn:#D9AA5E; --warn-soft:#352C18; --crit:#E0837C; --crit-soft:#3A2422;
+  --sk-hi:rgba(255,255,255,.10);
   --s-todo:#908F92; --s-todo-soft:#3A3B3F; --s-prog:#E3C069; --s-prog-soft:#3C331C; --s-done:#74BE9C; --s-done-soft:#22332B;
   --shadow-1:0 1px 2px rgba(0,0,0,.4); --shadow-2:0 6px 20px rgba(0,0,0,.5); --shadow-3:0 18px 46px rgba(0,0,0,.6);
   --shadow-rose:0 10px 26px rgba(0,0,0,.5); color-scheme:dark;
@@ -139,7 +143,6 @@ svg{display:block;flex:none}
 img{display:block;max-width:100%}
 ::selection{background:var(--rose-soft);color:var(--rose-deep)}
 :focus-visible{outline:2px solid var(--rose);outline-offset:2px;border-radius:6px}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 .num{font-variant-numeric:tabular-nums}
 .serif{font-family:var(--font-d)}
 .muted{color:var(--ink2)} .faint{color:var(--ink3)} .small{font-size:13px} .tiny{font-size:11.5px}
@@ -220,6 +223,33 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 
 /* avatar / thumb */
 .thumb{background-size:cover;background-position:center;border-radius:var(--r-m);position:relative;overflow:hidden;flex:none}
+/* Real photos load asynchronously. Without a placeholder the card renders as a
+   blank hole and the photo snaps in — that pop is a large part of what read as
+   "flashing". Hold a quiet shimmer, then cross-fade the photo in. */
+.thumb.loading{background:var(--surface3)}
+.thumb.loading::before{content:"";position:absolute;inset:0;
+  background:linear-gradient(100deg,transparent 32%,var(--sk-hi) 50%,transparent 68%);
+  transform:translateX(-100%);animation:shine 1.5s infinite}
+.thumb-img{position:absolute;inset:0;background-size:cover;background-position:center;
+  opacity:0;transition:opacity var(--t-slow) var(--ease-out)}
+.thumb-img.in{opacity:1}
+
+/* skeletons — placeholders that match the shape of what is coming, so the
+   first paint has the same layout as the loaded screen and nothing jumps. */
+.sk{background:var(--surface3);border-radius:var(--r-s);position:relative;overflow:hidden}
+.sk::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(100deg,transparent 32%,var(--sk-hi) 50%,transparent 68%);
+  transform:translateX(-100%);animation:shine 1.5s infinite}
+.sk-line{height:12px;margin:0 0 9px}
+.sk-line:last-child{margin-bottom:0}
+@media(prefers-reduced-motion:reduce){.sk::after,.thumb.loading::before{animation:none}}
+
+/* async buttons — the label is swapped for a spinner in place. The button keeps
+   its measured width so the row never reflows mid-action. */
+.btn.is-busy{pointer-events:none;opacity:.85}
+.btn-spin{width:15px;height:15px;border-radius:50%;display:inline-block;
+  border:2px solid currentColor;border-top-color:transparent;opacity:.9;
+  animation:spin .65s linear infinite;flex:none}
 .avatar{border-radius:var(--r-full);background-size:cover;background-position:center;flex:none;display:grid;place-items:center;
   font-family:var(--font-d);font-weight:600;color:var(--on-rose)}
 
@@ -246,19 +276,13 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .screen.no-tab{padding-bottom:36px}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
-.stagger>*{animation:fadeUp .5s var(--ease) both}
-.stagger>*:nth-child(2){animation-delay:.05s}
-.stagger>*:nth-child(3){animation-delay:.10s}
-.stagger>*:nth-child(4){animation-delay:.15s}
-.stagger>*:nth-child(5){animation-delay:.20s}
-.stagger>*:nth-child(6){animation-delay:.25s}
+/* .stagger is defined once, further down — see @keyframes rise. */
 
 /* top bar */
 .topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:14px 20px 12px;
   background:linear-gradient(var(--ground) 72%,transparent);backdrop-filter:saturate(1.4) blur(8px)}
-.topbar h2{font-size:21px;flex:1}
+.topbar h1{font-size:21px;flex:1;font-weight:600}
 .icon-btn{width:42px;height:42px;border-radius:var(--r-full);display:grid;place-items:center;background:var(--surface);
   box-shadow:var(--shadow-1);color:var(--ink);transition:transform var(--dur) var(--ease),background var(--dur);border:1px solid var(--line)}
 .icon-btn:active{transform:scale(.9)}
@@ -307,6 +331,14 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
   max-height:92vh;overflow-y:auto;overscroll-behavior:contain;box-shadow:var(--shadow-3);animation:sheetUp .4s var(--ease);padding-bottom:env(safe-area-inset-bottom)}
 @media(min-width:560px){.sheet{border-radius:var(--r-xl);max-height:88vh}}
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+/* Closing used to re-declare the same animation with `reverse`, which browsers
+   are inconsistent about restarting — the sheet sometimes vanished instantly.
+   A dedicated forward animation on a .closing class is deterministic. */
+.scrim.closing{animation:fadeOut var(--t-base) var(--ease-in-out) forwards}
+.scrim.closing .sheet{animation:sheetDown var(--t-base) var(--ease-in-out) forwards}
+@keyframes fadeOut{to{opacity:0}}
+@keyframes sheetDown{to{transform:translateY(100%)}}
+@media(min-width:560px){@keyframes sheetDown{to{transform:translateY(14px);opacity:0}}}
 .sheet-grab{width:38px;height:5px;border-radius:9px;background:var(--line2);margin:10px auto 2px}
 .sheet-h{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 6px}
 .sheet-h h3{font-size:21px}
@@ -424,6 +456,18 @@ select.field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xml
 .icon-btn:active{transform:scale(.9)}
 .chip{transition:transform .14s var(--ease),background .18s,color .18s,box-shadow .2s}
 .chip:active{transform:scale(.95)}
+/* Touch targets. Chips (35px tall), small buttons and segment tabs are compact
+   by design and land under the 44px comfortable-tap minimum, so a thumb misses
+   them. Extend the hit area with a pseudo-element instead of padding them out —
+   the target grows, the design does not change. */
+button.chip,.btn-sm,.seg button,.icon-btn{position:relative}
+button.chip::after,.btn-sm::after,.seg button::after,.icon-btn::after{
+  content:"";position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+  height:44px;min-height:100%}
+/* …but only where a finger is actually the input device. */
+@media (pointer:fine){
+  button.chip::after,.btn-sm::after,.seg button::after,.icon-btn::after{display:none}
+}
 /* section headers: refined weight + optical alignment */
 .sec-h h3{font-weight:650;letter-spacing:-.01em}
 .sec-h .link{display:inline-flex;align-items:center;gap:3px;opacity:.9;transition:opacity .18s}
@@ -509,8 +553,8 @@ h1,h2{letter-spacing:-.02em}
 
 @media(min-width:1024px){
   body{background:var(--ground2)}
-  .app{max-width:none;width:100%;min-height:100vh;display:grid;
-    grid-template-columns:264px minmax(0,1fr);box-shadow:none;background:var(--ground)}
+  .app{max-width:none;width:100%;min-height:100vh;box-shadow:none;background:var(--ground)}
+  .app.has-nav{display:grid;grid-template-columns:264px minmax(0,1fr)}
   /* the tab bar becomes the sidebar */
   .tabbar{order:-1;position:sticky;top:0;bottom:auto;left:auto;transform:none;
     width:264px;max-width:none;height:100vh;z-index:40;
@@ -545,7 +589,7 @@ h1,h2{letter-spacing:-.02em}
   .screen>div>.thumb{border-radius:var(--r-l)}
 }
 @media(min-width:1600px){
-  .app{grid-template-columns:288px minmax(0,1fr)}
+  .app.has-nav{grid-template-columns:288px minmax(0,1fr)}
   .screen{max-width:1180px;padding-left:56px;padding-right:56px}
   .tabbar{width:288px}
   .fab-btn{right:36px}
@@ -863,7 +907,29 @@ function logoMark(size=64){
 }
 
 function icon(name,size=22,extra=""){
-  return h("span",{class:"ic "+extra,html:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||""}</svg>`});
+  // The icon name is stamped on the element so labelIconButtons() can give
+  // icon-only buttons an accessible name without every call site remembering to.
+  return h("span",{class:"ic "+extra,dataset:{icon:name},"aria-hidden":"true",
+    html:`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||""}</svg>`});
+}
+/* A button whose only content is an icon has no accessible name — a screen
+   reader announces it as just "button". Rather than hand-label 25 call sites
+   (and every future one), derive the name from the icon it contains. An explicit
+   aria-label always wins. */
+const ICON_LABELS={home:"Home",heart:"Save",heartFill:"Saved",check:"Done",list:"List",search:"Search",
+  user:"Profile",bell:"Notifications",back:"Back",fwd:"Next",close:"Close",plus:"Add",filter:"Filters",
+  star:"Rating",pin:"Open in maps",phone:"Call",chat:"Message",clock:"Time",cal:"Calendar",
+  ig:"Instagram",share:"Share",edit:"Edit",trash:"Delete",grid:"Categories",spark:"Assistant",
+  chevD:"Expand",settings:"Settings",logout:"Sign out",wallet:"Payments",gift:"Voucher",
+  megaphone:"Announcements",chart:"Statistics",users:"Customers",tag:"Tag",camera:"Choose a photo",
+  sun:"Light theme",moon:"Dark theme",sliders:"Options",info:"Details",send:"Send",eye:"Views"};
+function labelIconButtons(scope){
+  (scope||document).querySelectorAll("button:not([aria-label])").forEach(b=>{
+    if(b.textContent.trim())return;                       // has a visible name already
+    const ic=b.querySelector(".ic[data-icon]");
+    const label=ic&&ICON_LABELS[ic.dataset.icon];
+    if(label)b.setAttribute("aria-label",label);
+  });
 }
 
 /* Downscale + re-encode an image (File/Blob or data-URI) to a small JPEG data
@@ -941,12 +1007,25 @@ function vendorImages(v){
   if(Array.isArray(v.gallery))v.gallery.forEach(u=>{if(u)imgs.push(u);});
   return imgs;
 }
-/* returns a thumb element with a real photo (when present) or generated art */
+/* returns a thumb element with a real photo (when present) or generated art.
+   A real photo decodes asynchronously, so painting it straight onto the element
+   leaves a blank hole that the photo then snaps into. Hold a shimmer instead and
+   cross-fade the photo in once it has actually decoded — the card never pops. */
 function coverEl(vendor, cls="", idx=0, showEmoji=true){
   const imgs=vendorImages(vendor);
   if(imgs.length){
     const url=imgs[idx % imgs.length];
-    const el=h("div.thumb "+cls,{style:{backgroundImage:`url("${String(url).replace(/"/g,'%22')}")`}});
+    const el=h("div.thumb "+cls);
+    const layer=h("div.thumb-img",{style:{backgroundImage:`url("${String(url).replace(/"/g,'%22')}")`}});
+    el.appendChild(layer);
+    const reveal=()=>{ el.classList.remove("loading"); layer.classList.add("in"); };
+    // Data URIs are already in memory — no shimmer, no fade, they are instant.
+    if(url.startsWith("data:")){ layer.classList.add("in"); return el; }
+    el.classList.add("loading");
+    const pre=new Image();
+    pre.onload=reveal; pre.onerror=reveal;
+    pre.src=url;
+    if(pre.complete)reveal();
     return el;
   }
   const c=coverFor(vendor,idx);
@@ -979,12 +1058,76 @@ function ringEl(pct, size=120, label="Complete"){
   return wrap;
 }
 
+/* ---- async buttons ----
+   Every screen used to hand-roll this as `btn.disabled=true; btn.textContent="Saving…"`.
+   That drops any icon inside the button and, because the new label is a different
+   width, the whole row reflows the moment you tap — the button jumps under your
+   finger. busy() locks the measured width, swaps in a spinner, and restores the
+   exact original contents afterwards. */
+function busy(btn, label){
+  if(!btn||btn._busy)return ()=>{};
+  const kids=Array.from(btn.childNodes);
+  const w=btn.getBoundingClientRect().width;
+  btn._busy=true;
+  if(w)btn.style.minWidth=Math.ceil(w)+"px";
+  btn.disabled=true;
+  btn.classList.add("is-busy");
+  btn.setAttribute("aria-busy","true");
+  clear(btn);
+  btn.appendChild(h("span",{style:{display:"inline-flex",alignItems:"center",gap:"8px",justifyContent:"center"}},
+    [h("span.btn-spin"), label?h("span",label):null]));
+  return ()=>{
+    if(!btn._busy)return;
+    btn._busy=false;
+    clear(btn); kids.forEach(k=>btn.appendChild(k));
+    btn.disabled=false; btn.style.minWidth="";
+    btn.classList.remove("is-busy");
+    btn.removeAttribute("aria-busy");
+  };
+}
+/* Wrap an async click handler so the button always shows progress and always
+   recovers — including when the work throws. */
+function onAsync(getBtn, label, fn){
+  return async function(ev){
+    const btn=typeof getBtn==="function"?getBtn():getBtn;
+    const done=busy(btn,label);
+    try{ await fn(ev); }
+    catch(e){ toast((e&&e.message)||"Something went wrong","⚠️"); }
+    finally{ done(); }
+  };
+}
+
+/* ---- skeletons ----
+   Shown while first-load data is still in flight. They mirror the real layout,
+   so when the content arrives it lands in the same place instead of pushing the
+   page around. */
+const skLine=(w="100%",hgt=12)=>h("div.sk.sk-line",{style:{width:w,height:hgt+"px"}});
+function skVendorCard(){
+  return h("div.card",{style:{padding:"0",overflow:"hidden"}},[
+    h("div.sk",{style:{height:"150px",borderRadius:"0"}}),
+    h("div",{style:{padding:"14px 15px 16px"}},[skLine("62%",15),skLine("40%"),skLine("78%")]),
+  ]);
+}
+const skList=(n=3,make=skVendorCard)=>h("div.col.gap16",Array.from({length:n},make));
+
 /* ---- Toast ---- */
 let _toastWrap;
+function toastRegion(){
+  if(!_toastWrap||!_toastWrap.isConnected){
+    _toastWrap=h("div#toast-wrap",{role:"status","aria-live":"polite","aria-atomic":"false"});
+    document.body.appendChild(_toastWrap);
+  }
+  return _toastWrap;
+}
 function toast(msg, em="✨"){
-  if(!_toastWrap){_toastWrap=h("div#toast-wrap");document.body.appendChild(_toastWrap);}
-  const t=h("div.toast",[em?h("span.em",em):null,h("span",msg)]);
-  _toastWrap.appendChild(t);
+  // role=status + aria-live means confirmations and errors are announced. Without
+  // it a screen-reader user taps Save and gets no feedback at all. The region has
+  // to already be in the document when the message lands — a live region created
+  // and filled in the same tick is not reliably announced — so it is created up
+  // front and the toast is appended on the next frame.
+  const wrap=toastRegion();
+  const t=h("div.toast",[em?h("span.em",{"aria-hidden":"true"},em):null,h("span",msg)]);
+  requestAnimationFrame(()=>wrap.appendChild(t));
   setTimeout(()=>{t.classList.add("out");setTimeout(()=>t.remove(),320);},2400);
 }
 
@@ -1096,9 +1239,11 @@ function unlockScroll(){
   window.scrollTo(0,_lockY);
 }
 
+const FOCUSABLE="a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex='-1'])";
 function sheet({title,body,actions,onClose,maxWidth}){
   const scrim=h("div.scrim",{onclick:e=>{if(e.target===scrim)close();}});
-  const s=h("div.sheet",maxWidth?{style:{maxWidth}}:{});
+  const s=h("div.sheet",{role:"dialog","aria-modal":"true",...(maxWidth?{style:{maxWidth}}:{})});
+  if(title)s.setAttribute("aria-label",title);
   s.appendChild(h("div.sheet-grab"));
   if(title)s.appendChild(h("div.sheet-h",[h("h3",title),h("button.icon-btn.plain",{onclick:()=>close(),"aria-label":"Close"},icon("close",22))]));
   const content=h("div",{style:{padding:"6px 20px 22px"}});
@@ -1107,12 +1252,35 @@ function sheet({title,body,actions,onClose,maxWidth}){
   if(actions)s.appendChild(h("div",{style:{padding:"0 20px 22px",display:"flex",gap:"10px"}},actions));
   scrim.appendChild(s);
   document.body.appendChild(scrim);
+  labelIconButtons(s);
   lockScroll();
+
+  // Keyboard: Escape closes, and Tab stays inside the sheet. Without the trap,
+  // tabbing walks out into the page behind the scrim — invisible focus, and on
+  // desktop (where the app is now a full window) that is very easy to hit.
+  const opener=document.activeElement;
+  function onKey(e){
+    if(e.key==="Escape"){ e.preventDefault(); close(); return; }
+    if(e.key!=="Tab")return;
+    const items=Array.from(s.querySelectorAll(FOCUSABLE)).filter(el=>el.offsetParent!==null);
+    if(!items.length)return;
+    const first=items[0], last=items[items.length-1];
+    if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+    else if(!s.contains(document.activeElement)){ e.preventDefault(); first.focus(); }
+  }
+  document.addEventListener("keydown",onKey);
+
   let closed=false;
   function close(){
     if(closed)return; closed=true;                 // never unlock twice
-    s.style.animation="sheetUp .3s var(--ease) reverse";scrim.style.animation="fade .3s reverse";
-    setTimeout(()=>{scrim.remove();unlockScroll();},260);
+    document.removeEventListener("keydown",onKey);
+    scrim.classList.add("closing");
+    setTimeout(()=>{scrim.remove();unlockScroll();
+      // Hand focus back to whatever opened the sheet, so keyboard users don't
+      // get dumped at the top of the document.
+      try{ if(opener&&opener.isConnected&&opener.focus)opener.focus({preventScroll:true}); }catch(e){}
+    },220);
     onClose&&onClose();
   }
   return {close,el:s};
@@ -1501,6 +1669,7 @@ function render(){
     view=fn({...query},params);
   }
   root.appendChild(view);
+  labelIconButtons(root);           // give icon-only buttons an accessible name
   // restore synchronously — this happens before paint, so nothing visibly jumps
   window.scrollTo(0,keepY);
   if(sameScreen){
@@ -1518,7 +1687,7 @@ window.addEventListener("hashchange",render);
 function topbar(title,{back:showBack,right,large}={}){
   const bar=h("div.topbar");
   if(showBack)bar.appendChild(h("button.icon-btn",{onclick:()=>back(),"aria-label":"Back"},icon("back",22)));
-  bar.appendChild(h("h2",title));
+  bar.appendChild(h("h1",title));   // the screen title is the page's h1
   if(right)bar.appendChild(right);
   else bar.appendChild(h("span",{style:{width:showBack?"0":"0"}}));
   return bar;
@@ -1560,7 +1729,11 @@ function adminTabs(active){
 
 /* wrap a screen in the phone app frame with optional tabbar */
 function appFrame(children,{tabs,noTab}={}){
-  const app=h("div.app");
+  // .has-nav marks a frame that actually carries the tab bar. On desktop the
+  // frame becomes a two-column grid whose first column IS the nav — so a frame
+  // without one (sign-in, onboarding, vendor detail) must not use that grid,
+  // or its only child gets stuffed into the empty 264px nav column.
+  const app=h("div.app"+(tabs?".has-nav":""));
   const screen=h("div.screen"+(noTab?".no-tab":""));
   (Array.isArray(children)?children:[children]).forEach(c=>c&&screen.appendChild(c));
   app.appendChild(screen);
@@ -2498,8 +2671,13 @@ route("/search",(q)=>{
   if(q.cat){/* preset category filter via query when arriving from a category */}
   let query="";
   const kids=[];
+  // Typing used to rebuild the filter bar and every result card on each
+  // keystroke — the list visibly churned under the finger on a long query.
+  // Coalesce keystrokes into one redraw, and leave the filter bar alone: it
+  // doesn't depend on the query, so rebuilding it only cost a repaint.
+  let _t=null;
   const input=h("input.field",{placeholder:"Search vendors, categories, cities…",style:{paddingLeft:"44px"},
-    oninput:e=>{query=e.target.value;redraw();}});
+    oninput:e=>{query=e.target.value;clearTimeout(_t);_t=setTimeout(()=>drawResults(),110);}});
   const inputWrap=h("div",{style:{position:"relative"}},[
     h("span",{style:{position:"absolute",left:"15px",top:"50%",transform:"translateY(-50%)",color:"var(--ink3)"}},icon("search",19)),
     input,
@@ -2516,6 +2694,9 @@ route("/search",(q)=>{
 
   function redraw(){
     const nb=filterBar(f,()=>redraw()); bar.replaceWith(nb); bar=nb;
+    drawResults();
+  }
+  function drawResults(){
     clear(results);
     if(!query.trim() && !f.city && !f.price && !f.offers){
       // suggestions state: popular categories + trending vendors
@@ -2768,11 +2949,11 @@ function openPaywall(reason){
     const prov=paymentProvider();
     const payLabel=prov==="apple"?"Subscribe with Apple":prov==="smartpay"?"Pay with Bank Muscat":"Start Premium";
     const payBtn=h("button.btn.btn-pri.btn-lg.btn-block",{style:{marginTop:"10px"},onclick:async()=>{
-      payBtn.disabled=true; clear(payBtn).appendChild(h("span","Processing…"));
+      const done=busy(payBtn,"Processing…");
       try{
         await payCheckout(chosen);          // demo resolves instantly; smartpay redirects; apple awaits StoreKit
         ref.close(); confetti(); toast("Welcome to Premium 💗","✨"); setTimeout(render,120);
-      }catch(e){ payBtn.disabled=false; clear(payBtn).appendChild(h("span",payLabel)); }
+      }catch(e){ done(); }
     }},payLabel);
     b.appendChild(payBtn);
     b.appendChild(h("p.center.tiny.faint",{style:{margin:"12px 0 2px"}},
@@ -3048,12 +3229,14 @@ route("/assistant",()=>{
     h("button.icon-btn",{onclick:()=>back()},icon("back",22)),
     h("div.row.gap8.grow",[
       h("span.avatar",{style:{width:"38px",height:"38px",fontSize:"16px",background:"linear-gradient(135deg,var(--rose),var(--gold))"}},"A"),
-      h("div",[h("h2",{style:{fontSize:"18px"}},"Aya"),h("div.tiny",{style:{color:"var(--good)"}},"● Online · web search + photos")]),
+      h("div",[h("h1",{style:{fontSize:"18px",fontWeight:"600"}},"Aya"),
+        h("div.tiny",{style:{color:"var(--good)"}},[h("span",{"aria-hidden":"true"},"● "),"Online · web search + photos"])]),
     ]),
     isPremium()?h("span.tag.tag-gold","Premium"):h("span.tag.tag-todo",FREE_AI_MESSAGES-S.assistant.used+" free"),
   ]));
   // messages
-  const feed=h("div",{style:{flex:"1",overflowY:"auto",padding:"8px 18px 12px",display:"flex",flexDirection:"column",gap:"12px"}});
+  const feed=h("div",{role:"log","aria-live":"polite","aria-label":"Conversation with Aya",
+    style:{flex:"1",overflowY:"auto",padding:"8px 18px 12px",display:"flex",flexDirection:"column",gap:"12px"}});
   screen.appendChild(feed);
 
   function bubble(role,text,chips,img){
@@ -3079,16 +3262,25 @@ route("/assistant",()=>{
       animation:"blink 1.2s "+delay+"s infinite"}});}
   }
 
+  // Rebuilding the whole transcript on every turn threw away and re-created every
+  // bubble in the conversation — the history visibly re-animated, attached photos
+  // were re-decoded, and the cost grew with the chat. renderFeed() is now only for
+  // the first paint; each new message is appended on its own.
+  function bubbleFor(m){ return bubble(m.role,m.text,m.role==="bot"?m.chips:null,m.img); }
+  function scrollFeed(smooth){
+    const go=()=>feed.scrollTo({top:feed.scrollHeight,behavior:smooth?"smooth":"auto"});
+    go(); requestAnimationFrame(go);
+  }
+  function appendMsg(m){ feed.appendChild(bubbleFor(m)); scrollFeed(true); }
   function renderFeed(){
     clear(feed);
     if(!S.assistant.msgs.length){
       feed.appendChild(bubble("bot",`Hi ${S.bride.name||"there"}! 🌸 I'm Aya, your personal wedding assistant. Ask me anything — I can search the web for the latest ideas and prices, recommend vendors, plan your budget, or look at a photo you send and give you my honest take. 📸`,
         [{label:"What should I do next?",q:"what should I do next"},{label:"2026 wedding trends",q:"what are the top wedding trends for 2026?"},{label:"Plan my budget",q:"plan my budget"},{label:"Find a photographer",q:"find me a photographer"}]));
     }else{
-      S.assistant.msgs.forEach(m=>feed.appendChild(bubble(m.role,m.text,m.role==="bot"?m.chips:null,m.img)));
+      S.assistant.msgs.forEach(m=>feed.appendChild(bubbleFor(m)));
     }
-    feed.scrollTop=feed.scrollHeight;
-    setTimeout(()=>feed.scrollTop=feed.scrollHeight,50);
+    scrollFeed(false);
   }
 
   let pendingImg=null;   // {data, type} — a photo attached to the next message
@@ -3099,10 +3291,14 @@ route("/assistant",()=>{
     // gate free users
     if(!isPremium() && S.assistant.used>=FREE_AI_MESSAGES){ openPaywall("assistant"); return; }
     const img=pendingImg; pendingImg=null; drawAttachment();
-    S.assistant.msgs.push(img?{role:"user",text,img:img.data,imgType:img.type}:{role:"user",text});
+    const mine=img?{role:"user",text,img:img.data,imgType:img.type}:{role:"user",text};
+    S.assistant.msgs.push(mine);
     if(!isPremium())S.assistant.used++;
-    save(); renderFeed();
-    const tip=typing(); feed.appendChild(tip); feed.scrollTop=feed.scrollHeight;
+    save();
+    // the greeting bubble is not a real message — clear it on the first send
+    if(S.assistant.msgs.length===1)clear(feed);
+    appendMsg(mine);
+    const tip=typing(); feed.appendChild(tip); scrollFeed(true);
 
     let replied=false;
     try{
@@ -3122,7 +3318,7 @@ route("/assistant",()=>{
       S.assistant.msgs.push({role:"bot",text:ans.text,chips:ans.chips});
     }
     tip.remove();
-    save(); renderFeed();
+    save(); appendMsg(S.assistant.msgs[S.assistant.msgs.length-1]);
     const badge=app.querySelector(".topbar .tag");
     if(badge&&!isPremium())badge.textContent=(FREE_AI_MESSAGES-S.assistant.used)+" free";
   }
@@ -3454,12 +3650,12 @@ function openAccountSheet(onDone,opts){
         wrap.appendChild(h("div",[h("label.lbl","WhatsApp number"),
           h("div.row.gap8",[h("span.chip",{style:{flex:"none",fontSize:"14px",padding:"12px 14px"}},"🇴🇲 +968"),h("div.grow",phoneI)])]));
         const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
-          btn.disabled=true;btn.textContent="Sending code…";
+          const done=busy(btn,"Sending code…");
           try{
             const r=await api("/api/auth/otp/start",{method:"POST",body:{phone:d.phone}});
             existing=!!r.existing; devCode=r.devCode||""; d.phone=r.phone||d.phone;
             step="verify"; draw();
-          }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Send code on WhatsApp";}
+          }catch(e){toast(e.message,"⚠️");done();}
         }},"Send code on WhatsApp");
         wrap.appendChild(btn);
         if(opts.skippable) wrap.appendChild(h("button.btn.btn-quiet.btn-block",{onclick:()=>{
@@ -3485,7 +3681,7 @@ function openAccountSheet(onDone,opts){
         wrap.appendChild(h("div",[h("label.lbl","Verification code"),codeI]));
         if(devCode)wrap.appendChild(h("p.center.tiny.faint","Test mode — your code is "+devCode));
         const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
-          btn.disabled=true;btn.textContent="Verifying…";
+          const done=busy(btn,"Verifying…");
           try{
             const r=await api("/api/auth/otp/verify",{method:"POST",
               body:{phone:d.phone,code:d.code,name:d.name,age:d.age,governorate:d.governorate}});
@@ -3493,7 +3689,7 @@ function openAccountSheet(onDone,opts){
             if(r.user.name&&!existing)S.bride.name=r.user.name;
             save(); ref.close(); toast(existing?"Welcome back 💗":"Welcome to Wedding & Co 💗");
             cloudInit(); onDone&&onDone(); render();
-          }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Verify & continue";}
+          }catch(e){toast(e.message,"⚠️");done();}
         }},"Verify & continue");
         wrap.appendChild(btn);
         // resend with 60s countdown
@@ -3527,13 +3723,13 @@ function openRedeemSheet(onDone){
     const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
       if(!d.code.trim()){toast("Enter a code","⚠️");return;}
       if(!S.account){ ref.close(); await new Promise(res=>openAccountSheet(res)); if(!S.account){return;} ref=openRedeemSheet(onDone); return; }
-      btn.disabled=true;btn.textContent="Checking…";
+      const done=busy(btn,"Checking…");
       try{
         const r=await api("/api/redeem",{method:"POST",body:{code:d.code}});
         goPremium(r.plan==="annual"?"annual":"voucher"); save();
         ref.close(); confetti(); toast("Unlocked — enjoy full access 💛","🎉");
         cloudInit(); onDone&&onDone(); setTimeout(render,120);
-      }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Redeem";}
+      }catch(e){toast(e.message,"⚠️");done();}
     }},"Redeem");
     b.appendChild(btn);
     setTimeout(()=>codeI.focus(),200);
@@ -3550,12 +3746,12 @@ function openAdminSignInSheet(onDone){
     h("div",[h("label.lbl","Email"),h("input.field",{type:"email",placeholder:"admin@…",oninput:e=>d.email=e.target.value})]),
     h("div",[h("label.lbl","Password"),h("input.field",{type:"password",oninput:e=>d.password=e.target.value})]),
     (()=>{const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
-      btn.disabled=true;btn.textContent="Signing in…";
+      const done=busy(btn,"Signing in…");
       try{
         const r=await api("/api/auth/login",{method:"POST",body:d});
         S.account={id:r.user.id||r.user.email,email:r.user.email,name:r.user.name,role:r.user.role,token:r.token};
         save(); ref.close(); toast("Signed in ✓"); onDone&&onDone(); render();
-      }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Sign in";}
+      }catch(e){toast(e.message,"⚠️");done();}
     }},"Sign in");return btn;})(),
   ])});
   return ref;
@@ -3725,16 +3921,17 @@ route("/premium/return",(q)=>{
    access-controlled area with no entry point from the customer app. */
 function adminGateView(){
   const d={email:"",password:""};
-  const app=h("div.app");
-  const s=h("div.screen.no-tab",{style:{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",
-    background:"linear-gradient(160deg,var(--gold-soft),var(--ground) 55%,var(--rose-tint))"}});
+  // the gradient goes on the frame, not the screen — the screen is capped at a
+  // readable width, so painting it there leaves bare rails down both edges
+  const app=h("div.app",{style:{background:"linear-gradient(160deg,var(--gold-soft),var(--ground) 55%,var(--rose-tint))"}});
+  const s=h("div.screen.no-tab",{style:{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center"}});
   const emailI=h("input.field",{type:"email",placeholder:"admin@…",value:d.email,oninput:e=>d.email=e.target.value});
   const passI=h("input.field",{type:"password",placeholder:"Password",oninput:e=>d.password=e.target.value,
     onkeydown:e=>{if(e.key==="Enter")submit();}});
   const btn=h("button.btn.btn-pri.btn-lg.btn-block",{style:{marginTop:"4px"},onclick:()=>submit()},"Sign in");
   async function submit(){
     if(!(typeof apiBase==="function" && apiBase())){toast("Backend not configured","⚠️");return;}
-    btn.disabled=true;btn.textContent="Signing in…";
+    const done=busy(btn,"Signing in…");
     try{
       // fail fast with a clear message if the API can't be reached at all
       const health=await fetch(apiBase()+"/api/payments/status").then(r=>r.ok).catch(()=>false);
@@ -3743,7 +3940,7 @@ function adminGateView(){
       if(r.user.role!=="admin"){throw new Error("This account is not an administrator.");}
       S.account={id:r.user.id||r.user.email,email:r.user.email,name:r.user.name,role:r.user.role,token:r.token};
       S.role="admin"; save(); toast("Welcome back ✨"); go("/admin"); render();
-    }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Sign in";}
+    }catch(e){toast(e.message,"⚠️");done();}
   }
   s.appendChild(h("div.stagger",{style:{textAlign:"center",maxWidth:"360px",margin:"0 auto",width:"100%"}},[
     h("div",{style:{fontSize:"46px",marginBottom:"6px"}},"🔐"),
@@ -3764,7 +3961,7 @@ function adminGateView(){
 
 function adminTop(title,right){
   return h("div.topbar",[
-    h("div.grow",[h("div.eyebrow",{style:{color:"var(--gold)"}},"Admin"),h("h2",{style:{fontSize:"22px"}},title)]),
+    h("div.grow",[h("div.eyebrow",{style:{color:"var(--gold)"}},"Admin"),h("h1",{style:{fontSize:"22px",fontWeight:"600"}},title)]),
     right||null,
   ]);
 }
@@ -3949,10 +4146,10 @@ function openBulkImport(onDone){
       if(!parsed||!parsed.vendors.length){toast("Nothing to import","⚠️");return;}
       const list=parsed.vendors;
       VENDORS.unshift(...list); save();
-      const btn=e.target; btn.disabled=true; btn.textContent="Importing…";
+      const done=busy(e.currentTarget,"Importing…");
       if(typeof isAdmin==="function"&&isAdmin()&&typeof saveVendorsRemote==="function"&&apiBase()){
         try{ await saveVendorsRemote(list); ref.close(); toast(list.length+" vendors imported & live ✓","🎉"); onDone&&onDone(); }
-        catch(err){ btn.disabled=false; btn.textContent="Import vendors"; toast("Import failed to publish: "+((err&&err.message)||"error"),"⚠️"); }
+        catch(err){ done(); toast("Import failed to publish: "+((err&&err.message)||"error"),"⚠️"); }
       }else{ ref.close(); toast(list.length+" vendors imported ✓","🎉"); onDone&&onDone(); }
     }},"Import vendors"),
   ]});
@@ -4063,9 +4260,9 @@ function openVendorForm(v,rerender){
       // Save just this vendor to the cloud (tiny request → immune to size limits)
       // and report the real result so a failure is never silent.
       if(typeof isAdmin==="function" && isAdmin() && typeof apiBase==="function" && apiBase() && typeof saveVendorsRemote==="function"){
-        const btn=e.target; btn.disabled=true; const orig=btn.textContent; btn.textContent="Publishing…";
+        const done=busy(e.currentTarget,"Publishing…");
         try{ await saveVendorsRemote([isNew?d:v]); toast(isNew?"Vendor added & live ✓":"Vendor updated & live ✓","🎉"); ref.close(); rerender?rerender():render(); }
-        catch(err){ btn.disabled=false; btn.textContent=orig; toast("Publish failed: "+((err&&err.message)||"error"),"⚠️"); }
+        catch(err){ done(); toast("Publish failed: "+((err&&err.message)||"error"),"⚠️"); }
       }else{
         toast(isNew?"Vendor added ✓":"Vendor updated ✓","🎉");
         ref.close(); rerender?rerender():render();
@@ -4248,10 +4445,10 @@ route("/admin/branding",()=>{
 
   const publishBtn=h("button.btn.btn-sec.btn-block",{style:{marginTop:"10px"},onclick:async()=>{
     if(!apiBase()){toast("Saved on this device","💾");return;}
-    publishBtn.disabled=true; const orig=publishBtn.textContent; publishBtn.textContent="Publishing…";
+    const done=busy(publishBtn,"Publishing…");
     try{ await saveSettingsRemote(SETTINGS); toast("Splash is live for brides ✓","🎉"); }
     catch(e){ toast(e.message||"Could not publish","⚠️"); }
-    finally{ publishBtn.disabled=false; clear(publishBtn); publishBtn.append(icon("share",18),"Publish to all brides"); }
+    finally{ done(); }
   }},[icon("share",18),"Publish to all brides"]);
   kids.push(publishBtn);
 
@@ -4269,20 +4466,23 @@ route("/admin/vouchers",()=>{
   const kids=[adminTop("Vouchers")];
   let count=10;
   const created=h("div"); // holds the just-created batch
-  const stat=h("div.card.pad-s",{style:{marginBottom:"14px"}},h("div.small.muted","Loading…"));
+  const stat=h("div.card.pad-s",{style:{marginBottom:"14px"}},
+    h("div.row.gap12",Array.from({length:3},()=>h("div.kpi.grow.center",
+      [h("div.sk",{style:{height:"22px",width:"46px",margin:"2px auto 8px"}}),
+       h("div.sk",{style:{height:"10px",width:"58px",margin:"0 auto"}})]))));
   kids.push(stat);
   // create panel
   kids.push(h("div.card.pad.col.gap12",[
     h("div",[h("label.lbl","How many vouchers?"),
       h("input.field",{type:"number",min:1,max:2000,value:count,oninput:e=>count=Math.min(2000,Math.max(1,+e.target.value||1))})]),
     (()=>{const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
-      btn.disabled=true;btn.textContent="Creating…";
+      const done=busy(btn,"Creating…");
       try{
         const r=await api("/api/admin/vouchers",{method:"POST",body:{count}});
         toast(r.created+" vouchers created ✓","🎉");
         showBatch(r.codes); load();
       }catch(e){toast(e.message,"⚠️");}
-      btn.disabled=false;btn.textContent="Create vouchers";
+      done();
     }},"Create vouchers");return btn;})(),
     h("p.tiny.faint","Each code unlocks full access once. Give codes to customers who don't pay online."),
   ]));
@@ -4290,7 +4490,10 @@ route("/admin/vouchers",()=>{
   // list
   kids.push(h("div.between",{style:{margin:"22px 3px 10px"}},[h("h3",{style:{fontSize:"18px"}},"All vouchers"),
     h("button.chip",{onclick:()=>downloadAll()},[icon("share",14),"Download CSV"])]));
-  const list=h("div.col.gap8"); kids.push(list);
+  const list=h("div.col.gap8",Array.from({length:4},()=>
+    h("div.card.pad-s.between",[h("div.sk",{style:{height:"14px",width:"120px"}}),
+                                h("div.sk",{style:{height:"11px",width:"72px"}})])));
+  kids.push(list);
   let all=[];
   function showBatch(codes){
     clear(created);
@@ -4325,7 +4528,9 @@ route("/admin/vouchers",()=>{
         h("div.kpi.grow.center",[h("div.v",{style:{color:"var(--ink2)"}},r.redeemed),h("div.k","Used")]),
       ]));
       draw();
-    }catch(e){clear(stat);stat.appendChild(h("div.small.muted","Couldn't load: "+e.message));}
+    }catch(e){clear(stat);stat.appendChild(h("div.small.muted","Couldn't load: "+e.message));
+      draw();   // clear the skeletons — they must never be left shimmering forever
+    }
   }
   load();
   return appFrame(kids,{tabs:adminTabs("/admin/more")});
@@ -4334,7 +4539,12 @@ route("/admin/vouchers",()=>{
 /* ---------- BANK MUSCAT / SMARTPAY SETTINGS ---------- */
 route("/admin/payments",()=>{
   const kids=[adminTop("Bank Muscat")];
-  const status=h("div.card.pad-s",{style:{marginBottom:"14px"}},h("div.small.muted","Loading current settings…"));
+  const status=h("div.card.pad-s",{style:{marginBottom:"14px"}},
+    h("div.row.gap10",{style:{alignItems:"center"}},[
+      h("div.sk",{style:{width:"38px",height:"38px",borderRadius:"50%",flex:"none"}}),
+      h("div.grow",[h("div.sk",{style:{height:"13px",width:"58%",marginBottom:"7px"}}),
+                    h("div.sk",{style:{height:"10px",width:"38%"}})]),
+    ]));
   kids.push(status);
   const form=h("div.card.pad.col.gap12");
   const d={merchantId:"",accessCode:"",workingKey:"",txnUrl:"",currency:"OMR"};
@@ -4352,13 +4562,13 @@ route("/admin/payments",()=>{
   );
   const saveBtn=h("button.btn.btn-pri.btn-lg.btn-block",{style:{marginTop:"14px"},onclick:async()=>{
     if(!d.merchantId.trim()||!d.accessCode.trim()){toast("Enter MID and access code","⚠️");return;}
-    saveBtn.disabled=true;saveBtn.textContent="Saving…";
+    const done=busy(saveBtn,"Saving…");
     try{
       const r=await api("/api/admin/config/smartpay",{method:"PUT",body:d});
       toast("Bank Muscat settings saved ✓","🏦"); paint(r);
       d.workingKey=""; wkI.value="";
     }catch(e){toast(e.message,"⚠️");}
-    saveBtn.disabled=false;saveBtn.textContent="Save settings";
+    done();
   }},"Save settings");
   kids.push(form);
   kids.push(saveBtn);
@@ -4518,8 +4728,9 @@ if(window.ZAFFA_ADMIN){
 }else if(!location.hash){
   location.hash = S.onboarded ? (S.role==="admin"?"#/admin":"#/home") : "#/welcome";
 }
+toastRegion();            // live region must exist before the first announcement
 render();
-cloudInit();              // pulls the live catalog + account entitlement when a backend is configured
+cloudInit();            // pulls the live catalog + account entitlement when a backend is configured
 startCatalogPolling();    // keeps open apps in sync with admin changes in near real-time
 
 // keep theme in sync with system when in auto mode

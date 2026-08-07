@@ -264,8 +264,13 @@ route("/search",(q)=>{
   if(q.cat){/* preset category filter via query when arriving from a category */}
   let query="";
   const kids=[];
+  // Typing used to rebuild the filter bar and every result card on each
+  // keystroke — the list visibly churned under the finger on a long query.
+  // Coalesce keystrokes into one redraw, and leave the filter bar alone: it
+  // doesn't depend on the query, so rebuilding it only cost a repaint.
+  let _t=null;
   const input=h("input.field",{placeholder:"Search vendors, categories, cities…",style:{paddingLeft:"44px"},
-    oninput:e=>{query=e.target.value;redraw();}});
+    oninput:e=>{query=e.target.value;clearTimeout(_t);_t=setTimeout(()=>drawResults(),110);}});
   const inputWrap=h("div",{style:{position:"relative"}},[
     h("span",{style:{position:"absolute",left:"15px",top:"50%",transform:"translateY(-50%)",color:"var(--ink3)"}},icon("search",19)),
     input,
@@ -282,6 +287,9 @@ route("/search",(q)=>{
 
   function redraw(){
     const nb=filterBar(f,()=>redraw()); bar.replaceWith(nb); bar=nb;
+    drawResults();
+  }
+  function drawResults(){
     clear(results);
     if(!query.trim() && !f.city && !f.price && !f.offers){
       // suggestions state: popular categories + trending vendors

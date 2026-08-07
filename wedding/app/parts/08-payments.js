@@ -237,12 +237,12 @@ function openAccountSheet(onDone,opts){
         wrap.appendChild(h("div",[h("label.lbl","WhatsApp number"),
           h("div.row.gap8",[h("span.chip",{style:{flex:"none",fontSize:"14px",padding:"12px 14px"}},"🇴🇲 +968"),h("div.grow",phoneI)])]));
         const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
-          btn.disabled=true;btn.textContent="Sending code…";
+          const done=busy(btn,"Sending code…");
           try{
             const r=await api("/api/auth/otp/start",{method:"POST",body:{phone:d.phone}});
             existing=!!r.existing; devCode=r.devCode||""; d.phone=r.phone||d.phone;
             step="verify"; draw();
-          }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Send code on WhatsApp";}
+          }catch(e){toast(e.message,"⚠️");done();}
         }},"Send code on WhatsApp");
         wrap.appendChild(btn);
         if(opts.skippable) wrap.appendChild(h("button.btn.btn-quiet.btn-block",{onclick:()=>{
@@ -268,7 +268,7 @@ function openAccountSheet(onDone,opts){
         wrap.appendChild(h("div",[h("label.lbl","Verification code"),codeI]));
         if(devCode)wrap.appendChild(h("p.center.tiny.faint","Test mode — your code is "+devCode));
         const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
-          btn.disabled=true;btn.textContent="Verifying…";
+          const done=busy(btn,"Verifying…");
           try{
             const r=await api("/api/auth/otp/verify",{method:"POST",
               body:{phone:d.phone,code:d.code,name:d.name,age:d.age,governorate:d.governorate}});
@@ -276,7 +276,7 @@ function openAccountSheet(onDone,opts){
             if(r.user.name&&!existing)S.bride.name=r.user.name;
             save(); ref.close(); toast(existing?"Welcome back 💗":"Welcome to Wedding & Co 💗");
             cloudInit(); onDone&&onDone(); render();
-          }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Verify & continue";}
+          }catch(e){toast(e.message,"⚠️");done();}
         }},"Verify & continue");
         wrap.appendChild(btn);
         // resend with 60s countdown
@@ -310,13 +310,13 @@ function openRedeemSheet(onDone){
     const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
       if(!d.code.trim()){toast("Enter a code","⚠️");return;}
       if(!S.account){ ref.close(); await new Promise(res=>openAccountSheet(res)); if(!S.account){return;} ref=openRedeemSheet(onDone); return; }
-      btn.disabled=true;btn.textContent="Checking…";
+      const done=busy(btn,"Checking…");
       try{
         const r=await api("/api/redeem",{method:"POST",body:{code:d.code}});
         goPremium(r.plan==="annual"?"annual":"voucher"); save();
         ref.close(); confetti(); toast("Unlocked — enjoy full access 💛","🎉");
         cloudInit(); onDone&&onDone(); setTimeout(render,120);
-      }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Redeem";}
+      }catch(e){toast(e.message,"⚠️");done();}
     }},"Redeem");
     b.appendChild(btn);
     setTimeout(()=>codeI.focus(),200);
@@ -333,12 +333,12 @@ function openAdminSignInSheet(onDone){
     h("div",[h("label.lbl","Email"),h("input.field",{type:"email",placeholder:"admin@…",oninput:e=>d.email=e.target.value})]),
     h("div",[h("label.lbl","Password"),h("input.field",{type:"password",oninput:e=>d.password=e.target.value})]),
     (()=>{const btn=h("button.btn.btn-pri.btn-lg.btn-block",{onclick:async()=>{
-      btn.disabled=true;btn.textContent="Signing in…";
+      const done=busy(btn,"Signing in…");
       try{
         const r=await api("/api/auth/login",{method:"POST",body:d});
         S.account={id:r.user.id||r.user.email,email:r.user.email,name:r.user.name,role:r.user.role,token:r.token};
         save(); ref.close(); toast("Signed in ✓"); onDone&&onDone(); render();
-      }catch(e){toast(e.message,"⚠️");btn.disabled=false;btn.textContent="Sign in";}
+      }catch(e){toast(e.message,"⚠️");done();}
     }},"Sign in");return btn;})(),
   ])});
   return ref;

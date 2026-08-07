@@ -330,6 +330,7 @@ function render(){
     view=fn({...query},params);
   }
   root.appendChild(view);
+  labelIconButtons(root);           // give icon-only buttons an accessible name
   // restore synchronously — this happens before paint, so nothing visibly jumps
   window.scrollTo(0,keepY);
   if(sameScreen){
@@ -347,7 +348,7 @@ window.addEventListener("hashchange",render);
 function topbar(title,{back:showBack,right,large}={}){
   const bar=h("div.topbar");
   if(showBack)bar.appendChild(h("button.icon-btn",{onclick:()=>back(),"aria-label":"Back"},icon("back",22)));
-  bar.appendChild(h("h2",title));
+  bar.appendChild(h("h1",title));   // the screen title is the page's h1
   if(right)bar.appendChild(right);
   else bar.appendChild(h("span",{style:{width:showBack?"0":"0"}}));
   return bar;
@@ -389,7 +390,11 @@ function adminTabs(active){
 
 /* wrap a screen in the phone app frame with optional tabbar */
 function appFrame(children,{tabs,noTab}={}){
-  const app=h("div.app");
+  // .has-nav marks a frame that actually carries the tab bar. On desktop the
+  // frame becomes a two-column grid whose first column IS the nav — so a frame
+  // without one (sign-in, onboarding, vendor detail) must not use that grid,
+  // or its only child gets stuffed into the empty 264px nav column.
+  const app=h("div.app"+(tabs?".has-nav":""));
   const screen=h("div.screen"+(noTab?".no-tab":""));
   (Array.isArray(children)?children:[children]).forEach(c=>c&&screen.appendChild(c));
   app.appendChild(screen);
