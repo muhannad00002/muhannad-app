@@ -311,7 +311,15 @@ function render(){
     }
   }
   if(!fn)fn=routes["/home"];
+  // Navigating to a different screen should animate in and start at the top.
+  // Re-rendering the SAME screen (a background data refresh, a local edit) must
+  // not: replaying entrance animations and jumping to the top is what made the
+  // app feel like it was flashing and reloading under the user.
+  const key=path+"?"+JSON.stringify(query);
+  const sameScreen=(key===_lastRenderKey);
+  const keepY=sameScreen?(window.scrollY||document.documentElement.scrollTop||0):0;
   clear(root);
+  root.classList.toggle("no-motion",sameScreen);
   applyTheme();
   // Admin area is access-controlled: every /admin* route requires a signed-in
   // admin account. Otherwise show the admin sign-in gate.
@@ -322,8 +330,16 @@ function render(){
     view=fn({...query},params);
   }
   root.appendChild(view);
-  window.scrollTo(0,0);
+  // restore synchronously — this happens before paint, so nothing visibly jumps
+  window.scrollTo(0,keepY);
+  if(sameScreen){
+    // let the new DOM settle for one frame, then re-enable motion for
+    // interactions the user triggers from here on
+    requestAnimationFrame(()=>requestAnimationFrame(()=>root.classList.remove("no-motion")));
+  }
+  _lastRenderKey=key;
 }
+let _lastRenderKey=null;
 function isAdmin(){ return !!(S.account && S.account.role==="admin"); }
 window.addEventListener("hashchange",render);
 
@@ -345,11 +361,14 @@ function brideTabs(active){
     ["/favorites","heart","Saved"],
     ["/profile","user","You"],
   ];
-  return h("nav.tabbar",tabs.map(([path,ic,label])=>
-    h("button.tab"+(active===path?".on":"")+(ic==="__logo"?".tab-logo":""),{onclick:()=>go(path)},[
-      ic==="__logo"?logoMark(26):icon(ic,23),h("span",label),
-    ])
-  ));
+  // .nav-brand only shows when the tab bar becomes a desktop sidebar
+  return h("nav.tabbar",[
+    h("div.nav-brand",[logoMark(26),h("span","Wedding & Co")]),
+    ...tabs.map(([path,ic,label])=>
+      h("button.tab"+(active===path?".on":"")+(ic==="__logo"?".tab-logo":""),{onclick:()=>go(path)},[
+        ic==="__logo"?logoMark(26):icon(ic,23),h("span",label),
+      ])),
+  ]);
 }
 function adminTabs(active){
   const tabs=[
@@ -359,11 +378,13 @@ function adminTabs(active){
     ["/admin/users","users","Users"],
     ["/admin/more","settings","More"],
   ];
-  return h("nav.tabbar",tabs.map(([path,ic,label])=>
-    h("button.tab"+(active===path?".on":""),{onclick:()=>go(path)},[
-      icon(ic,22),h("span",label),
-    ])
-  ));
+  return h("nav.tabbar",[
+    h("div.nav-brand",[logoMark(26),h("span","Control Center")]),
+    ...tabs.map(([path,ic,label])=>
+      h("button.tab"+(active===path?".on":""),{onclick:()=>go(path)},[
+        icon(ic,22),h("span",label),
+      ])),
+  ]);
 }
 
 /* wrap a screen in the phone app frame with optional tabbar */

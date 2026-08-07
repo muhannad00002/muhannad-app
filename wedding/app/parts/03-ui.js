@@ -243,6 +243,77 @@ function toast(msg, em="✨"){
   apply();
 })();
 
+/* ---- pull to refresh ----
+   The browser's own pull-to-refresh reloads the whole page, which is why a pull
+   used to blank the app. We take the gesture over: an indicator follows the
+   finger, content stays exactly where it is, and on release we fetch and update
+   in place — no full reload, no scroll jump, no re-run entrance animations. */
+let _ptrBusy=false;
+function refreshNow(){
+  if(_ptrBusy)return Promise.resolve();
+  _ptrBusy=true;
+  const done=()=>{ _ptrBusy=false; };
+  const work=(typeof cloudInit==="function" && typeof apiBase==="function" && apiBase())
+    ? cloudInit({catalogOnly:true,silent:true}).catch(()=>{})
+    : Promise.resolve();
+  // a floor of ~450ms so the indicator reads as deliberate rather than a blink
+  return Promise.all([work,new Promise(r=>setTimeout(r,450))]).then(()=>{
+    if(typeof render==="function")render();          // same screen → soft render
+    const root=document.getElementById("root");
+    if(root){ root.classList.add("refreshed"); setTimeout(()=>root.classList.remove("refreshed"),420); }
+    done();
+  },done);
+}
+(function pullToRefresh(){
+  const THRESHOLD=68, MAX=110;
+  let startY=0, pulling=false, dist=0, armed=false;
+  const ind=h("div#ptr",h("div.ptr-spin"));
+  const place=()=>{ if(!document.getElementById("ptr"))document.body.appendChild(ind); };
+  const atTop=()=>(window.scrollY||document.documentElement.scrollTop||0)<=0;
+  const blocked=()=>document.querySelector(".scrim")||document.body.classList.contains("no-scroll");
+
+  document.addEventListener("touchstart",e=>{
+    if(blocked()||!atTop()||e.touches.length!==1){armed=false;return;}
+    armed=true; startY=e.touches[0].clientY; dist=0; pulling=false;
+  },{passive:true});
+
+  document.addEventListener("touchmove",e=>{
+    if(!armed||blocked())return;
+    const dy=e.touches[0].clientY-startY;
+    if(dy<=0){ if(pulling){pulling=false;ind.style.transform="";ind.classList.remove("on","ready");} return; }
+    if(!atTop())return;
+    if(!pulling && dy>8){ pulling=true; place(); ind.classList.add("on"); }
+    if(!pulling)return;
+    e.preventDefault();                                   // own the gesture
+    dist=Math.min(MAX, dy*0.5);                           // resistance
+    ind.style.transform="translateX(-50%) translateY("+dist+"px)";
+    ind.style.opacity=Math.min(1,dist/THRESHOLD).toFixed(2);
+    ind.classList.toggle("ready",dist>=THRESHOLD*0.72);
+  },{passive:false});
+
+  const release=()=>{
+    if(!pulling){armed=false;return;}
+    const go=dist>=THRESHOLD*0.72;
+    pulling=false; armed=false;
+    if(go){
+      ind.classList.add("spinning");
+      ind.style.transform="translateX(-50%) translateY(56px)";
+      refreshNow().then(()=>{
+        ind.classList.remove("spinning","ready");
+        ind.style.transform=""; ind.style.opacity="";
+        setTimeout(()=>ind.classList.remove("on"),240);
+      });
+    }else{
+      ind.style.transform=""; ind.style.opacity="";
+      ind.classList.remove("ready");
+      setTimeout(()=>ind.classList.remove("on"),240);
+    }
+    dist=0;
+  };
+  document.addEventListener("touchend",release,{passive:true});
+  document.addEventListener("touchcancel",release,{passive:true});
+})();
+
 /* ---- scroll lock ----
    body{overflow:hidden} alone doesn't stop iOS Safari scrolling, so we pin the
    body and restore the exact scroll position afterwards. Counted, because
