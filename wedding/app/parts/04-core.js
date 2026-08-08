@@ -29,6 +29,7 @@ function defaultState(){
     assistant:{msgs:[],used:0},   // chat history + free-message counter
     _catSeed:null,_vendorSeed:null,
     _catalogVersion:0,            // last catalog version pulled from the backend
+    _lastBroadcastAt:0,           // newest admin broadcast already delivered here
   };
 }
 

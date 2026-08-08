@@ -295,6 +295,65 @@ async function handle(req, res) {
       return json(res, 200, { ok: true, plan: v.plan });
     }
 
+    /* ---------- Broadcasts (admin → customers) ----------
+       The admin composes a notification; every app fetches it and shows it in
+       the bell. Stored newest-first under one key, capped, so the read is a
+       single lookup on a path customers hit often.
+       `audience` is "all" or a specific user id (notify one bride). */
+    if (p === "/api/broadcasts" && req.method === "GET") {
+      // Customers poll this. `since` keeps the response tiny once they are
+      // caught up: the common case returns an empty list.
+      const since = Number(url.searchParams.get("since")) || 0;
+      const user = await auth.fromRequest(req).catch(() => null);
+      const all = (await db.get("broadcasts")) || [];
+      const mine = all.filter(b =>
+        b.sentAt > since &&
+        (b.audience === "all" || (user && b.audience === user.id)));
+      return json(res, 200, { broadcasts: mine, now: Date.now() });
+    }
+    if (p === "/api/admin/broadcasts" && req.method === "GET") {
+      const user = await auth.fromRequest(req);
+      if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
+      return json(res, 200, { broadcasts: (await db.get("broadcasts")) || [] });
+    }
+    if (p === "/api/admin/broadcasts" && req.method === "POST") {
+      const user = await auth.fromRequest(req);
+      if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
+      let b; try { b = parseBody(await body(req), req.headers["content-type"]); }
+      catch (e) { return json(res, 400, { error: "invalid_json" }); }
+      const title = String(b.title || "").trim().slice(0, 120);
+      if (!title) return json(res, 400, { error: "title_required" });
+      const item = {
+        id: "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        em: String(b.em || "🔔").slice(0, 8),
+        title,
+        body: String(b.body || "").trim().slice(0, 600),
+        audience: b.audience && b.audience !== "all" ? String(b.audience).slice(0, 64) : "all",
+        sentAt: Date.now(),
+        sentBy: user.email,
+      };
+      try {
+        const all = (await db.get("broadcasts")) || [];
+        all.unshift(item);
+        if (all.length > 100) all.length = 100;      // keep the single row small
+        await db.set("broadcasts", all);
+        return json(res, 200, { ok: true, broadcast: item });
+      } catch (e) {
+        console.error("broadcast failed:", (e && e.message) || e);
+        return json(res, 500, { error: "broadcast_failed: " + ((e && e.message) || "unknown") });
+      }
+    }
+    if (p === "/api/admin/broadcasts/delete" && req.method === "POST") {
+      const user = await auth.fromRequest(req);
+      if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
+      let b; try { b = parseBody(await body(req), req.headers["content-type"]); }
+      catch (e) { return json(res, 400, { error: "invalid_json" }); }
+      const all = (await db.get("broadcasts")) || [];
+      const next = all.filter(x => x.id !== b.id);
+      await db.set("broadcasts", next);
+      return json(res, 200, { ok: true, removed: all.length - next.length });
+    }
+
     /* ---------- catalog (vendors, categories, tips, ads) ----------
        Public read; admin-only write. The admin app publishes whole
        collections — matching how the client edits them in memory. */

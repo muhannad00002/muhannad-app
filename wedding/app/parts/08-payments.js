@@ -94,6 +94,8 @@ async function cloudInit(opts){
   }catch(e){/* offline or backend down — local data keeps working */}
   finally{ _applyingRemote=false; }
   if(_seedBaseline && isAdmin() && apiBase()) autoPublish();  // seed empty cloud catalog once
+  // pull anything the admin sent while the app was closed, quietly
+  if(!window.ZAFFA_ADMIN) fetchBroadcasts({announce:false});
 }
 
 /* Publish the current catalog to the backend. Called automatically (debounced)
@@ -197,6 +199,42 @@ function syncDot(state,detail){
 
 /* ---- Real-time polling: pull admin changes into open customer apps ---- */
 let _pollTimer=null;
+/* ---- admin broadcasts ----
+   The admin's "Send notification" used to call pushNotif(), which only writes
+   to the admin's OWN device — no bride ever saw it. Notifications now go to the
+   server; every app pulls anything newer than the last one it has seen and
+   files it in the bell. `since` means a caught-up client gets an empty list. */
+async function fetchBroadcasts({announce=true}={}){
+  if(!apiBase())return 0;
+  try{
+    const since=S._lastBroadcastAt||0;
+    const r=await api("/api/broadcasts?since="+encodeURIComponent(since));
+    const list=(r&&r.broadcasts)||[];
+    if(!list.length){
+      // still advance the cursor so a quiet poll stays a cheap no-op
+      if(r&&r.now&&!since)S._lastBroadcastAt=r.now, save();
+      return 0;
+    }
+    const seen=new Set(S.notifs.map(n=>n.id));
+    let added=0, newest=since;
+    // oldest first, so the bell ends up newest-at-top like everything else
+    list.slice().sort((a,b)=>a.sentAt-b.sentAt).forEach(b=>{
+      if(b.sentAt>newest)newest=b.sentAt;
+      if(seen.has(b.id))return;                       // already delivered
+      pushNotif({id:b.id,em:b.em,title:b.title,body:b.body,when:b.sentAt,fromAdmin:true});
+      added++;
+    });
+    S._lastBroadcastAt=newest; save();
+    if(added){
+      // toast only for ones that land while she is using the app; at launch the
+      // bell badge is enough (a stack of toasts on open would just be noise)
+      if(announce)toast(list[0].title,list[0].em||"🔔");
+      if(typeof render==="function")render();          // refresh the bell badge
+    }
+    return added;
+  }catch(e){ return 0; }                               // offline → try again next poll
+}
+
 function startCatalogPolling(){
   if(!apiBase()||_pollTimer)return;
   const tick=async()=>{
@@ -207,6 +245,7 @@ function startCatalogPolling(){
       if(meta && meta.version && meta.version!==S._catalogVersion){
         await cloudInit({catalogOnly:true}); // pull latest, re-render
       }
+      if(!window.ZAFFA_ADMIN) await fetchBroadcasts();   // new notifications from the admin
     }catch(e){/* backend asleep/offline — try again next tick */}
   };
   _pollTimer=setInterval(tick,5000);               // every 5s → near-instant catalog updates

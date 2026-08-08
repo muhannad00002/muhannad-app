@@ -1368,6 +1368,7 @@ function defaultState(){
     assistant:{msgs:[],used:0},   // chat history + free-message counter
     _catSeed:null,_vendorSeed:null,
     _catalogVersion:0,            // last catalog version pulled from the backend
+    _lastBroadcastAt:0,           // newest admin broadcast already delivered here
   };
 }
 
@@ -3507,6 +3508,8 @@ async function cloudInit(opts){
   }catch(e){/* offline or backend down — local data keeps working */}
   finally{ _applyingRemote=false; }
   if(_seedBaseline && isAdmin() && apiBase()) autoPublish();  // seed empty cloud catalog once
+  // pull anything the admin sent while the app was closed, quietly
+  if(!window.ZAFFA_ADMIN) fetchBroadcasts({announce:false});
 }
 
 /* Publish the current catalog to the backend. Called automatically (debounced)
@@ -3610,6 +3613,42 @@ function syncDot(state,detail){
 
 /* ---- Real-time polling: pull admin changes into open customer apps ---- */
 let _pollTimer=null;
+/* ---- admin broadcasts ----
+   The admin's "Send notification" used to call pushNotif(), which only writes
+   to the admin's OWN device — no bride ever saw it. Notifications now go to the
+   server; every app pulls anything newer than the last one it has seen and
+   files it in the bell. `since` means a caught-up client gets an empty list. */
+async function fetchBroadcasts({announce=true}={}){
+  if(!apiBase())return 0;
+  try{
+    const since=S._lastBroadcastAt||0;
+    const r=await api("/api/broadcasts?since="+encodeURIComponent(since));
+    const list=(r&&r.broadcasts)||[];
+    if(!list.length){
+      // still advance the cursor so a quiet poll stays a cheap no-op
+      if(r&&r.now&&!since)S._lastBroadcastAt=r.now, save();
+      return 0;
+    }
+    const seen=new Set(S.notifs.map(n=>n.id));
+    let added=0, newest=since;
+    // oldest first, so the bell ends up newest-at-top like everything else
+    list.slice().sort((a,b)=>a.sentAt-b.sentAt).forEach(b=>{
+      if(b.sentAt>newest)newest=b.sentAt;
+      if(seen.has(b.id))return;                       // already delivered
+      pushNotif({id:b.id,em:b.em,title:b.title,body:b.body,when:b.sentAt,fromAdmin:true});
+      added++;
+    });
+    S._lastBroadcastAt=newest; save();
+    if(added){
+      // toast only for ones that land while she is using the app; at launch the
+      // bell badge is enough (a stack of toasts on open would just be noise)
+      if(announce)toast(list[0].title,list[0].em||"🔔");
+      if(typeof render==="function")render();          // refresh the bell badge
+    }
+    return added;
+  }catch(e){ return 0; }                               // offline → try again next poll
+}
+
 function startCatalogPolling(){
   if(!apiBase()||_pollTimer)return;
   const tick=async()=>{
@@ -3620,6 +3659,7 @@ function startCatalogPolling(){
       if(meta && meta.version && meta.version!==S._catalogVersion){
         await cloudInit({catalogOnly:true}); // pull latest, re-render
       }
+      if(!window.ZAFFA_ADMIN) await fetchBroadcasts();   // new notifications from the admin
     }catch(e){/* backend asleep/offline — try again next tick */}
   };
   _pollTimer=setInterval(tick,5000);               // every 5s → near-instant catalog updates
@@ -4385,7 +4425,7 @@ route("/admin/more",()=>{
     ["gift","Vouchers","Create redeem codes for free access",()=>go("/admin/vouchers")],
     ["camera","App splash screen",SETTINGS&&SETTINGS.splash?"Custom splash set · tap to change":"Not set · tap to add",()=>go("/admin/branding")],
     ["wallet","Bank Muscat payments","Merchant ID, access code & working key",()=>go("/admin/payments")],
-    ["megaphone","Send notification","Broadcast to brides",()=>openBroadcastForm()],
+    ["megaphone","Notifications","Send to all brides · see what was sent",()=>go("/admin/notifications")],
     ["tag","Advertisements",ADS.filter(a=>a.active).length+" active",()=>go("/admin/ads")],
     ["spark","Wedding tips",TIPS.length+" tips",()=>go("/admin/tips")],
     ["star","Featured vendors",VENDORS.filter(v=>v.featured).length+" featured",()=>go("/admin/vendors")],
@@ -4402,6 +4442,56 @@ route("/admin/more",()=>{
     h("span.icon-btn",{style:{width:"36px",height:"36px",background:"var(--good-soft)",color:"var(--good)",border:"0"}},icon("check",18)),
     h("div.grow",[h("b.small","Signed in as admin"),h("div.tiny.faint",S.account.email||"")])]));
   kids.push(h("button.btn.btn-sec.btn-block",{style:{marginTop:"12px",color:"var(--crit)"},onclick:()=>adminSignOut()},[icon("logout",18),"Sign out"]));
+  return appFrame(kids,{tabs:adminTabs("/admin/more")});
+});
+
+/* ---------- NOTIFICATIONS (send + history) ----------
+   Sending is fire-and-forget, so without a record of what went out the admin has
+   no way to tell a delivered notification from one that silently failed. */
+route("/admin/notifications",()=>{
+  const kids=[adminTop("Notifications",
+    h("button.icon-btn",{onclick:()=>openBroadcastForm(null,load),"aria-label":"Send notification"},icon("plus",22)))];
+  // capped: a primary action stretched across a 1100px dashboard reads as a banner
+  kids.push(h("button.btn.btn-pri.btn-lg.btn-block",{style:{marginBottom:"10px",maxWidth:"420px"},
+    onclick:()=>openBroadcastForm(null,load)},[icon("megaphone",18),"Send to all brides"]));
+  kids.push(h("p.tiny.faint",{style:{margin:"0 3px 26px"}},
+    "Brides receive this in the app's bell within a few seconds of opening it."));
+  kids.push(h("div.between",{style:{margin:"4px 3px 12px"}},[h("h3",{style:{fontSize:"18px"}},"Sent"),h("span")]));
+  const list=h("div.col.gap10",Array.from({length:3},()=>
+    h("div.card.pad-s",[h("div.sk",{style:{height:"13px",width:"55%",marginBottom:"8px"}}),
+                        h("div.sk",{style:{height:"10px",width:"80%"}})])));
+  kids.push(list);
+
+  function draw(rows){
+    clear(list);
+    if(!rows.length){
+      list.appendChild(h("div.empty",[h("div.em","📭"),h("h3","Nothing sent yet"),
+        h("p.muted","Notifications you send will be listed here.")]));
+      return;
+    }
+    rows.forEach(b=>list.appendChild(h("div.card.pad-s.row.gap12",[
+      h("span",{style:{fontSize:"22px",width:"32px",textAlign:"center",flex:"none"}},b.em||"🔔"),
+      h("div.grow",{style:{minWidth:"0"}},[
+        h("div.between",[h("b.small",b.title),h("span.tiny.faint",timeAgo(b.sentAt))]),
+        b.body?h("p.small.muted",{style:{marginTop:"3px"}},b.body):null,
+        h("div.tiny.faint",{style:{marginTop:"4px"}},b.audience==="all"?"Everyone":"One bride"),
+      ]),
+      h("button.icon-btn.plain",{style:{color:"var(--crit)","aria-label":"Delete"},onclick:()=>{
+        confirmSheet("Delete this notification?",
+          "It stays in the bell of anyone who already received it — this only removes it from the list here.",
+          "Delete",async()=>{
+            try{ await api("/api/admin/broadcasts/delete",{method:"POST",body:{id:b.id}}); load(); }
+            catch(e){ toast(e.message||"Could not delete","⚠️"); }
+          },true);
+      }},icon("trash",18)),
+    ])));
+  }
+  async function load(){
+    if(!apiBase()){ draw([]); return; }
+    try{ const r=await api("/api/admin/broadcasts"); draw((r&&r.broadcasts)||[]); }
+    catch(e){ clear(list); list.appendChild(h("p.small.muted","Couldn't load: "+(e.message||"error"))); }
+  }
+  load();
   return appFrame(kids,{tabs:adminTabs("/admin/more")});
 });
 
@@ -4593,7 +4683,7 @@ route("/admin/payments",()=>{
   return appFrame(kids,{tabs:adminTabs("/admin/more")});
 });
 
-function openBroadcastForm(user){
+function openBroadcastForm(user,onSent){
   const d={em:"💌",title:"",body:""};
   const emojis=["💌","🔔","🎁","💄","📸","🎂","🏛️","✨","💗"];
   let ref;
@@ -4607,8 +4697,24 @@ function openBroadcastForm(user){
     ]);
   },actions:[
     h("button.btn.btn-sec.grow",{onclick:()=>ref.close()},"Cancel"),
-    h("button.btn.btn-pri.grow",{onclick:()=>{if(!d.title.trim()){toast("Enter a title","⚠️");return;}
-      pushNotif({em:d.em,title:d.title,body:d.body}); ref.close(); toast("Notification sent 📨");}},[icon("send",16),"Send"]),
+    (()=>{
+      const send=h("button.btn.btn-pri.grow",{onclick:async()=>{
+        if(!d.title.trim()){toast("Enter a title","⚠️");return;}
+        if(!apiBase()){toast("Connect the backend to send notifications","⚠️");return;}
+        // This used to call pushNotif(), which writes to the ADMIN's own device
+        // only — no bride ever received it. It now goes to the server, and every
+        // app picks it up on its next poll.
+        const done=busy(send,"Sending…");
+        try{
+          await api("/api/admin/broadcasts",{method:"POST",
+            body:{em:d.em,title:d.title,body:d.body,audience:user?user.id:"all"}});
+          ref.close();
+          toast(user?("Sent to "+user.name+" 📨"):"Sent to all brides 📨");
+          onSent&&onSent();
+        }catch(e){ toast(e.message||"Could not send","⚠️"); done(); }
+      }},[icon("send",16),"Send"]);
+      return send;
+    })(),
   ]});
 }
 
