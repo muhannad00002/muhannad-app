@@ -13,7 +13,9 @@ function defaultState(){
     onboarded:false,
     role:"bride",                 // bride | admin
     theme:"light",                // day by default; user can switch in Profile
-    bride:{name:"Sarah", date:null, budget:6000, currency:"OMR"},
+    // No placeholder name: "Sarah" was pre-filling the sign-up field and greeting
+    // every real bride by the wrong name until she overwrote it.
+    bride:{name:"", date:null, budget:6000, currency:"OMR"},
     checklist:{},                 // taskId -> "todo"|"prog"|"done"
     selectedVendor:{},            // taskId -> vendorId (when a vendor completes a task)
     favorites:[],                 // vendorId[]
@@ -135,7 +137,13 @@ function load(){
     S.checklist={}; CHECKLIST_TEMPLATE.forEach(t=>S.checklist[t.id]="todo");
   }
   if(!S.notifs||!S.notifs.length)S.notifs=SEED_NOTIFS.map(n=>({...n}));
+  // Anyone who installed before the default was removed still has the old
+  // placeholder saved. Clear it — but only when it is exactly the old default
+  // and no signed-in account confirms it, so a real Sarah keeps her name.
+  if(S.bride.name==="Sarah" && !S.account) S.bride.name="";
 }
+/* Her name once she has given it; screens that greet her fall back to this. */
+function brideName(){ return (S.bride && S.bride.name || "").trim(); }
 
 function save(){
   try{localStorage.setItem(LS_KEY,JSON.stringify({

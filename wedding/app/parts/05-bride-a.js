@@ -31,7 +31,7 @@ route("/onboard",()=>{
 
   const steps=[
     {em:"🌸",h:"What's your name?",sub:"So we can make Wedding & Co truly yours.",field:()=>{
-      const i=h("input.field",{placeholder:"e.g. Sarah",value:data.name,style:{fontSize:"18px",textAlign:"center"},
+      const i=h("input.field",{placeholder:"Your first name",value:data.name,style:{fontSize:"18px",textAlign:"center"},
         oninput:e=>{data.name=e.target.value;refreshNext();}}); setTimeout(()=>i.focus(),200); return i;},
       valid:()=>!!data.name.trim()},
     {em:"🎂",h:"How old are you?",sub:"Helps us tailor advice to you.",field:()=>{
@@ -106,11 +106,12 @@ route("/home",()=>{
   const homeCats=CATEGORIES.slice(0,7);
 
   const kids=[];
-  // header
-  kids.push(h("div.between",{style:{padding:"18px 0 10px"}},[
+  // header — .topbar so the greeting and the assistant/bell buttons stay frozen
+  // at the top instead of scrolling away with the content
+  kids.push(h("div.topbar.between",[
     h("div",[
       h("div.small.muted",greet),
-      h("h1",{style:{fontSize:"27px",marginTop:"2px"}},[S.bride.name+" ",h("span",{style:{fontSize:"20px"}},"🌸")]),
+      h("h1",{style:{fontSize:"27px",marginTop:"2px"}},[(brideName()||"Welcome")+" ",h("span",{style:{fontSize:"20px"}},"🌸")]),
     ]),
     h("div.row.gap8",[
       h("button.icon-btn",{onclick:()=>go("/assistant"),"aria-label":"AI assistant",style:{color:"var(--rose-deep)",background:"var(--rose-soft)",border:"0"}},icon("spark",21)),

@@ -364,8 +364,8 @@ route("/profile",()=>{
   const kids=[topbar("You",{right:h("button.icon-btn",{onclick:()=>go("/profile/edit")},icon("edit",20))})];
   // header card
   kids.push(h("div.card.pad-l",{style:{textAlign:"center",background:"linear-gradient(160deg,var(--rose-tint),var(--surface))"}},[
-    h("span.avatar",{style:{width:"84px",height:"84px",fontSize:"30px",margin:"0 auto 12px",background:"linear-gradient(135deg,var(--rose),var(--gold))"}},initials(S.bride.name)),
-    h("h2",{style:{fontSize:"25px"}},S.bride.name),
+    h("span.avatar",{style:{width:"84px",height:"84px",fontSize:"30px",margin:"0 auto 12px",background:"linear-gradient(135deg,var(--rose),var(--gold))"}},brideName()?initials(brideName()):"🌸"),
+    h("h2",{style:{fontSize:"25px"}},brideName()||"Your profile"),
     S.bride.date?h("p.muted",{style:{marginTop:"4px"}},["💍 ",new Date(S.bride.date+"T00:00:00").toLocaleDateString("en",{weekday:"long",day:"numeric",month:"long",year:"numeric"})]):h("p.muted",{style:{marginTop:"4px"}},"No date set yet"),
     d!=null?h("span.tag.tag-rose",{style:{marginTop:"10px"}},d+" days to go"):null,
   ]));

@@ -293,7 +293,7 @@ function openAccountSheet(onDone,opts){
           ["We sent a code to your WhatsApp ",h("b",d.phone),". ",existing?"Welcome back!":"Fill in your details to finish signing up."]));
         if(!existing){
           wrap.appendChild(h("div",[h("label.lbl","Your name"),
-            h("input.field",{value:d.name,placeholder:"e.g. Sarah",oninput:e=>d.name=e.target.value})]));
+            h("input.field",{value:d.name,placeholder:"Your first name",oninput:e=>d.name=e.target.value})]));
           const govSel=h("select.field",GOVERNORATES.map(c=>h("option",{value:c,selected:c===d.governorate},c)));
           govSel.onchange=e=>d.governorate=e.target.value;
           wrap.appendChild(h("div.row.gap8",[
