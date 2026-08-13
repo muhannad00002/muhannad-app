@@ -32,6 +32,33 @@ def _load_yaml() -> Dict[str, Any]:
     return {}
 
 
+def _resolve_database_url(url: str) -> str:
+    """Return a robust database URL.
+
+    For SQLite, resolve relative file paths against the backend directory (so
+    the app does not depend on the current working directory) and ensure the
+    parent folder exists — otherwise the very first query fails with
+    "unable to open database file" and the server appears to 500 on startup.
+    Non-SQLite URLs (e.g. PostgreSQL) are returned unchanged.
+    """
+    if not url:
+        return f"sqlite:///{(DATA_DIR / 'vendors.db').as_posix()}"
+
+    prefix = "sqlite:///"
+    if not url.startswith(prefix):
+        return url
+
+    path_part = url[len(prefix):]
+    if not path_part or path_part == ":memory:":
+        return url
+
+    path = Path(path_part)
+    if not path.is_absolute():
+        path = (BACKEND_DIR / path).resolve()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return f"{prefix}{path.as_posix()}"
+
+
 class Settings:
     """Merged view over ``config.yaml`` and environment secrets."""
 
@@ -42,8 +69,8 @@ class Settings:
         self.google_maps_api_key: str = os.getenv("GOOGLE_MAPS_API_KEY", "")
         self.search_api_key: str = os.getenv("SEARCH_API_KEY", "")
         self.search_engine_id: str = os.getenv("SEARCH_ENGINE_ID", "")
-        self.database_url: str = os.getenv(
-            "DATABASE_URL", f"sqlite:///{DATA_DIR / 'vendors.db'}"
+        self.database_url: str = _resolve_database_url(
+            os.getenv("DATABASE_URL", "").strip()
         )
         self.cors_origins: List[str] = [
             o.strip() for o in os.getenv(

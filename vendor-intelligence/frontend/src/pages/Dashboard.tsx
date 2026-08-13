@@ -11,7 +11,20 @@ export function Dashboard({ t }: { t: (k: string) => string }) {
     api.stats().then(setStats).catch((e) => setError(String(e)));
   }, []);
 
-  if (error) return <div className="card p-6 text-sm text-red-600">Failed to load: {error}</div>;
+  if (error)
+    return (
+      <div className="card p-6 text-sm">
+        <div className="font-semibold text-red-600">Couldn’t reach the API: {error}</div>
+        <div className="mt-2 text-slate-500">
+          Make sure the backend is running. Open{" "}
+          <a className="text-brand-ink underline" href="/api/health" target="_blank" rel="noreferrer">
+            /api/health
+          </a>{" "}
+          — if that also fails, start it with <code className="rounded bg-slate-100 px-1">uvicorn main:app --reload</code>{" "}
+          in <code className="rounded bg-slate-100 px-1">vendor-intelligence/backend</code>.
+        </div>
+      </div>
+    );
   if (!stats) return <div className="card p-6 text-sm text-slate-500">Loading…</div>;
 
   const tiles: { label: string; value: number; accent?: string }[] = [
