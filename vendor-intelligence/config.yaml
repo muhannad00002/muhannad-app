@@ -1,0 +1,34 @@
+# Oman Wedding Vendor Intelligence — application configuration.
+# Values here are non-secret and safe to commit. Secrets (API keys) live in
+# the git-ignored .env file (see .env.example).
+
+default_country: Oman
+default_country_code: OM
+
+# Feature toggles for the discovery pipeline.
+google_maps_enabled: true
+instagram_discovery_enabled: true
+deep_search_enabled: true
+
+# Scoring / review defaults.
+default_confidence_threshold: 70
+default_governorate: Muscat
+
+# Discovery behaviour.
+search:
+  # Which SearchProvider to use for public web / Instagram discovery.
+  # One of: google_cse, bing, none. "none" disables automated web discovery
+  # and relies on manual Instagram URL import (fully compliant fallback).
+  provider: google_cse
+  standard_queries_per_category: 8
+  deep_queries_per_category: 40
+  max_results_per_query: 10
+  # Politeness: never hammer external services.
+  min_seconds_between_requests: 1.0
+  cache_ttl_seconds: 604800  # 7 days
+
+# Rate limiting / retry for external APIs.
+rate_limit:
+  max_retries: 5
+  backoff_initial_seconds: 1
+  backoff_max_seconds: 30
