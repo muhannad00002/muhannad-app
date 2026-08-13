@@ -202,7 +202,9 @@ npm run dev
 | 2 | Core services + keyword engine | ✅ |
 | 3 | Places enrichment + discovery providers | ✅ |
 | 4 | Jobs + API + export/import | ✅ |
-| 5 | React/TS/Tailwind frontend | 🚧 in progress |
-| 6–8 | Advanced dashboard, testing, optimization | ⏭️ next |
+| 5 | React/TS/Tailwind frontend | ✅ |
+| 6–8 | Advanced dashboard polish, more tests, optimization | ⏭️ ongoing |
 
-Backend is fully runnable and tested today (`uvicorn main:app` + `/docs`).
+Full stack runs today: `uvicorn main:app` serves the API (and the built
+frontend if you run `npm run build` first). For development, run the backend
+and `npm run dev` (the Vite dev server proxies `/api` to the backend).

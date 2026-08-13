@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  @apply bg-slate-50 text-slate-800 antialiased;
+}
+
+/* RTL support: when the app is in Arabic, dir="rtl" flips layout naturally. */
+[dir="rtl"] {
+  text-align: right;
+}
+
+.card {
+  @apply bg-white rounded-xl border border-slate-200 shadow-sm;
+}
+
+.btn {
+  @apply inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white
+         px-3 py-2 text-sm font-medium text-slate-700 transition
+         hover:bg-slate-50 active:translate-y-px disabled:opacity-50;
+}
+.btn-primary {
+  @apply border-brand bg-brand text-white hover:bg-brand-ink;
+}
+.chip {
+  @apply cursor-pointer select-none rounded-full border border-slate-300 bg-white
+         px-3 py-1 text-xs text-slate-600 transition hover:border-brand;
+}
+.chip-active {
+  @apply border-brand bg-brand text-white;
+}
+.input {
+  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm
+         outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft;
+}
+.pill {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
