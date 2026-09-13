@@ -496,6 +496,112 @@ async function handle(req, res) {
       return json(res, r.ok ? 200 : 400, r);
     }
 
+    /* ---------- WhatsApp Webhook Setup & Verification ---------- */
+    if (p === "/webhook/whatsapp" && req.method === "GET") {
+      const mode = req.url.split("?")[1];
+      const params = new URLSearchParams(mode);
+      const token = params.get("hub.verify_token");
+      const challenge = params.get("hub.challenge");
+      const mode_param = params.get("hub.mode");
+
+      if (mode_param === "subscribe" && token === process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN) {
+        return res.writeHead(200, { "Content-Type": "text/plain" }), res.end(challenge);
+      }
+      return json(res, 403, { error: "invalid_token" });
+    }
+
+    /* ---------- WhatsApp Incoming Messages & Status Updates ---------- */
+    if (p === "/webhook/whatsapp" && req.method === "POST") {
+      const raw = await body(req);
+      let b;
+      try { b = JSON.parse(raw); } catch (e) { return json(res, 400, { error: "invalid_json" }); }
+
+      // Parse incoming message
+      const msg = whatsapp.parseIncomingMessage(b);
+      if (msg) {
+        console.log("WhatsApp incoming:", msg.type, {
+          from: msg.from,
+          messageId: msg.messageId,
+          ...(msg.type === "message" && { text: msg.text?.slice(0, 100) }),
+          ...(msg.type === "status" && { status: msg.status }),
+        });
+
+        // Store incoming message
+        if (msg.type === "message") {
+          await db.set("whatsapp:msg:" + msg.messageId, {
+            ...msg,
+            receivedAt: Date.now(),
+          });
+        }
+      }
+
+      return json(res, 200, { ok: true });
+    }
+
+    /* ---------- Send WhatsApp Text Message ---------- */
+    if (p === "/api/whatsapp/send" && req.method === "POST") {
+      const user = await auth.fromRequest(req);
+      if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
+
+      const b = parseBody(await body(req), req.headers["content-type"]);
+      const { phone, message } = b;
+
+      if (!phone || !message) return json(res, 400, { error: "missing_phone_or_message" });
+
+      const result = await whatsapp.sendMessage(phone, message);
+      if (result.sent) {
+        return json(res, 200, { ok: true, messageId: result.id });
+      }
+      return json(res, 400, { error: result.reason });
+    }
+
+    /* ---------- Send WhatsApp Template Message ---------- */
+    if (p === "/api/whatsapp/template" && req.method === "POST") {
+      const user = await auth.fromRequest(req);
+      if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
+
+      const b = parseBody(await body(req), req.headers["content-type"]);
+      const { phone, templateName, languageCode, parameters } = b;
+
+      if (!phone || !templateName) return json(res, 400, { error: "missing_phone_or_template" });
+
+      const result = await whatsapp.sendTemplate(phone, templateName, languageCode || "en", parameters || []);
+      if (result.sent) {
+        return json(res, 200, { ok: true, messageId: result.id });
+      }
+      return json(res, 400, { error: result.reason });
+    }
+
+    /* ---------- Mark WhatsApp Message as Read ---------- */
+    if (p === "/api/whatsapp/read" && req.method === "POST") {
+      const user = await auth.fromRequest(req);
+      if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
+
+      const b = parseBody(await body(req), req.headers["content-type"]);
+      const { messageId } = b;
+
+      if (!messageId) return json(res, 400, { error: "missing_messageId" });
+
+      const result = await whatsapp.markAsRead(messageId);
+      if (result.ok) {
+        return json(res, 200, { ok: true });
+      }
+      return json(res, 400, { error: result.reason });
+    }
+
+    /* ---------- WhatsApp Configuration Status ---------- */
+    if (p === "/api/whatsapp/status" && req.method === "GET") {
+      const user = await auth.fromRequest(req);
+      if (!user || user.role !== "admin") return json(res, 403, { error: "admin_only" });
+
+      return json(res, 200, {
+        configured: whatsapp.isConfigured(),
+        provider: whatsapp.provider(),
+        phoneNumber: process.env.WHATSAPP_PHONE_NUMBER || "not configured",
+        webhookUrl: process.env.PUBLIC_BASE_URL ? process.env.PUBLIC_BASE_URL + "/webhook/whatsapp" : "not configured",
+      });
+    }
+
     /* ---------- AI assistant (Aya, powered by Claude) ---------- */
     if (p === "/api/assistant" && req.method === "POST") {
       // Graceful degrade: if no key is configured the client falls back to its
