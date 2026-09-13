@@ -37,6 +37,7 @@ const apple = require("./apple");
 const db = require("./db");
 const auth = require("./auth");
 const assistant = require("./assistant");
+const whatsapp = require("./whatsapp");
 
 const PORT = process.env.PORT || 8787;
 const APP_RETURN = process.env.APP_RETURN_URL || "http://localhost:8742/index.html";
