@@ -1,0 +1,90 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                   WHATSAPP WEBHOOK QUICK REFERENCE                           ║
+║                         (Updated for Vercel)                                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📋 YOUR CALLBACK URL & VERIFY TOKEN:
+───────────────────────────────────────────────────────────────────────────────
+
+  Callback URL:
+  https://weddingandco.vercel.app/webhook/whatsapp
+
+  Verify Token:
+  80a89438e96ad337b658ce2c4fe6051589697f8a1a6e4c80d97f52d0d6695e86
+
+───────────────────────────────────────────────────────────────────────────────
+
+✅ WHAT'S READY:
+  ✓ Backend webhook routes implemented
+  ✓ Message sending API endpoints
+  ✓ Incoming message storage
+  ✓ .env configured locally
+
+📱 NEXT STEPS (IN ORDER):
+
+  1️⃣  SET ENVIRONMENT VARIABLES ON VERCEL
+      → Go to vercel.com/dashboard
+      → Select your project (weddingandco)
+      → Settings → Environment Variables
+      → Add these 6 variables:
+         WHATSAPP_BUSINESS_ACCOUNT_ID=1358023363153523
+         WHATSAPP_PHONE_NUMBER_ID=1341879095676595
+         WHATSAPP_ACCESS_TOKEN=[your access token]
+         WHATSAPP_API_VERSION=v20.0
+         WHATSAPP_PHONE_NUMBER=+96871766009
+         WHATSAPP_WEBHOOK_VERIFY_TOKEN=80a89438e96ad337b658ce2c4fe6051589697f8a1a6e4c80d97f52d0d6695e86
+
+  2️⃣  REDEPLOY SERVICE
+      → Click "Redeploy" or push a new commit to trigger deployment
+
+  3️⃣  CONFIGURE WEBHOOK IN META
+      → Go to developers.facebook.com/apps
+      → Select your WhatsApp app
+      → WhatsApp → Configuration
+      → Webhooks section:
+         Callback URL: https://weddingandco.vercel.app/webhook/whatsapp
+         Verify Token: 80a89438e96ad337b658ce2c4fe6051589697f8a1a6e4c80d97f52d0d6695e86
+         Click "Verify & Save"
+
+  4️⃣  SUBSCRIBE TO EVENTS
+      → Check these boxes:
+         ✅ messages
+         ✅ message_template_status_change
+         ✅ message_status_update
+      → Click "Save"
+
+  5️⃣  CREATE TEMPLATES (OPTIONAL)
+      → Message Templates tab
+      → Create "otp_code" template (required for OTP)
+      → Create other templates as needed
+      → Submit for approval
+
+  6️⃣  TEST WITH SANDBOX
+      → Configuration → Sandbox Mode
+      → Add your test phone
+      → Send test messages
+
+───────────────────────────────────────────────────────────────────────────────
+
+🔗 API ENDPOINTS AVAILABLE:
+
+  Send Text:
+  POST https://weddingandco.vercel.app/api/whatsapp/send
+  { "phone": "+96890000000", "message": "Hello!" }
+
+  Send Template:
+  POST https://weddingandco.vercel.app/api/whatsapp/template
+  { "phone": "+96890000000", "templateName": "otp_code", "parameters": ["123456"] }
+
+  Mark as Read:
+  POST https://weddingandco.vercel.app/api/whatsapp/read
+  { "messageId": "wamid.xxxxx" }
+
+  Check Status:
+  GET https://weddingandco.vercel.app/api/whatsapp/status
+
+───────────────────────────────────────────────────────────────────────────────
+
+📖 FULL GUIDE:
+  See WHATSAPP-WEBHOOK-SETUP.md in your project
+
