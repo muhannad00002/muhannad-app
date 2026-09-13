@@ -4,7 +4,7 @@
 
 **Callback URL:**
 ```
-https://zaffa-backend.onrender.com/webhook/whatsapp
+https://weddingandco.vercel.app/webhook/whatsapp
 ```
 
 **Verify Token:**
@@ -14,6 +14,7 @@ https://zaffa-backend.onrender.com/webhook/whatsapp
 
 **Business Account ID:** 1358023363153523
 **Phone Number ID:** 1341879095676595
+**Domain:** weddingandco.vercel.app
 
 ---
 
@@ -26,7 +27,7 @@ https://zaffa-backend.onrender.com/webhook/whatsapp
 
 ### 2. Add Webhook URL
 Look for "Webhooks" section:
-- **Callback URL:** `https://zaffa-backend.onrender.com/webhook/whatsapp`
+- **Callback URL:** `https://weddingandco.vercel.app/webhook/whatsapp`
 - **Verify Token:** `80a89438e96ad337b658ce2c4fe6051589697f8a1a6e4c80d97f52d0d6695e86`
 - Click **Verify & Save**
 
@@ -97,14 +98,14 @@ In Configuration → Sandbox Mode:
 
 ### 2. Test Webhook Verification
 ```bash
-curl -X GET "https://zaffa-backend.onrender.com/webhook/whatsapp?hub.mode=subscribe&hub.verify_token=80a89438e96ad337b658ce2c4fe6051589697f8a1a6e4c80d97f52d0d6695e86&hub.challenge=test123"
+curl -X GET "https://weddingandco.vercel.app/webhook/whatsapp?hub.mode=subscribe&hub.verify_token=80a89438e96ad337b658ce2c4fe6051589697f8a1a6e4c80d97f52d0d6695e86&hub.challenge=test123"
 ```
 
 Should return: `test123`
 
 ### 3. Send Test Message
 ```bash
-curl -X POST https://zaffa-backend.onrender.com/api/whatsapp/send \
+curl -X POST https://weddingandco.vercel.app/api/whatsapp/send \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_AUTH_TOKEN" \
   -d '{
@@ -115,14 +116,14 @@ curl -X POST https://zaffa-backend.onrender.com/api/whatsapp/send \
 
 ---
 
-## Deployment to Render
+## Deployment to Vercel
 
 Your `.env` is ready locally. Now deploy:
 
-### 1. Set Environment Variables on Render
-1. Go to https://dashboard.render.com
-2. Select "zaffa-backend" service
-3. Click **Environment** (left sidebar)
+### 1. Set Environment Variables on Vercel
+1. Go to https://vercel.com/dashboard
+2. Select "weddingandco" project (or your project)
+3. Click **Settings** → **Environment Variables**
 4. Add these variables:
    - `WHATSAPP_BUSINESS_ACCOUNT_ID`: `1358023363153523`
    - `WHATSAPP_PHONE_NUMBER_ID`: `1341879095676595`
@@ -132,8 +133,9 @@ Your `.env` is ready locally. Now deploy:
    - `WHATSAPP_WEBHOOK_VERIFY_TOKEN`: `80a89438e96ad337b658ce2c4fe6051589697f8a1a6e4c80d97f52d0d6695e86`
 
 ### 2. Redeploy
-- Service page → **Deploy latest commit** 
-- (or it auto-deploys if autoDeploy is on)
+- Projects page → Select project
+- Click **Redeploy** or push new commit
+- (or it auto-deploys on git push if connected)
 
 ---
 
